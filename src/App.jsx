@@ -5,7 +5,7 @@ import ScreenNav from './components/ScreenNav';
 // Auth pages
 import Welcome from './pages/auth/Welcome';
 import SignUp from './pages/auth/SignUp';
-import PhoneInput from './pages/auth/PhoneInput';
+import SignUpForm from './pages/auth/SignUpForm';
 import OTPVerification from './pages/auth/OTPVerification';
 const ProfileSetup = lazy(() => import('./pages/auth/ProfileSetup'));
 
@@ -77,8 +77,7 @@ export default function App() {
         {/* Auth Flow */}
         <Route path="/" element={<Welcome />} />
         <Route path="/signup" element={<SignUp />} />
-        <Route path="/signup/phone" element={<PhoneInput />} />
-        <Route path="/signup/email" element={<PhoneInput />} />
+        <Route path="/signup/:method" element={<SignUpForm />} />
         <Route path="/otp" element={<OTPVerification />} />
         <Route path="/profile-setup" element={<ProfileSetup />} />
 

@@ -3,7 +3,7 @@
  *
  * Maps to: members table
  */
-import api from './api';
+import api from '../api';
 
 const BASE = '/committees';
 

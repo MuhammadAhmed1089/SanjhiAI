@@ -3,7 +3,7 @@
  *
  * Maps to: committees, collection_accounts, organizers, co_organizers tables
  */
-import api from './api';
+import api from '../api';
 
 const BASE = '/committees';
 

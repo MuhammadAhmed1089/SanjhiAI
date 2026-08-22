@@ -4,7 +4,7 @@
  * Maps to: admins, admin_action_logs tables + admin-scoped views
  * of users, committees, complaints.
  */
-import api from './api';
+import api from '../api';
 
 const BASE = '/admin';
 

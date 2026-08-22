@@ -3,7 +3,7 @@
  *
  * Maps to: cycles, payments tables
  */
-import api from './api';
+import api from '../api';
 
 const BASE = '/committees';
 

@@ -9,7 +9,7 @@
  *   import { sendOTP, getMyCommittees } from '../services';
  */
 
-export { default as api, setToken, clearToken } from './api';
+export { default as api, setToken, clearToken } from '../api';
 
 export * as authService from './authService';
 export * as committeeService from './committeeService';

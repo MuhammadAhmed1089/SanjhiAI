@@ -3,7 +3,7 @@
  *
  * Maps to: users, otps, sessions tables
  */
-import api, { setToken, clearToken } from './api';
+import api, { setToken, clearToken } from '../api';
 
 const BASE = '/auth';
 
