@@ -1,0 +1,15 @@
+{
+  "name": "mobile",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "react-native start",
+    "android": "react-native run-android",
+    "ios": "react-native run-ios"
+  },
+  "dependencies": {
+    "react": "^18.3.0",
+    "react-native": "^0.75.0",
+    "@react-navigation/native": "^6.1.0"
+  }
+}
