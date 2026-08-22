@@ -219,6 +219,15 @@ h1, h2, h3, h4, h5, h6 {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Quick fade-in for small elements */
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out both;
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 /* ── Floating-label field inputs ── */
 .field-input {
   width: 100%;

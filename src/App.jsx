@@ -6,6 +6,7 @@ import ScreenNav from './components/ScreenNav';
 import Welcome from './pages/auth/Welcome';
 import SignUp from './pages/auth/SignUp';
 import SignUpForm from './pages/auth/SignUpForm';
+import LoginForm from './pages/auth/LoginForm';
 import OTPVerification from './pages/auth/OTPVerification';
 const ProfileSetup = lazy(() => import('./pages/auth/ProfileSetup'));
 
@@ -78,6 +79,8 @@ export default function App() {
         <Route path="/" element={<Welcome />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/signup/:method" element={<SignUpForm />} />
+        <Route path="/login" element={<LoginForm />} />
+        <Route path="/forgot-password" element={<OTPVerification />} />
         <Route path="/otp" element={<OTPVerification />} />
         <Route path="/profile-setup" element={<ProfileSetup />} />
 

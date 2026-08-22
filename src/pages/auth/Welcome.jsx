@@ -28,7 +28,7 @@ export default function Welcome() {
           <Button fullWidth onClick={() => navigate('/signup')}>
             Get Started
           </Button>
-          <Button variant="secondary" fullWidth onClick={() => navigate('/otp')}>
+          <Button variant="secondary" fullWidth onClick={() => navigate('/login')}>
             Login
           </Button>
         </div>

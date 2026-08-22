@@ -69,7 +69,7 @@ export default function SignUp() {
           <div className="mt-8 text-center pt-8 border-t border-deep-navy/10">
             <p className="font-body text-[16px] text-on-surface-variant">
               Already have an account?{' '}
-              <button onClick={() => navigate('/otp')} className="font-label text-[14px] font-semibold text-teal-emerald hover:text-secondary underline underline-offset-4 decoration-2 decoration-teal-emerald/30 transition-all">
+              <button onClick={() => navigate('/login')} className="font-label text-[14px] font-semibold text-teal-emerald hover:text-secondary underline underline-offset-4 decoration-2 decoration-teal-emerald/30 transition-all">
                 Log in
               </button>
             </p>

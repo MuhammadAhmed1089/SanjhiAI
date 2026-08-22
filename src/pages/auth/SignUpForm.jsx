@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Icon from '../../components/Icon';
+import FloatingField from '../../components/FloatingField';
 import { COUNTRIES, DEFAULT_COUNTRY, validatePhone } from '../../data/countries';
 
 /* ── Icon color themes ── */
@@ -71,27 +72,27 @@ export default function SignUpForm() {
       </div>
 
       {/* Glass card */}
-      <div className="glass-card w-full max-w-lg relative z-10 p-6 md:p-8 animate-fade-up">
+      <div className="glass-card w-full max-w-lg relative z-10 p-5 md:p-6 animate-fade-up">
         {/* Back button */}
         <button
           onClick={() => navigate(-1)}
-          className="absolute top-4 left-4 md:top-5 md:left-5 w-9 h-9 rounded-full flex items-center justify-center text-deep-navy/50 hover:text-deep-navy hover:bg-white/50 transition-all"
+          className="absolute top-3 left-3 md:top-4 md:left-4 w-8 h-8 rounded-full flex items-center justify-center text-deep-navy/50 hover:text-deep-navy hover:bg-white/50 transition-all"
         >
-          <Icon name="arrow_back_ios" size={18} />
+          <Icon name="arrow_back_ios" size={16} />
         </button>
 
         {/* Header */}
-        <div className="text-center mb-6">
-          <h1 className="font-headline text-[30px] md:text-[40px] leading-tight font-bold text-deep-navy mb-1">
+        <div className="text-center mb-4">
+          <h1 className="font-headline text-[26px] md:text-[34px] leading-tight font-bold text-deep-navy mb-0.5">
             Create Account
           </h1>
-          <p className="font-body text-[14px] text-on-surface-variant">
+          <p className="font-body text-[13px] text-on-surface-variant">
             {isPhone ? 'Sign up with your phone number' : 'Sign up with your email address'}
           </p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
 
           {/* ── Full Name ── */}
           <FloatingField icon="person" theme={ICON_THEMES.name} label="Full Name" active={name.length > 0}>
@@ -260,7 +261,7 @@ export default function SignUpForm() {
           {/* ── Submit ── */}
           <button
             type="submit"
-            className="mt-3 w-full font-label text-[14px] font-semibold py-4 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 bg-gradient-to-r from-teal-emerald to-teal-emerald/80 text-white shadow-lg shadow-teal-emerald/20 hover:shadow-xl hover:shadow-teal-emerald/30 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+            className="mt-2 w-full font-label text-[14px] font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 bg-gradient-to-r from-teal-emerald to-teal-emerald/80 text-white shadow-lg shadow-teal-emerald/20 hover:shadow-xl hover:shadow-teal-emerald/30 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
             disabled={!name || !age || !gender || (isPhone ? !phoneResult.valid : !emailValid) || !passwordStrong || !passwordsMatch}
           >
             Create Account
@@ -269,15 +270,15 @@ export default function SignUpForm() {
         </form>
 
         {/* Footer */}
-        <div className="mt-5 text-center">
+        <div className="mt-3 text-center">
           <p className="font-body text-[13px] text-on-surface-variant">
             Already have an account?{' '}
-            <button onClick={() => navigate('/otp')} className="font-label text-[13px] font-semibold text-teal-emerald hover:text-secondary underline underline-offset-4 decoration-teal-emerald/30 transition-all">
+            <button onClick={() => navigate('/login')} className="font-label text-[13px] font-semibold text-teal-emerald hover:text-secondary underline underline-offset-4 decoration-teal-emerald/30 transition-all">
               Log in
             </button>
           </p>
         </div>
-        <div className="mt-2 text-center">
+        <div className="mt-1 text-center">
           <button
             onClick={() => navigate(isPhone ? '/signup/email' : '/signup/phone')}
             className="font-body text-[13px] text-on-surface-variant hover:text-teal-emerald transition-colors flex items-center gap-1 mx-auto"
@@ -286,50 +287,6 @@ export default function SignUpForm() {
             {isPhone ? 'Use email instead' : 'Use phone instead'}
           </button>
         </div>
-      </div>
-    </div>
-  );
-}
-
-/* ──────────────────────────────────────────────────────────── */
-/* FloatingField — label animates up on focus or when filled   */
-/* ──────────────────────────────────────────────────────────── */
-function FloatingField({ icon, theme, label, children, wrapperClass = '', trailing, active = false }) {
-  const [focused, setFocused] = useState(false);
-  const isLifted = focused || active;
-
-  return (
-    <div
-      className={`relative ${wrapperClass}`}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
-    >
-      {/* Icon badge */}
-      {icon && (
-        <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl ${theme} flex items-center justify-center shadow-md z-10`}>
-          <Icon name={icon} className="text-white" size={20} />
-        </div>
-      )}
-
-      {/* Floating label */}
-      <label
-        className={`absolute left-12 pointer-events-none transition-all duration-200 ease-out font-label
-          ${isLifted
-            ? 'top-1 text-[10px] font-semibold tracking-wide'
-            : 'top-1/2 -translate-y-1/2 text-[14px]'
-          }
-          ${focused ? 'text-teal-emerald' : 'text-on-surface-variant'}
-        `}
-      >
-        {label}
-      </label>
-
-      {/* Children (input/select) */}
-      <div className="relative">
-        {children}
-        {trailing && (
-          <div className="absolute right-1 top-1/2 -translate-y-1/2 z-10">{trailing}</div>
-        )}
       </div>
     </div>
   );
