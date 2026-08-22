@@ -37,7 +37,7 @@ export default function AdminDisputes() {
 </li>
 </ul>
 <div className="mt-auto flex items-center gap-4 p-4">
-<img alt="Staff Member" className="w-10 h-10 rounded-full object-cover border border-secondary/10" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoGXb2I5RDgXrBHfeFg_ShfaQUMKuQShjGbnD0UJv8dFWgZOOOLjSbs_qKKYMAJwOk5Dh7qDNvN0abJIrUdy8pA8Zy_4N0FhaW_tqPslV1eibYkVEr4AxW9QN2KxxnmdwMBm_O2JzW8w52pmMcvPT7YCLRGS5FgRnnTsho5apuWj6nFORGHPKGdUT1GaBqOOL8MYernq0L_eBJp3XiKpdGyUpqNyxh8X62gDUXIkkgHoA_7M9GQHeY"/>
+<img alt="Staff Member" className="w-10 h-10 rounded-full object-cover border border-secondary/10" src="/avatar.svg"/>
 <div>
 <p className="font-label-sm text-label-sm text-on-surface">Admin Profile</p>
 <p className="text-xs text-on-surface-variant">Active</p>
@@ -56,7 +56,7 @@ export default function AdminDisputes() {
 </div>
 <h1 className="hidden md:block font-headline-md text-headline-md text-primary dark:text-primary-fixed">Complaints</h1>
 <div className="flex items-center gap-4">
-<img alt="Admin Profile" className="md:hidden w-8 h-8 rounded-full object-cover border border-secondary/10" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUw-6c39GIsIJDPxSFgeWUh1xfCQKL0v9GA8UovXincbsYFw3vA2DDINlHOp6O-I3bsxOi6m01wVT59D6xVM20Oi3bBlKXhJMIEs3gRZvoNIgRUxgiDIOTsXecmhc9bnSV6pgQmUbjLBEcW-Pq-Qx5FpgyaSTZqm_Xpvf4cbcz-ekA0FVlQzkasmwAG7F_PRzTdmRlTQiTE67h-_gh71uGSzS3soKEN2TGs7UW1kpjh-qm5DQcypQm"/>
+<img alt="Admin Profile" className="md:hidden w-8 h-8 rounded-full object-cover border border-secondary/10" src="/avatar.svg"/>
 </div>
 </header>
 <div className="flex-1 overflow-y-auto bg-surface-bright jali-pattern-subtle">
@@ -113,7 +113,7 @@ export default function AdminDisputes() {
 </div>
 <div className="flex items-center gap-3 md:flex-col md:items-end justify-between mt-2 md:mt-0 pt-3 md:pt-0 border-t border-outline-variant/20 md:border-t-0">
 <div className="flex -space-x-2">
-<img alt="User" className="w-8 h-8 rounded-full border-2 border-surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtrGaMjvLIcWqRsr4MtRfhSKWK3E2qRO0e3k48zI00vCbvLm1heoHi-zOFhYmgIsmBegQvdnGq3SuQszbZ04X7HaXlG_7uVqdPXR_2Hp3IyF977k_w0-uSPkEMi08sJcRnI9Ao-ucxtJHNw5nDaPbYN-aaUuFjvPX2D6v49-q7qEsp0YSBhpE9H6vizTXZz44kM8L844rTKUTXXcshc9qRFwHPeLEGGMlrk_z7FO5sFQDj8ZvBMo5Z"/>
+<img alt="User" className="w-8 h-8 rounded-full border-2 border-surface" src="/avatar.svg"/>
 <div className="w-8 h-8 rounded-full border-2 border-surface bg-surface-variant flex items-center justify-center text-xs text-on-surface-variant font-bold">+1</div>
 </div>
 <button className="px-4 py-2 bg-secondary text-on-secondary rounded-full font-label-sm text-sm hover:bg-on-secondary-fixed-variant transition-colors whitespace-nowrap">Review Case</button>
@@ -141,7 +141,7 @@ export default function AdminDisputes() {
 </div>
 <div className="flex items-center gap-3 md:flex-col md:items-end justify-between mt-2 md:mt-0 pt-3 md:pt-0 border-t border-outline-variant/20 md:border-t-0">
 <div className="flex -space-x-2">
-<img alt="User" className="w-8 h-8 rounded-full border-2 border-surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlEAF3f65sFXiD6V4Kt-ayA3YiDi3t4fAZehe2W8bMVduru_iNFAcwzZ4EXSflC4UY-IQRSCCPp8ySfuiFd8EuQKK4oXMfvxccRYa-bwlmUkDDYxBdoDS9h-VErHKiOfGIzuLe9VsyJ-ni4i1gGOD2biB_44t6p4P7bCLL_DK1kp4_jKJb5erA_qclilSPKTlJf-vju2vvQ8dNm9W4Kf2xFasVyMcHfJxle0ruLbgphDa2EGYdPna-"/>
+<img alt="User" className="w-8 h-8 rounded-full border-2 border-surface" src="/avatar.svg"/>
 </div>
 <button className="px-4 py-2 border border-secondary text-secondary rounded-full font-label-sm text-sm hover:bg-secondary-container/20 transition-colors whitespace-nowrap">Review Case</button>
 </div>
@@ -165,7 +165,7 @@ export default function AdminDisputes() {
 </div>
 <div className="flex items-center gap-3 md:flex-col md:items-end justify-between mt-2 md:mt-0 pt-3 md:pt-0 border-t border-outline-variant/20 md:border-t-0">
 <div className="flex -space-x-2">
-<img alt="User" className="w-8 h-8 rounded-full border-2 border-surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFrKd56JYFKHeN-uzFqpesxrKl6bwbmu8SY0nYixf2rYFC8j9LEHIryglonJCiExeudT2a23a8dGu9dJ5y3tgPC4VNes7L7lRU3_wt4H1sVVdDgV7eIzYx3oMuhacXDKYlauUQhlsXo3aXhbWnohIpUHV3jf5ONFmiaA44n-o_iX-y8ivndr6uiA57M-Yu4mll3CMopeeQlnTmwIQk0ByGXEqBWwp97EvIWKxdJC18ukWyNntBnvMD"/>
+<img alt="User" className="w-8 h-8 rounded-full border-2 border-surface" src="/avatar.svg"/>
 </div>
 <button className="px-4 py-2 text-secondary font-label-sm text-sm hover:bg-secondary-container/20 rounded-full transition-colors whitespace-nowrap">View Details</button>
 </div>

@@ -15,7 +15,7 @@ export default function ActivityLog() {
 </div>
 <div className="flex items-center gap-sm cursor-pointer active:opacity-80 hover:bg-surface-container-high transition-colors p-2 rounded-full">
 <div className="w-10 h-10 rounded-full overflow-hidden bg-surface-variant flex items-center justify-center">
-<img className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4xkG6gf2SWY-xB2OuLXN8lX138XUZgjeFOhh4pcEdSBgcKsd0B_6gnhN2q7OLkWLEJ3Muj7hcmxiHg83W_IlNls17lKtixj_56dJ03gMBiqhwkktsXcqeRbtwPup2ZP_IpHD7StauKMPWoMxfimWEqdguYKw6b7dNwzkvUkqkaa0YPbGFH-nj0mbowb037N2P3cZjObzoC8qmQnUE7FUqEvpom2aP34izF7tFA3AFpG9DGcoZr6GQ"/>
+<img className="w-full h-full object-cover" src="/avatar.svg"/>
 </div>
 <span className="font-label-sm text-label-sm hidden md:block">Admin Profile</span>
 </div>
@@ -24,7 +24,7 @@ export default function ActivityLog() {
 <nav className="bg-surface dark:bg-surface-container-lowest h-full w-80 fixed left-0 top-0 z-40 bg-surface-container-low dark:bg-surface-container-low flex flex-col py-lg space-y-sm hidden md:flex border-r border-outline-variant/15">
 <div className="px-lg pb-md mb-md border-b border-outline-variant/15 flex items-center gap-md">
 <div className="w-12 h-12 rounded-full overflow-hidden bg-surface-variant">
-<img className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaqQ6ymsJONgKCHTYoJG5k0biOAnQFyMbwADlGdFGzuy6AbvSqOStZq2Czn_mPoa7jB2SIvWcNydxPUOZvaD0cg51DvxGW79DmSYYQFUfI0QsDodpHCDPZoU-4Kr1BZ3tTw4wus4C9iLhsYSHtzB7wpsq8r3hrd2b6mFGzqSVsbH5ifuvPzFBOPNv3uvpgJUAn1N-xX-VkBImGiDVQ0iKAvOcy_MxYExAbezFb_FRRzdmL4E-AocwY"/>
+<img className="w-full h-full object-cover" src="/avatar.svg"/>
 </div>
 <div>
 <div className="font-headline-md text-[18px] font-bold text-primary">Sanjhi Admin</div>

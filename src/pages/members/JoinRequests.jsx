@@ -27,7 +27,7 @@ export default function JoinRequests() {
 <div className="flex items-start justify-between mb-4">
 <div className="flex items-center gap-4">
 <div className="w-12 h-12 rounded-full overflow-hidden border border-outline-variant/20 flex-shrink-0">
-<img alt="Avatar" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAllas1Fk0l9flugWf49eR9fi-6jJyYOKDbgC33DZ9TWrHsjVZerAZl80sf3gqQGF4VTD2_RWIf8OD62Fo9kSmQXMElybb8Yb7222bPLVXBJ86_ey0JPZcbF1JFvlS7TOHnu5AONWX5BBDmfer8u1Q8gkjstjDTRIg9S5dq0TiqtoMxDixQm8GYrIREoydX9ZZDwSNzK0gAwOiKvmNL-IJxEBNh03UaS5VklMSk-tXkuptpRQjy7P3d"/>
+<img alt="Avatar" className="w-full h-full object-cover" src="/avatar.svg"/>
 </div>
 <div>
 <h3 className="text-body-lg font-body-lg font-bold text-on-surface">Ayesha Malik</h3>
@@ -56,7 +56,7 @@ export default function JoinRequests() {
 <div className="flex items-start justify-between mb-4">
 <div className="flex items-center gap-4">
 <div className="w-12 h-12 rounded-full overflow-hidden border border-outline-variant/20 flex-shrink-0">
-<img alt="Avatar" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDuYm2AhjC95PToU0zfJRva6Kty6y5VuXL7W6Edki_uWg1ycLrqzz9LZ8ZK6CZAi8S9mA-pwl_Oj3bm5YPy43u_J6vyWdkI2pW_bBtHfmrAwr0Eqw9CFDf1dfPZH0Bx0kCzg0m2ffXJFUy3diJl19orkzmQvgDbnDEd2SrmBOYW7kebxRuvLqDh_9p5xDgaHt9I7alJsifyaHZkGUoqszrI-xExVOiLCF3IbRQohohp-dAI2-pv4Noe"/>
+<img alt="Avatar" className="w-full h-full object-cover" src="/avatar.svg"/>
 </div>
 <div>
 <h3 className="text-body-lg font-body-lg font-bold text-on-surface">Omar Farooq</h3>
@@ -85,7 +85,7 @@ export default function JoinRequests() {
 <div className="flex items-start justify-between mb-4">
 <div className="flex items-center gap-4">
 <div className="w-12 h-12 rounded-full overflow-hidden border border-outline-variant/20 flex-shrink-0">
-<img alt="Avatar" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzZ7pg8eYqTrVL7_YhvGRbvd8LgI7q1BZY_WLEfVyOdz_m2bbba4pB2eTJdUpNoK7DP_ijAiuvKD108KYEZLUW96qW0aEDFPdY9dkL_uNZe5vwdR2YWi9ykcbdyhMp46Bx3aqAIssybpyBudQRddihC6r8WnnC6qzxB3Wo_h6HCvanO4vt1bIC040oz9WtLpuKQ0lKcM6Hkqk1nOyn6eBwrFD4vtFf-Bgnakmx5k1mpB5nMxKwlmTZ"/>
+<img alt="Avatar" className="w-full h-full object-cover" src="/avatar.svg"/>
 </div>
 <div>
 <h3 className="text-body-lg font-body-lg font-bold text-on-surface">Sara Khan</h3>

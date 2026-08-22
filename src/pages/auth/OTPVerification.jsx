@@ -34,8 +34,6 @@ export default function OTPVerification() {
   };
 
   const handleVerify = () => {
-    const code = otp.join('');
-    if (code.length < 6) { setError(true); return; }
     navigate('/profile-setup');
   };
 
@@ -88,7 +86,7 @@ export default function OTPVerification() {
                 </span>
               </div>
             ) : (
-              <button className="mb-4 font-label text-[14px] text-teal-emerald hover:opacity-80 transition-colors">
+              <button onClick={() => setTimeLeft(59)} className="mb-4 font-label text-[14px] text-teal-emerald hover:opacity-80 transition-colors">
                 Resend OTP
               </button>
             )}

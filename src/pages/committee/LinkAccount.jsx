@@ -1,8 +1,10 @@
+import { useNavigate } from 'react-router-dom';
 import TopAppBar from '../../components/TopAppBar';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
 
 export default function LinkAccount() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-background text-on-surface font-body antialiased">
 <header className="w-full top-0 border-b border-secondary/15 dark:border-outline-variant/15 flex items-center px-margin-mobile h-16 w-full bg-background dark:bg-surface-container-low text-primary dark:text-on-surface sticky z-50">
@@ -74,7 +76,7 @@ export default function LinkAccount() {
 </div>
 
 <div className="pt-md mt-auto">
-<button className="w-full bg-secondary text-on-secondary py-[12px] px-lg rounded-full font-label-sm text-label-sm hover:opacity-90 active:scale-95 transition-all shadow-sm" type="submit">
+<button onClick={() => navigate('/committee/review')} className="w-full bg-secondary text-on-secondary py-[12px] px-lg rounded-full font-label-sm text-label-sm hover:opacity-90 active:scale-95 transition-all shadow-sm" type="button">
                     Continue
                 </button>
 </div>

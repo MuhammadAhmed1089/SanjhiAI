@@ -39,7 +39,7 @@ export default function ReleasePayout() {
 <h3 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Recipient Details</h3>
 <div className="flex items-center gap-md">
 <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden bg-surface-container-low border border-outline-variant flex-shrink-0">
-<img className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiPx3pnHi7Og4m8rHlaHVcjugSjjqHMgkQzg1UhJ_Ap-4RNNTOR9-lpuXZPNZbyzdlwM1qq1zfBAukoNa-sQnbJHClets-aJUoti7fxkQLOlKvjZd47HUoAwwiheQMG8IFXwKBDxi4F_ynSEBbqrTtaYpW1ayexO5rxX5pQs_ZNQnTAp0XCA_42k8kEIHZMtiUhC1l7FJnP7Xjg1rsaEVMFCrpCh1n_XM0jA5Hn7SIIzDiaJLrySuH"/>
+<img className="w-full h-full object-cover" src="/avatar.svg"/>
 </div>
 <div className="flex-1">
 <h4 className="font-headline-md text-headline-md-mobile md:text-headline-md text-on-surface">Rahul Sharma</h4>

@@ -1,8 +1,10 @@
+import { useNavigate } from 'react-router-dom';
 import TopAppBar from '../../components/TopAppBar';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
 
 export default function CreateCommittee() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-background text-on-surface font-body antialiased">
 <header className="bg-surface dark:bg-inverse-surface w-full top-0 sticky z-40 bg-surface-container-low dark:bg-surface-dim">
@@ -87,7 +89,7 @@ export default function CreateCommittee() {
 </section>
 
 <div className="mt-xl pb-margin-mobile md:pb-0 pt-md sticky md:static bottom-0 bg-background/95 backdrop-blur-sm md:bg-transparent border-t border-outline-variant/20 md:border-none z-10">
-<button className="w-full bg-secondary text-on-secondary font-label-sm text-label-sm py-4 rounded-xl hover:bg-secondary/90 transition-colors active:scale-[0.98] flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(0,105,114,0.15)]">
+<button onClick={() => navigate('/committee/schedule')} className="w-full bg-secondary text-on-secondary font-label-sm text-label-sm py-4 rounded-xl hover:bg-secondary/90 transition-colors active:scale-[0.98] flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(0,105,114,0.15)]">
                 Continue <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
 </button>
 </div>

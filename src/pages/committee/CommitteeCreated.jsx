@@ -1,8 +1,10 @@
+import { useNavigate } from 'react-router-dom';
 import TopAppBar from '../../components/TopAppBar';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
 
 export default function CommitteeCreated() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-background text-on-surface font-body antialiased">
 <header className="bg-surface dark:bg-surface-dim docked full-width top-0 flex justify-between items-center w-full px-margin-mobile h-16 sticky z-10">
@@ -51,7 +53,7 @@ export default function CommitteeCreated() {
 </main>
 
 <div className="w-full max-w-md mx-auto px-margin-mobile py-lg bg-background sticky bottom-0 border-t border-outline-variant/10 pb-safe">
-<button className="w-full bg-secondary text-on-secondary font-label-sm text-label-sm py-4 rounded-full hover:bg-secondary/90 transition-colors shadow-sm active:scale-[0.98] duration-150">
+<button onClick={() => navigate('/dashboard')} className="w-full bg-secondary text-on-secondary font-label-sm text-label-sm py-4 rounded-full hover:bg-secondary/90 transition-colors shadow-sm active:scale-[0.98] duration-150">
             Go to Committee
         </button>
 </div>

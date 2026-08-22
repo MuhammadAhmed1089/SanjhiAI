@@ -1,8 +1,10 @@
+import { useNavigate } from 'react-router-dom';
 import TopAppBar from '../../components/TopAppBar';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
 
 export default function FileComplaint() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-background text-on-surface font-body antialiased">
 <header className="w-full top-0 sticky bg-background dark:bg-background border-b border-outline/10 flex justify-between items-center px-margin-mobile py-sm z-50">
@@ -47,7 +49,7 @@ export default function FileComplaint() {
 </section>
 
 <section className="mt-md">
-<button className="w-full bg-secondary text-on-secondary py-3 px-6 rounded-lg font-label-sm text-label-sm hover:bg-secondary/90 transition-colors active:scale-[0.98] duration-150 shadow-sm flex items-center justify-center gap-2">
+<button onClick={() => navigate('/support/complaints')} className="w-full bg-secondary text-on-secondary py-3 px-6 rounded-lg font-label-sm text-label-sm hover:bg-secondary/90 transition-colors active:scale-[0.98] duration-150 shadow-sm flex items-center justify-center gap-2">
                 Submit Complaint
                 <span className="material-symbols-outlined text-sm">send</span>
 </button>

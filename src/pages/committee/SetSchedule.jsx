@@ -1,8 +1,10 @@
+import { useNavigate } from 'react-router-dom';
 import TopAppBar from '../../components/TopAppBar';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
 
 export default function SetSchedule() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-background text-on-surface font-body antialiased">
 <header className="bg-background text-primary font-headline-md text-headline-md w-full top-0 bg-background flex items-center px-margin-mobile w-full h-16 sticky z-40">
@@ -109,7 +111,7 @@ export default function SetSchedule() {
 </div>
 
 <div className="fixed bottom-0 left-0 w-full bg-surface p-md md:p-lg border-t border-secondary/10 flex justify-end z-30">
-<button className="bg-secondary text-on-secondary hover:bg-on-secondary-fixed-variant transition-colors font-label-sm text-label-sm py-sm px-[24px] rounded-full active:scale-95 duration-200 flex items-center shadow-[0_4px_14px_0_rgba(0,105,114,0.15)]">
+<button onClick={() => navigate('/committee/link-account')} className="bg-secondary text-on-secondary hover:bg-on-secondary-fixed-variant transition-colors font-label-sm text-label-sm py-sm px-[24px] rounded-full active:scale-95 duration-200 flex items-center shadow-[0_4px_14px_0_rgba(0,105,114,0.15)]">
                 Continue
                 <span className="material-symbols-outlined ml-sm">arrow_forward</span>
 </button>

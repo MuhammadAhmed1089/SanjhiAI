@@ -1,8 +1,10 @@
+import { useNavigate } from 'react-router-dom';
 import TopAppBar from '../../components/TopAppBar';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
 
 export default function JoinCommittee() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-background text-on-surface font-body antialiased">
 <header className="w-full top-0 sticky z-50 bg-background flex items-center px-margin-mobile h-16 max-w-[1280px] mx-auto">
@@ -77,7 +79,7 @@ export default function JoinCommittee() {
 <section className="bg-surface-container-low rounded-xl p-md flat-outline flex items-center justify-between mt-sm">
 <div className="flex items-center gap-4">
 <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-surface-container-lowest relative bg-surface-variant">
-<img alt="Organizer Avatar" className="object-cover w-full h-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPRVZUhQD3AKXlK7Mlf59qb2aPiOgnExA5ghXyWt8-RjfeNM9qqLgazfZYgWqt5iYyz8fWPJY8yK_vl6gjeFIsXtvyGGM3l8nHXtviBHsVkPaUTT2Oea6UmhQHIW6ARzRvHtMLD5aZEnRBNzezPPBBou-vhpElA4D2RgAbPD9FudgHfimwn7IgXg0AypY5EMK9KJtYfhE0PWSwJ8jsaF9tkKCb_d4jFUhLgG56sL5MRs6oYD_bGW94"/>
+<img alt="Organizer Avatar" className="object-cover w-full h-full" src="/avatar.svg"/>
 </div>
 <div className="flex flex-col">
 <span className="font-label-sm text-label-sm text-tertiary uppercase tracking-wider">Organizer</span>
@@ -90,7 +92,7 @@ export default function JoinCommittee() {
 </section>
 
 <section className="mt-xl mb-xl flex flex-col items-center gap-4 w-full">
-<button className="w-full md:w-auto min-w-[280px] bg-secondary text-on-secondary rounded-full py-4 px-lg font-label-sm text-label-sm uppercase tracking-wider hover:bg-on-secondary-fixed-variant transition-colors ambient-shadow active:scale-95 duration-200 flex justify-center items-center gap-2">
+<button onClick={() => navigate('/join-request-sent')} className="w-full md:w-auto min-w-[280px] bg-secondary text-on-secondary rounded-full py-4 px-lg font-label-sm text-label-sm uppercase tracking-wider hover:bg-on-secondary-fixed-variant transition-colors ambient-shadow active:scale-95 duration-200 flex justify-center items-center gap-2">
 <span>Request to Join</span>
 <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
 </button>

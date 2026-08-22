@@ -21,7 +21,7 @@ export default function CommitteeDetail() {
 
 <aside className="hidden md:flex h-full w-72 rounded-r-xl bg-surface-container-low dark:bg-surface-container-lowest shadow-lg dark:shadow-none flex flex-col py-lg sticky top-24 border border-secondary/10">
 <div className="px-md mb-lg flex items-center gap-md">
-<img className="w-12 h-12 rounded-full object-cover border-2 border-secondary" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxUIT51VFvpyKMRw2sm_YjK7t31nOkg46QnVbIIjDht28tvnRhRSdSMl13bSRj_jn6tzmg0yMrJaOh-0uYn4OEAwQsSJB3ymjAwV2Z7Nc7t6OUBhU4yULAluBc4o-qyEKuvqe0IJsjnqVKw1Zc0K2KFVecrYATDgjHhqwDbCsA_ohaN3b3CGNND-zBsAwEDaY1nHuZmjwbVLjVkTi8I-clFzKOHDwuJrukHz2_aYDYPOfyGC3JR5wu"/>
+<img className="w-12 h-12 rounded-full object-cover border-2 border-secondary" src="/avatar.svg"/>
 <div>
 <h2 className="font-headline-md text-headline-md text-secondary text-lg">Community Member</h2>
 <p className="font-body-md text-body-md text-primary dark:text-primary-fixed-dim text-sm text-outline">Gold Tier Contributor</p>
@@ -68,7 +68,7 @@ export default function CommitteeDetail() {
 <div className="bg-surface-container-lowest border border-secondary/10 rounded-xl p-md flex flex-col sm:flex-row sm:items-center justify-between gap-md relative overflow-hidden">
 <div className="absolute top-0 left-0 w-1 h-full bg-secondary"></div>
 <div className="flex items-center gap-md pl-sm">
-<img className="w-10 h-10 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBG46mp2_pJCvCKAcpPp_DSTby7EL9aMq132NodMW68QLQGXKFNiYxvbODlPi318KNA9OlP8gdIuIq3QBd1if2w4vhAjmgML-LTWEk3A5smvB2dlM1sUqp4nt4XP4j1G4F_QvbBSwQhmmFjBB3TjLKwz13J9ngAMiRfaUw4HDGEI-e1ZUsGF9qGOK0wsJk1GHEAQgFQcOY73iwhf7su40c0dh8hvi-mtP-uuGowPGzpc2ocHREmGiyW"/>
+<img className="w-10 h-10 rounded-full object-cover" src="/avatar.svg"/>
 <div>
 <p className="font-body-lg text-primary font-semibold">Rahul Sharma</p>
 <p className="font-body-md text-outline text-sm">₹5,000</p>
@@ -103,7 +103,7 @@ export default function CommitteeDetail() {
 <div className="bg-surface-container-lowest border border-error/20 rounded-xl p-md flex flex-col sm:flex-row sm:items-start sm:items-center justify-between gap-md relative overflow-hidden bg-error/5">
 <div className="absolute top-0 left-0 w-1 h-full bg-error"></div>
 <div className="flex items-start sm:items-center gap-md pl-sm">
-<img className="w-10 h-10 rounded-full object-cover mt-1 sm:mt-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBw2Q3BgLYpsqC64MALVtKPPdavoFhRV7VhAKrK4_21fcA7d6x2eD59wfcjIb22LyjBcXhpsT_RW1lfP1ok6FOlXzvcgrMGTbssMvfL0Bk4WUQ58H-_pURinmCBod8VunUf-zFjGFsxavyaZsJfGRsykXxtRccqTBGLhohxJ72VZQxhRvdY1pTpeZPlYPKtyhuYTK8pVPCRggnP199nDgfjC-W5Y_vhjpwjfDOgMetABXTfZvhCuLF8"/>
+<img className="w-10 h-10 rounded-full object-cover mt-1 sm:mt-0" src="/avatar.svg"/>
 <div>
 <div className="flex items-center gap-sm">
 <p className="font-body-lg text-primary font-semibold">Ayesha Malik</p>

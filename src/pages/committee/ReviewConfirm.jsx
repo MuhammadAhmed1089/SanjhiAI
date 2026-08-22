@@ -1,8 +1,10 @@
+import { useNavigate } from 'react-router-dom';
 import TopAppBar from '../../components/TopAppBar';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
 
 export default function ReviewConfirm() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-background text-on-surface font-body antialiased">
 <div className="absolute inset-0 jali-pattern pointer-events-none"></div>
@@ -96,7 +98,7 @@ export default function ReviewConfirm() {
 </div>
 </main>
 <div className="fixed bottom-0 left-0 w-full max-w-lg mx-auto bg-surface/95 backdrop-blur-md border-t border-outline-variant/10 p-margin-mobile z-50">
-<button className="w-full bg-secondary hover:bg-primary-container text-on-primary rounded-full py-4 px-lg font-label-sm text-label-sm text-center transition-colors shadow-sm flex items-center justify-center gap-2">
+<button onClick={() => navigate('/committee/created')} className="w-full bg-secondary hover:bg-primary-container text-on-primary rounded-full py-4 px-lg font-label-sm text-label-sm text-center transition-colors shadow-sm flex items-center justify-center gap-2">
 <span>Confirm & Create</span>
 <span className="material-symbols-outlined">check_circle</span>
 </button>

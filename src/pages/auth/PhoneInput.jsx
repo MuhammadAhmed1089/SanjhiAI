@@ -1,12 +1,9 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopAppBar from '../../components/TopAppBar';
 import Icon from '../../components/Icon';
 
 export default function PhoneInput() {
   const navigate = useNavigate();
-  const [phone, setPhone] = useState('');
-  const isValid = phone.replace(/\D/g, '').length >= 10;
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center jali-dots">
@@ -34,26 +31,20 @@ export default function PhoneInput() {
               </div>
               <input
                 type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                value=""
                 placeholder="3XX XXX XXXX"
                 className="flex-1 bg-surface-container-lowest border border-outline-variant/30 text-on-surface placeholder:text-outline-variant rounded-xl px-4 py-4 focus:ring-2 focus:ring-teal-emerald focus:border-teal-emerald transition-all font-body text-[18px] shadow-sm"
               />
             </div>
-            <button className="text-teal-emerald font-label text-[14px] font-semibold text-left self-start mt-2 hover:opacity-80 transition-opacity flex items-center gap-1">
+            <button onClick={() => navigate('/signup/email')} className="text-teal-emerald font-label text-[14px] font-semibold text-left self-start mt-2 hover:opacity-80 transition-opacity flex items-center gap-1">
               Use email instead
             </button>
           </div>
         </div>
         <div className="fixed bottom-0 w-full max-w-[480px] px-4 py-6 bg-gradient-to-t from-background via-background to-transparent md:absolute">
           <button
-            onClick={() => isValid && navigate('/otp')}
-            className={`w-full font-label text-[14px] font-semibold py-4 rounded-xl flex items-center justify-center transition-all ${
-              isValid
-                ? 'bg-teal-emerald text-white shadow-md active:scale-95'
-                : 'bg-surface-variant text-outline opacity-70 cursor-not-allowed'
-            }`}
-            disabled={!isValid}
+            onClick={() => navigate('/otp')}
+            className="w-full font-label text-[14px] font-semibold py-4 rounded-xl flex items-center justify-center transition-all bg-teal-emerald text-white shadow-md active:scale-95"
           >
             Continue
           </button>

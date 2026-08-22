@@ -1,8 +1,10 @@
+import { useNavigate } from 'react-router-dom';
 import TopAppBar from '../../components/TopAppBar';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
 
 export default function ProfileSetup() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-background text-on-surface font-body antialiased">
 <header className="w-full top-0 sticky bg-background flex items-center px-container-margin-mobile md:px-container-margin-desktop h-16 max-w-[1280px] mx-auto z-40">
@@ -58,7 +60,7 @@ export default function ProfileSetup() {
 <div className="h-8 md:h-12"></div>
 
 <div className="w-full pt-stack-md mt-auto">
-<button className="w-full bg-surface-variant text-outline font-label-lg text-label-lg py-4 px-gutter rounded-full transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-70 flex items-center justify-center" disabled type="submit">
+<button onClick={() => navigate('/dashboard')} className="w-full bg-teal-emerald text-white font-label-lg text-label-lg py-4 px-6 rounded-full transition-all duration-300 flex items-center justify-center active:scale-95" type="button">
                         Finish
                     </button>
 </div>

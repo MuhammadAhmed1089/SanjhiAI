@@ -24,7 +24,7 @@ export default function CommitteeSetup() {
 <nav className="hidden md:flex flex-col p-md gap-sm bg-surface border-r border-outline/10 h-[calc(100vh-64px)] w-80 sticky top-[64px]">
 <div className="mb-lg">
 <div className="flex items-center gap-4 mb-4">
-<img alt="User profile photo" className="w-12 h-12 rounded-full object-cover border border-outline/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAvzj2TE1tn60tZs4bKrWw-adv3VrZmCcH0njXDKH7MdYJZdOxLjXuIM5-tUMWMWLU5zAv9sF60eEY17O8L8j7kuM3FnI1-VkHd_ReiNFzRx1tMplJwCIEtn6gzJiCnJiO4_fWsHq03sWa1NMqtD1S5SakGqtCXY6eollcQvzUUmIk6HgVDX_XFlMEHpc3H7uaPHyFEn3hpYtBeE7mUs5Kab77UZBIfQn5irO_i3LRoVGdZflnT9JUj"/>
+<img alt="User profile photo" className="w-12 h-12 rounded-full object-cover border border-outline/20" src="/avatar.svg"/>
 <div>
 <h2 className="font-headline-md text-body-lg font-bold text-on-surface">Aarav Sharma</h2>
 <p className="font-label-sm text-on-surface-variant">Trust Score: 850</p>

@@ -31,7 +31,7 @@ export default function Profile() {
 <span className="material-symbols-outlined">chat_bubble</span> Support
                 </a>
 </nav>
-<img alt="User profile avatar" className="w-10 h-10 rounded-full object-cover border border-secondary/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4-1NtlqJr38g1ercW908cHguxsww1BFT8EPcQa5Nqjna4hygSWRJGc4Bz68sUW5r-cIXfu4fleO4UJ1HMiiv3b32fo30DrQKaOffvaFVTety3cHvheogq6PD6k4Bd3Rejk6VACf7t5NK0la1MTc0_VMITEDfqo_HP_RDg4nm0WPfLghMqExXZuPwlIC6eeo0BM0NsQ4D5svGDCJTkjBuHXBsGYrqHT3RIPhYuT7j6CiyA5ORDi17J"/>
+<img alt="User profile avatar" className="w-10 h-10 rounded-full object-cover border border-secondary/20" src="/avatar.svg"/>
 </div>
 </header>
 
@@ -40,13 +40,13 @@ export default function Profile() {
 <span className="material-symbols-outlined">menu</span>
 </button>
 <h1 className="font-display-lg-mobile text-display-lg-mobile text-secondary font-bold">Sanjhi</h1>
-<img alt="User profile avatar" className="w-8 h-8 rounded-full object-cover border border-secondary/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHduKMVwg8_4zLz83daWnKTcmzNwCDzAA66mZ4j_5zg2hIDNVIQdXV-K_fI6aHHAf11LP9WiBQQB8IB1jJ3D4CnNGnQeShddFtLGcDSWFkmc_miov5_hbbhfqMknlUNh38zHwqsbhldfQdDY5VwfG5_wFqrq_iRwPH3AZIZPXXcJDb06efIcp3NCgdAUh43ClhkhnlTnOWLLPvUnWd8p05Xxtrxj7aF_TEHi6pc67YLxsPL40X3ryv"/>
+<img alt="User profile avatar" className="w-8 h-8 rounded-full object-cover border border-secondary/20" src="/avatar.svg"/>
 </header>
 <main className="max-w-4xl mx-auto px-margin-mobile md:px-margin-desktop py-lg md:py-xl pb-32">
 
 <section className="flex flex-col items-center mb-12">
 <div className="relative mb-4">
-<img alt="Aarav Sharma" className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-surface shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZbl1lGeP3-4NSOivuy0Fpob0m9aKnUtk91ACgDzwKGMbEeaj5tKunvm-zi5UWV21maPOCL-L4Gnibw4oYZrnmyF93hUVf5beME8DtlG-jobxioTp_HZB8axF6Dv8y0Lg8FjEIjTZUkJvXAuwmOmOJ3bELNtHgLT2-RJL22vmgF2WUtpGp2b_rvwA5nb6UC-KyTzRxrgObfHNaAPlKxyx9aDP7giIpz3DnPd73te91XAic2zeYkV5s"/>
+<img alt="Aarav Sharma" className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-surface shadow-sm" src="/avatar.svg"/>
 <button className="absolute bottom-0 right-0 bg-surface-container-high p-2 rounded-full border border-secondary/10 shadow-sm hover:bg-surface-variant transition-colors group">
 <span className="material-symbols-outlined text-secondary text-sm group-hover:scale-110 transition-transform">edit</span>
 </button>

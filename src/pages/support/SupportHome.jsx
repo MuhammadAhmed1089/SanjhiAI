@@ -12,7 +12,7 @@ export default function SupportHome() {
 </button>
 <h1 className="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed tracking-tight">Sanjhi</h1>
 <div className="relative w-8 h-8 rounded-full overflow-hidden hover:bg-surface-container-high transition-colors active:scale-95 duration-150 cursor-pointer">
-<img alt="User profile photo" className="object-cover w-full h-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUDt1-radkqQemEkWM18R9MeFXUIuK9XSbnlAjc7-_Kio9k-odVBsYIE2rgtkSLuAcOPhhUpFv0_fKUB8qGYKgJIRwkjDsrvOC1KRVY8TwjCAIgIllDGwpm_iwOBLBfX7FYyncW7dTWwNa_q4k9NDtfLFA-OtpEPi3yxgRHBsnowH8sgntaLIFDYGZ5krhgFmmjH6PUyc3oBUM-ewIeyfhzHlaQYxRyggnbcTvtjcVcQhbmLyI2jS6"/>
+<img alt="User profile photo" className="object-cover w-full h-full" src="/avatar.svg"/>
 </div>
 </div>
 </header>

@@ -1,8 +1,10 @@
+import { useNavigate } from 'react-router-dom';
 import TopAppBar from '../../components/TopAppBar';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
 
 export default function JoinByCode() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-background text-on-surface font-body antialiased">
 <header className="w-full top-0 sticky bg-background text-primary font-headline-md text-headline-md flat no shadows">
@@ -41,7 +43,7 @@ export default function JoinByCode() {
 </div>
 
 <div className="flex-grow min-h-[40px]"></div>
-<button className="w-full bg-secondary text-on-secondary font-label-sm text-label-sm py-4 px-lg rounded-full hover:bg-on-secondary-fixed-variant transition-colors active:scale-95 duration-200 shadow-[0_8px_24px_-8px_rgba(0,105,114,0.3)]" type="button">
+<button onClick={() => navigate('/join/DEMO')} className="w-full bg-secondary text-on-secondary font-label-sm text-label-sm py-4 px-lg rounded-full hover:bg-on-secondary-fixed-variant transition-colors active:scale-95 duration-200 shadow-[0_8px_24px_-8px_rgba(0,105,114,0.3)]" type="button">
             Continue
         </button>
 </main>

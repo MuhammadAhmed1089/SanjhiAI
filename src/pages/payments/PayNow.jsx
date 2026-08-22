@@ -1,8 +1,10 @@
+import { useNavigate } from 'react-router-dom';
 import TopAppBar from '../../components/TopAppBar';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
 
 export default function PayNow() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-background text-on-surface font-body antialiased">
 <header className="w-full sticky top-0 bg-background dark:bg-background border-b border-secondary/10 z-50">
@@ -83,7 +85,7 @@ export default function PayNow() {
 </div>
 </div>
 <div className="pt-4">
-<button className="w-full bg-secondary text-on-secondary py-4 px-6 rounded-lg font-label-sm text-label-sm flex justify-center items-center gap-2 hover:bg-secondary/90 hover:shadow-md active:scale-[0.98] transition-all" type="button">
+<button onClick={() => navigate('/committee/1')} className="w-full bg-secondary text-on-secondary py-4 px-6 rounded-lg font-label-sm text-label-sm flex justify-center items-center gap-2 hover:bg-secondary/90 hover:shadow-md active:scale-[0.98] transition-all" type="button">
 <span>Submit Payment</span>
 <span className="material-symbols-outlined text-[20px]">check_circle</span>
 </button>

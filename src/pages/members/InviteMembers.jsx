@@ -67,7 +67,7 @@ export default function InviteMembers() {
 
 <div className="bg-surface-container-lowest/80 backdrop-blur-md border border-outline-variant/15 rounded-xl p-4 flex items-center justify-between shadow-sm">
 <div className="flex items-center gap-4">
-<img alt="Avatar" className="w-12 h-12 rounded-full object-cover border border-outline-variant/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOYsoMZl9uDg3PqLa9PViVjVKB81a-GRVCSy_sa2prNAVFPy-fUfvJ1S09lw-EouKvtDzPb1ohV77vytGhU4p26FZfTdH1BRgPF6W8NfY06IINrQIZX7V5UnTt1NXzg0TSK4x4-21boLqTLJfXf-ddooeo_Lv9EsOUkgBAWjNgDLvFJHxuo6rrPkMAzvcbxZ8tlipKTxava-Z9c2hLoJ09FebnbV9gOG1lGK7C8PGMstD7MvKvurlR"/>
+<img alt="Avatar" className="w-12 h-12 rounded-full object-cover border border-outline-variant/20" src="/avatar.svg"/>
 <div className="flex flex-col">
 <span className="text-body-md font-body-md text-on-surface font-semibold">Zaid Ahmed</span>
 <span className="text-label-sm font-label-sm text-on-surface-variant">@zaid_99</span>

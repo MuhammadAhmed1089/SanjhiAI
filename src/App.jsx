@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import ScreenNav from './components/ScreenNav';
 
 // Auth pages
 import Welcome from './pages/auth/Welcome';
@@ -71,6 +72,7 @@ function PageLoader() {
 export default function App() {
   return (
     <Suspense fallback={<PageLoader />}>
+      <ScreenNav />
       <Routes>
         {/* Auth Flow */}
         <Route path="/" element={<Welcome />} />

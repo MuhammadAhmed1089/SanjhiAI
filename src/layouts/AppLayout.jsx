@@ -31,7 +31,7 @@ function DashboardHeader() {
         <img
           alt="Profile"
           className="w-10 h-10 rounded-full object-cover border border-outline-variant/60"
-          src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJ0tqG5gvADCuJfIojLk30R5oY3hHyGErNfIDU8Zmy_90t7KXTIL8u-igI96MNHmpx-aEwyw4VegsKZBrxLOkKWQiKPlZZNYYyBD8QRijonWzXLn8yDKy-8tds-Tb6yv3Q5nPr_B-2rNTQ298MnGy9Al3PcvbCXg0SAMcGWPZLLRsGcSGMvb9GNzoEMHfK4sIYIAMhdNOLwfeXZeKx8clUB5k5iR9AzQaBVMNdYor6rzFkjXJuHHro"
+          src="/avatar.svg"
         />
         <h1 className="font-headline text-[20px] md:text-[24px] leading-[32px] font-bold text-on-surface">
           Hi, Anika

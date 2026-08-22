@@ -41,7 +41,7 @@ export default function ComplaintDetail() {
 <h3 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Evidence Attachments</h3>
 <div className="flex gap-md overflow-x-auto pb-sm">
 <button className="group relative w-32 h-24 rounded-lg overflow-hidden border border-outline-variant/30 hover:border-secondary transition-colors focus:outline-none focus:ring-2 focus:ring-secondary">
-<img className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDv6ul3AseubfFJl8JES9ArJudT80f1KIXX_VHEzOHFSTyhKE7IBku1aBkzqK1nqLB3SMcf1mVjHgYRqZWV8IyT9u8JM8fHvOEKndk8kxFR2EAeEhhd2MqSbn-Nhe7efdgg2PQRvOy87CZ-kbi_ARElSWVkb_LgG5aN6U3eNMpg-YEMKMXBbiaAwpGblmjk2QH7XJm2YBiig6ofrTZSa51k6mXRtX9ZpwpnI7bJHyBnlAujQ7ATeqZc"/>
+<img className="w-full h-full object-cover" src="/avatar.svg"/>
 <div className="absolute inset-0 bg-primary/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
 <span className="material-symbols-outlined text-surface">zoom_in</span>
 </div>
