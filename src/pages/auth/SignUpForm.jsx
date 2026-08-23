@@ -1,19 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Icon from '../../components/Icon';
-import FloatingField from '../../components/FloatingField';
+import logo from '../../assets/screen.png';
 import { COUNTRIES, DEFAULT_COUNTRY, validatePhone } from '../../data/countries';
-
-/* ── Icon color themes ── */
-const ICON_THEMES = {
-  name:     'bg-[#4a6670]',
-  age:      'bg-[#8a7350]',
-  gender:   'bg-[#7a6070]',
-  phone:    'bg-[#006972]',
-  email:    'bg-[#3a5a72]',
-  password: 'bg-[#4a5670]',
-  confirm:  'bg-[#3a7060]',
-};
 
 export default function SignUpForm() {
   const navigate = useNavigate();
@@ -62,237 +51,314 @@ export default function SignUpForm() {
     navigate('/otp');
   }
 
+  const strength = getStrength(password);
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center relative py-6 px-4">
-      {/* Animated background blobs — OUTSIDE overflow zone */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="blob blob-1" />
-        <div className="blob blob-2" />
-        <div className="blob blob-3" />
-      </div>
+    <div className="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col relative overflow-x-hidden">
+      {/* Decorative Background Elements */}
+      <div className="absolute inset-0 jali-pattern pointer-events-none z-0"></div>
+      <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-secondary-container/20 to-transparent pointer-events-none z-0"></div>
 
-      {/* Glass card */}
-      <div className="glass-card w-full max-w-lg relative z-10 p-5 md:p-6 animate-fade-up">
-        {/* Back button */}
-        <button
-          onClick={() => navigate(-1)}
-          className="absolute top-3 left-3 md:top-4 md:left-4 w-8 h-8 rounded-full flex items-center justify-center text-deep-navy/50 hover:text-deep-navy hover:bg-white/50 transition-all"
-        >
-          <Icon name="arrow_back_ios" size={16} />
-        </button>
+      {/* Main Content Area */}
+      <main className="flex-grow flex items-center justify-center p-4 md:p-16 relative z-10">
+        <div className="w-full max-w-lg bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/10 overflow-hidden flex flex-col relative">
+          
+          {/* Top App Bar */}
+          <header className="w-full top-0 sticky bg-surface-container-lowest flex items-center px-4 py-4 z-20">
+            <button
+              onClick={() => navigate(-1)}
+              aria-label="Go back"
+              className="text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-full p-2 active:scale-95 duration-150"
+            >
+              <span className="material-symbols-outlined">arrow_back</span>
+            </button>
+          </header>
 
-        {/* Header */}
-        <div className="text-center mb-4">
-          <h1 className="font-headline text-[26px] md:text-[34px] leading-tight font-bold text-deep-navy mb-0.5">
-            Create Account
-          </h1>
-          <p className="font-body text-[13px] text-on-surface-variant">
-            {isPhone ? 'Sign up with your phone number' : 'Sign up with your email address'}
-          </p>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
-
-          {/* ── Full Name ── */}
-          <FloatingField icon="person" theme={ICON_THEMES.name} label="Full Name" active={name.length > 0}>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder=""
-              className="field-input"
-            />
-          </FloatingField>
-
-          {/* ── Age + Gender ── */}
-          <div className="flex gap-2.5">
-            <FloatingField icon="cake" theme={ICON_THEMES.age} label="Age" wrapperClass="w-24 shrink-0" active={age.length > 0}>
-              <input
-                type="number"
-                value={age}
-                onChange={(e) => setAge(e.target.value.replace(/\D/g, '').slice(0, 3))}
-                placeholder=""
-                className="field-input"
+          <div className="px-4 md:px-6 pb-8 flex flex-col items-center">
+            {/* Logo & Brand Header */}
+            <div className="mb-6 flex flex-col items-center">
+              <img
+                alt="Sanjhi Handshake Logo"
+                src={logo}
+                className="w-32 h-32 md:w-36 md:h-36 mb-4 object-contain logo-green drop-shadow-md"
               />
-            </FloatingField>
+              <h1 className="font-headline text-[24px] font-semibold text-on-surface text-center mb-1">
+                Create Account
+              </h1>
+              <p className="font-body text-[16px] text-on-surface-variant text-center">
+                {isPhone ? 'Sign up with your phone number to join the community.' : 'Sign up with your email address to join the community.'}
+              </p>
+            </div>
 
-            <FloatingField icon="wc" theme={ICON_THEMES.gender} label="Gender" wrapperClass="flex-1" active={gender.length > 0}>
-              <select
-                value={gender}
-                onChange={(e) => setGender(e.target.value)}
-                className="field-input field-select"
-              >
-                <option value="" disabled hidden> </option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-              </select>
-            </FloatingField>
-          </div>
-
-          {/* ── Phone / Email ── */}
-          {isPhone ? (
-            <div className="relative" ref={pickerRef}>
-              <div className="flex gap-2">
-                {/* Country code picker button */}
-                <button
-                  type="button"
-                  onClick={() => setShowCountryPicker(!showCountryPicker)}
-                  className="shrink-0 bg-white/60 backdrop-blur-sm border border-white/70 rounded-xl px-2.5 py-0 flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-teal-emerald/40 transition-all shadow-sm hover:bg-white/80 h-[52px]"
-                >
-                  <img src={country.flag} alt={country.code} className="w-6 h-4 rounded-sm object-cover" />
-                  <span className="font-body text-[14px] font-semibold text-deep-navy">{country.dial}</span>
-                  <Icon name="expand_more" className="text-on-surface-variant" size={18} />
-                </button>
-
-                {/* Phone input */}
-                <FloatingField icon="smartphone" theme={ICON_THEMES.phone} label="Phone Number" wrapperClass="flex-1" active={phone.length > 0}>
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    value={phone}
-                    onChange={handlePhoneChange}
-                    placeholder=""
-                    maxLength={country.maxLength}
-                    className="field-input"
-                  />
-                </FloatingField>
+            {/* Form Area */}
+            <form onSubmit={handleSubmit} className="w-full space-y-3.5">
+              
+              {/* Full Name */}
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="bg-[#006972] text-white rounded-full w-8 h-8 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-sm">person</span>
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Full Name"
+                  className="block w-full pl-14 pr-4 py-3 bg-surface border border-outline-variant/30 rounded-lg text-on-surface focus:ring-2 focus:ring-[#006972] focus:border-[#006972] transition-shadow outline-none"
+                  id="fullName"
+                />
               </div>
 
-              {phone && phoneResult.message && (
-                <p className={`text-[11px] font-label mt-1 ml-12 ${phoneResult.valid ? 'text-teal-emerald' : 'text-amber-600'}`}>
-                  {phoneResult.valid ? '✓ ' : ''}{phoneResult.message}
-                </p>
-              )}
+              {/* Age & Gender Grid */}
+              <div className="grid grid-cols-2 gap-2">
+                {/* Age */}
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                    <div className="bg-[#765a05] text-white rounded-full w-8 h-8 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-sm">cake</span>
+                    </div>
+                  </div>
+                  <input
+                    type="number"
+                    value={age}
+                    onChange={(e) => setAge(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                    placeholder="Age"
+                    className="block w-full pl-12 pr-4 py-3 bg-surface border border-outline-variant/30 rounded-lg text-on-surface focus:ring-2 focus:ring-[#006972] focus:border-[#006972] transition-shadow outline-none"
+                    id="age"
+                  />
+                </div>
 
-              {/* Country picker dropdown */}
-              {showCountryPicker && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white/97 backdrop-blur-xl border border-white/60 rounded-2xl shadow-2xl z-50 overflow-hidden animate-slide-down">
-                  <div className="p-3 border-b border-deep-navy/5">
-                    <div className="relative">
-                      <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={18} />
+                {/* Gender */}
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                    <div className="bg-[#525f71] text-white rounded-full w-8 h-8 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-sm">wc</span>
+                    </div>
+                  </div>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="block w-full pl-12 pr-8 py-3 bg-surface border border-outline-variant/30 rounded-lg text-on-surface-variant focus:ring-2 focus:ring-[#006972] focus:border-[#006972] transition-shadow appearance-none outline-none cursor-pointer"
+                    id="gender"
+                  >
+                    <option value="" disabled>Gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Phone or Email */}
+              {isPhone ? (
+                <div className="relative" ref={pickerRef}>
+                  <div className="flex gap-2">
+                    {/* Country Code Dropdown */}
+                    <div className="relative w-1/3">
+                      <button
+                        type="button"
+                        onClick={() => setShowCountryPicker(!showCountryPicker)}
+                        className="w-full h-[50px] pl-3 pr-8 bg-surface border border-outline-variant/30 rounded-lg text-on-surface flex items-center gap-1.5 focus:ring-2 focus:ring-[#006972] outline-none transition-shadow"
+                      >
+                        <span className="text-xl">{country.flag ? <img src={country.flag} alt="" className="w-5 h-4 object-cover rounded-sm inline" /> : '🇵🇰'}</span>
+                        <span className="text-sm font-semibold">{country.dial}</span>
+                      </button>
+                      <div className="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
+                        <span className="material-symbols-outlined text-on-surface-variant text-sm">expand_more</span>
+                      </div>
+
+                      {/* Country picker popup */}
+                      {showCountryPicker && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-outline-variant/30 rounded-xl shadow-xl z-50 overflow-hidden">
+                          <div className="p-2 border-b border-outline-variant/20">
+                            <input
+                              type="text"
+                              placeholder="Search country..."
+                              value={countrySearch}
+                              onChange={(e) => setCountrySearch(e.target.value)}
+                              className="w-full bg-surface border border-outline-variant/20 rounded-md px-3 py-1.5 text-sm outline-none"
+                              autoFocus
+                            />
+                          </div>
+                          <div className="max-h-48 overflow-y-auto">
+                            {filteredCountries.map((c) => (
+                              <button
+                                key={c.code + c.dial}
+                                type="button"
+                                onClick={() => { setCountry(c); setPhone(''); setShowCountryPicker(false); setCountrySearch(''); }}
+                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-[#006972]/10 text-left text-sm"
+                              >
+                                <img src={c.flag} alt="" className="w-5 h-3.5 object-cover rounded-sm" />
+                                <span className="flex-1 truncate">{c.name}</span>
+                                <span className="text-xs text-on-surface-variant font-medium">{c.dial}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Number Input */}
+                    <div className="relative w-2/3">
+                      <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                        <div className="bg-[#006972] text-white rounded-full w-8 h-8 flex items-center justify-center">
+                          <span className="material-symbols-outlined text-sm">smartphone</span>
+                        </div>
+                      </div>
                       <input
-                        type="text"
-                        placeholder="Search country..."
-                        value={countrySearch}
-                        onChange={(e) => setCountrySearch(e.target.value)}
-                        className="w-full bg-deep-navy/5 border-none rounded-lg pl-10 pr-4 py-2.5 text-[14px] font-body text-deep-navy placeholder:text-deep-navy/30 focus:outline-none focus:ring-1 focus:ring-teal-emerald/40"
-                        autoFocus
+                        type="tel"
+                        inputMode="numeric"
+                        value={phone}
+                        onChange={handlePhoneChange}
+                        placeholder="300 1234567"
+                        maxLength={country.maxLength}
+                        className="block w-full pl-12 pr-4 py-3 bg-surface border border-outline-variant/30 rounded-lg text-on-surface focus:ring-2 focus:ring-[#006972] focus:border-[#006972] transition-shadow outline-none"
+                        id="phone"
                       />
                     </div>
                   </div>
-                  <div className="max-h-56 overflow-y-auto py-1">
-                    {filteredCountries.map((c) => (
-                      <button
-                        key={c.code + c.dial}
-                        type="button"
-                        onClick={() => { setCountry(c); setPhone(''); setShowCountryPicker(false); setCountrySearch(''); }}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 hover:bg-teal-emerald/5 transition-colors text-left ${
-                          country.code === c.code && country.dial === c.dial ? 'bg-teal-emerald/10' : ''
-                        }`}
-                      >
-                        <img src={c.flag} alt={c.code} className="w-7 h-5 rounded-sm object-cover shrink-0 shadow-sm" />
-                        <span className="flex-1 font-body text-[14px] text-deep-navy">{c.name}</span>
-                        <span className="font-label text-[13px] text-on-surface-variant font-medium">{c.dial}</span>
-                      </button>
-                    ))}
+                  {phone && phoneResult.message && (
+                    <p className={`text-[12px] font-medium mt-1 ml-1 ${phoneResult.valid ? 'text-[#006972]' : 'text-amber-600'}`}>
+                      {phoneResult.valid ? '✓ ' : ''}{phoneResult.message}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <div className="bg-[#3a5a72] text-white rounded-full w-8 h-8 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-sm">mail</span>
+                    </div>
                   </div>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email Address"
+                    className="block w-full pl-14 pr-4 py-3 bg-surface border border-outline-variant/30 rounded-lg text-on-surface focus:ring-2 focus:ring-[#006972] focus:border-[#006972] transition-shadow outline-none"
+                    id="email"
+                  />
                 </div>
               )}
+
+              {/* Password */}
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="bg-[#4a5670] text-white rounded-full w-8 h-8 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-sm">lock</span>
+                  </div>
+                </div>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  className="block w-full pl-14 pr-12 py-3 bg-surface border border-outline-variant/30 rounded-lg text-on-surface focus:ring-2 focus:ring-[#006972] focus:border-[#006972] transition-shadow outline-none"
+                  id="password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-on-surface-variant hover:text-on-surface outline-none"
+                >
+                  <span className="material-symbols-outlined">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                </button>
+              </div>
+
+              {/* Password Strength Indicator */}
+              <div className="flex gap-1 mt-2 mb-2 px-1">
+                {[1, 2, 3, 4].map((level) => {
+                  const active = strength >= level;
+                  const colors = ['bg-red-400', 'bg-orange-400', 'bg-amber-400', 'bg-[#006972]'];
+                  return (
+                    <div
+                      key={level}
+                      className={`h-1 flex-1 rounded-full transition-all duration-300 ${active ? colors[strength - 1] : 'bg-surface-variant'}`}
+                    />
+                  );
+                })}
+              </div>
+
+              {/* Confirm Password */}
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="bg-[#3a7060] text-white rounded-full w-8 h-8 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-sm">lock_reset</span>
+                  </div>
+                </div>
+                <input
+                  type={showConfirm ? 'text' : 'password'}
+                  value={confirmPass}
+                  onChange={(e) => setConfirmPass(e.target.value)}
+                  placeholder="Confirm Password"
+                  className="block w-full pl-14 pr-12 py-3 bg-surface border border-outline-variant/30 rounded-lg text-on-surface focus:ring-2 focus:ring-[#006972] focus:border-[#006972] transition-shadow outline-none"
+                  id="confirmPassword"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-on-surface-variant hover:text-on-surface outline-none"
+                >
+                  <span className="material-symbols-outlined">{showConfirm ? 'visibility_off' : 'visibility'}</span>
+                </button>
+              </div>
+
+              {confirmPass && !passwordsMatch && (
+                <p className="text-[12px] text-red-500 ml-1">Passwords don't match</p>
+              )}
+              {confirmPass && passwordsMatch && (
+                <p className="text-[12px] text-[#006972] ml-1">✓ Passwords match</p>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={!name || !age || !gender || (isPhone ? !phoneResult.valid : !emailValid) || !passwordStrong || !passwordsMatch}
+                className="w-full bg-[#82d3de] text-[#001f23] hover:bg-[#006972] hover:text-white font-semibold py-4 px-6 rounded-full flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 shadow-sm mt-6 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Create Account
+                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              </button>
+            </form>
+
+            {/* Footer Links */}
+            <div className="mt-6 flex flex-col items-center gap-2">
+              <p className="font-body text-[16px] text-on-surface-variant">
+                Already have an account?{' '}
+                <button onClick={() => navigate('/login')} className="text-[#006972] font-bold hover:underline bg-transparent border-none cursor-pointer">
+                  Log in
+                </button>
+              </p>
+              <button
+                onClick={() => navigate(isPhone ? '/signup/email' : '/signup/phone')}
+                className="font-semibold text-sm text-on-surface-variant hover:text-on-surface flex items-center gap-1 transition-colors bg-transparent border-none cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-sm">swap_horiz</span>
+                {isPhone ? 'Use email instead' : 'Use phone instead'}
+              </button>
             </div>
-          ) : (
-            <FloatingField icon="mail" theme={ICON_THEMES.email} label="Email Address" active={email.length > 0}>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder=""
-                className="field-input"
-              />
-            </FloatingField>
-          )}
+          </div>
 
-          {/* ── Password ── */}
-          <FloatingField icon="lock" theme={ICON_THEMES.password} label="Password" active={password.length > 0} trailing={
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-on-surface-variant hover:text-deep-navy transition-colors p-1">
-              <Icon name={showPassword ? 'visibility_off' : 'visibility'} size={20} />
-            </button>
-          }>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder=""
-              className="field-input pr-11"
-            />
-          </FloatingField>
-
-          {/* Password strength bar */}
-          {password && (
-            <div className="flex gap-1.5 -mt-1.5 px-12">
-              {[1, 2, 3, 4].map((level) => {
-                const s = getStrength(password);
-                const active = s >= level;
-                const colors = ['bg-red-400', 'bg-orange-400', 'bg-amber-400', 'bg-teal-emerald'];
-                return <div key={level} className={`h-1 flex-1 rounded-full transition-all duration-500 ${active ? colors[s - 1] : 'bg-deep-navy/10'}`} />;
-              })}
+          {/* Trust Tip Card */}
+          <div className="bg-surface-container-low border-t border-outline-variant/10 p-4 flex items-start gap-4">
+            <div className="bg-[#ffdf96] text-[#251a00] rounded-full p-2 flex-shrink-0 mt-1">
+              <span className="material-symbols-outlined">verified_user</span>
             </div>
-          )}
+            <div>
+              <h4 className="font-semibold text-sm text-on-surface mb-1">Building Community Trust</h4>
+              <p className="font-body text-sm text-on-surface-variant leading-relaxed">
+                Sanjhi relies on authentic profiles to maintain a safe, shared environment for everyone to exchange resources securely.
+              </p>
+            </div>
+          </div>
 
-          {/* ── Confirm Password ── */}
-          <FloatingField icon="lock_reset" theme={ICON_THEMES.confirm} label="Confirm Password" active={confirmPass.length > 0} trailing={
-            <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="text-on-surface-variant hover:text-deep-navy transition-colors p-1">
-              <Icon name={showConfirm ? 'visibility_off' : 'visibility'} size={20} />
-            </button>
-          }>
-            <input
-              type={showConfirm ? 'text' : 'password'}
-              value={confirmPass}
-              onChange={(e) => setConfirmPass(e.target.value)}
-              placeholder=""
-              className="field-input pr-11"
-            />
-          </FloatingField>
-
-          {confirmPass && !passwordsMatch && <p className="text-[11px] font-label text-red-500 -mt-1 ml-12">Passwords don't match</p>}
-          {confirmPass && passwordsMatch && <p className="text-[11px] font-label text-teal-emerald -mt-1 ml-12">✓ Passwords match</p>}
-
-          {/* ── Submit ── */}
-          <button
-            type="submit"
-            className="mt-2 w-full font-label text-[14px] font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 bg-gradient-to-r from-teal-emerald to-teal-emerald/80 text-white shadow-lg shadow-teal-emerald/20 hover:shadow-xl hover:shadow-teal-emerald/30 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-            disabled={!name || !age || !gender || (isPhone ? !phoneResult.valid : !emailValid) || !passwordStrong || !passwordsMatch}
-          >
-            Create Account
-            <Icon name="arrow_forward" size={18} />
-          </button>
-        </form>
-
-        {/* Footer */}
-        <div className="mt-3 text-center">
-          <p className="font-body text-[13px] text-on-surface-variant">
-            Already have an account?{' '}
-            <button onClick={() => navigate('/login')} className="font-label text-[13px] font-semibold text-teal-emerald hover:text-secondary underline underline-offset-4 decoration-teal-emerald/30 transition-all">
-              Log in
-            </button>
-          </p>
         </div>
-        <div className="mt-1 text-center">
-          <button
-            onClick={() => navigate(isPhone ? '/signup/email' : '/signup/phone')}
-            className="font-body text-[13px] text-on-surface-variant hover:text-teal-emerald transition-colors flex items-center gap-1 mx-auto"
-          >
-            <Icon name="swap_horiz" size={16} />
-            {isPhone ? 'Use email instead' : 'Use phone instead'}
-          </button>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }
 
-/* ── Password strength ── */
 function getStrength(pw) {
   let s = 0;
   if (pw.length >= 8) s++;

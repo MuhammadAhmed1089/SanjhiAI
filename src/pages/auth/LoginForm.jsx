@@ -1,168 +1,144 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Icon from '../../components/Icon';
-import FloatingField from '../../components/FloatingField';
-
-/* ── Muted icon themes (same palette as signup) ── */
-const ICON_THEMES = {
-  identity: 'bg-[#006972]',
-  password: 'bg-[#4a5670]',
-};
-
-/**
- * Detect whether the input is an email or phone number.
- * - Contains '@' → email
- * - Starts with '+' or all digits (with optional leading +) → phone
- * - Otherwise → unknown
- */
-function detectInputType(value) {
-  if (!value) return 'unknown';
-  if (value.includes('@')) return 'email';
-  const stripped = value.replace(/[\s\-()]/g, '');
-  if (/^\+?\d{3,}$/.test(stripped)) return 'phone';
-  return 'unknown';
-}
+import logo from '../../assets/screen.png';
 
 export default function LoginForm() {
   const navigate = useNavigate();
 
-  const [identity, setIdentity] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('hello123@gmail.com');
+  const [password, setPassword] = useState('••••••••');
   const [showPassword, setShowPassword] = useState(false);
-
-  const inputType = detectInputType(identity);
 
   function handleSubmit(e) {
     e.preventDefault();
-    // For preview, navigate to dashboard
     navigate('/dashboard');
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center relative py-6 px-4">
-      {/* Animated background blobs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="blob blob-1" />
-        <div className="blob blob-2" />
-        <div className="blob blob-3" />
-      </div>
+    <div className="bg-background text-on-background font-body-md min-h-screen py-6 px-4 overflow-y-auto flex items-center justify-center relative jali-pattern">
+      {/* Ambient glowing orbs (Decorative) */}
+      <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-secondary-fixed opacity-20 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-tertiary-fixed opacity-20 rounded-full blur-[100px] translate-x-1/3 translate-y-1/3 pointer-events-none"></div>
 
-      {/* Glass card */}
-      <div className="glass-card w-full max-w-lg relative z-10 p-5 md:p-6 animate-fade-up">
-        {/* Back button */}
-        <button
-          onClick={() => navigate(-1)}
-          className="absolute top-3 left-3 md:top-4 md:left-4 w-8 h-8 rounded-full flex items-center justify-center text-deep-navy/50 hover:text-deep-navy hover:bg-white/50 transition-all"
-        >
-          <Icon name="arrow_back_ios" size={16} />
-        </button>
-
-        {/* Header */}
-        <div className="text-center mb-5">
-          <h1 className="font-headline text-[26px] md:text-[34px] leading-tight font-bold text-deep-navy mb-0.5">
-            Welcome Back
-          </h1>
-          <p className="font-body text-[13px] text-on-surface-variant">
-            Log in to your Sanjhi account
-          </p>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-
-          {/* ── Email / Phone ── */}
-          <div className="relative">
-            <FloatingField
-              icon={inputType === 'email' ? 'mail' : 'smartphone'}
-              theme={ICON_THEMES.identity}
-              label="Email or Phone Number"
-              active={identity.length > 0}
+      <main className="w-full max-w-[460px] relative z-10 my-auto">
+        <div className="bg-surface-container-lowest rounded-xl p-5 md:p-8 shadow-[0_24px_64px_-12px_rgba(0,105,114,0.08),0_0_0_1px_rgba(116,119,125,0.1)] flex flex-col items-center">
+          
+          {/* Header area with back button */}
+          <div className="w-full flex items-center justify-between mb-2">
+            <button
+              onClick={() => navigate(-1)}
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-variant/50 transition-colors text-outline cursor-pointer"
+              aria-label="Go back"
             >
-              <input
-                type="text"
-                value={identity}
-                onChange={(e) => setIdentity(e.target.value)}
-                placeholder=""
-                className="field-input"
-                autoComplete="username"
-              />
-            </FloatingField>
-
-            {/* Detection indicator */}
-            {identity.length > 2 && inputType !== 'unknown' && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 animate-fade-in">
-                <span className={`text-[10px] font-label font-semibold px-2 py-0.5 rounded-full ${
-                  inputType === 'email'
-                    ? 'bg-sky-100 text-sky-700'
-                    : 'bg-teal-100 text-teal-700'
-                }`}>
-                  {inputType === 'email' ? 'Email' : 'Phone'}
-                </span>
-              </div>
-            )}
+              <span className="material-symbols-outlined text-sm">arrow_back</span>
+            </button>
+            <div className="w-9 h-9"></div> {/* Spacer */}
           </div>
 
-          {/* ── Password ── */}
-          <FloatingField
-            icon="lock"
-            theme={ICON_THEMES.password}
-            label="Password"
-            active={password.length > 0}
-            trailing={
+          <div className="text-center mb-6 w-full flex flex-col items-center">
+            <img
+              alt="Sanjhi Handshake Logo"
+              src={logo}
+              className="w-20 h-20 md:w-28 md:h-28 mb-3 object-contain logo-green drop-shadow-md"
+            />
+            <h1 className="text-[26px] md:text-[38px] leading-tight font-bold text-primary mb-1 font-display-lg">
+              Welcome Back
+            </h1>
+            <p className="font-body-md text-[14px] md:text-[16px] text-on-surface-variant">
+              Log in to your Sanjhi account
+            </p>
+          </div>
+
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="w-full flex flex-col gap-3.5">
+            
+            {/* Email Field */}
+            <div className="relative group">
+              <div className="absolute left-0 top-0 h-full w-12 flex items-center justify-center text-on-surface-variant group-focus-within:text-secondary transition-colors z-10 pointer-events-none">
+                <div className="w-9 h-9 bg-secondary rounded-full flex items-center justify-center text-on-primary">
+                  <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>mail</span>
+                </div>
+              </div>
+              <input
+                type="email"
+                id="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email address"
+                className="w-full h-11 pl-[52px] pr-16 bg-primary-fixed text-on-primary-fixed border-0 rounded-lg focus:ring-2 focus:ring-secondary transition-shadow font-body-md text-[15px] outline-none"
+              />
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 bg-surface-container-lowest rounded text-secondary font-label-sm text-[10px] uppercase tracking-wider shadow-xs">
+                Email
+              </div>
+            </div>
+
+            {/* Password Field */}
+            <div className="relative group">
+              <div className="absolute left-0 top-0 h-full w-12 flex items-center justify-center text-on-surface-variant group-focus-within:text-secondary transition-colors z-10 pointer-events-none">
+                <div className="w-9 h-9 bg-surface-tint rounded-full flex items-center justify-center text-on-primary">
+                  <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>lock</span>
+                </div>
+              </div>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                className="w-full h-11 pl-[52px] pr-12 bg-primary-fixed text-on-primary-fixed border-0 rounded-lg focus:ring-2 focus:ring-secondary transition-shadow font-body-md text-[15px] outline-none"
+              />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="text-on-surface-variant hover:text-deep-navy transition-colors p-1"
+                className="absolute right-0 top-0 h-full w-11 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
               >
-                <Icon name={showPassword ? 'visibility_off' : 'visibility'} size={20} />
+                <span className="material-symbols-outlined text-sm">{showPassword ? 'visibility_off' : 'visibility'}</span>
               </button>
-            }
-          >
-            <input
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder=""
-              className="field-input pr-11"
-              autoComplete="current-password"
-            />
-          </FloatingField>
+            </div>
 
-          {/* Forgot password */}
-          <div className="flex justify-end -mt-1">
+            <div className="flex justify-end w-full">
+              <button
+                type="button"
+                onClick={() => navigate('/forgot-password')}
+                className="font-label-sm text-label-sm text-secondary hover:text-on-secondary-container transition-colors bg-transparent border-none cursor-pointer"
+              >
+                Forgot password?
+              </button>
+            </div>
+
             <button
-              type="button"
-              onClick={() => navigate('/forgot-password')}
-              className="font-label text-[12px] font-semibold text-teal-emerald hover:text-secondary transition-colors"
+              type="submit"
+              className="w-full bg-secondary hover:bg-on-secondary-fixed-variant text-on-secondary py-3.5 px-6 rounded-lg font-label-sm text-label-sm flex items-center justify-center gap-2 transition-all active:scale-95 duration-200 mt-1 shadow-sm hover:shadow-md cursor-pointer"
             >
-              Forgot password?
+              Log In
+              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
             </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="font-body-md text-[14px] text-on-surface-variant">
+              Don't have an account?{' '}
+              <button
+                onClick={() => navigate('/signup')}
+                className="text-secondary font-bold hover:underline underline-offset-4 decoration-2 bg-transparent border-none cursor-pointer"
+              >
+                Sign up
+              </button>
+            </p>
           </div>
-
-          {/* ── Submit ── */}
-          <button
-            type="submit"
-            className="mt-2 w-full font-label text-[14px] font-semibold py-4 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 bg-gradient-to-r from-teal-emerald to-teal-emerald/80 text-white shadow-lg shadow-teal-emerald/20 hover:shadow-xl hover:shadow-teal-emerald/30 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-            disabled={!identity || !password}
-          >
-            Log In
-            <Icon name="arrow_forward" size={18} />
-          </button>
-        </form>
-
-        {/* Footer */}
-        <div className="mt-4 text-center">
-          <p className="font-body text-[13px] text-on-surface-variant">
-            Don't have an account?{' '}
-            <button
-              onClick={() => navigate('/signup')}
-              className="font-label text-[13px] font-semibold text-teal-emerald hover:text-secondary underline underline-offset-4 decoration-teal-emerald/30 transition-all"
-            >
-              Sign up
-            </button>
-          </p>
         </div>
-      </div>
+      </main>
+
+      {/* Floating Action Button */}
+      <button
+        onClick={() => navigate('/dashboard')}
+        className="fixed bottom-8 right-8 w-12 h-12 bg-secondary text-on-secondary rounded-full shadow-lg flex items-center justify-center hover:bg-on-secondary-fixed-variant transition-colors active:scale-90 z-50 hidden md:flex cursor-pointer"
+        aria-label="Dashboard widgets"
+      >
+        <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>widgets</span>
+      </button>
     </div>
   );
 }
