@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Icon from '../../components/Icon';
 import logo from '../../assets/screen.png';
 import { COUNTRIES, DEFAULT_COUNTRY, validatePhone } from '../../data/countries';
+import { sendOTP } from '../../services/authService';
 
 export default function SignUpForm() {
   const navigate = useNavigate();
@@ -21,6 +22,8 @@ export default function SignUpForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [countrySearch, setCountrySearch] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState('');
   const pickerRef = useRef(null);
 
   useEffect(() => {
@@ -46,12 +49,36 @@ export default function SignUpForm() {
     setPhone(e.target.value.replace(/\D/g, '').slice(0, country.maxLength));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    navigate('/otp');
+    setApiError('');
+    setLoading(true);
+
+    const target = isPhone ? `${country.dial}${phone}` : email;
+
+    try {
+      const response = await sendOTP({ target, purpose: 'signup' });
+      navigate('/otp', {
+        state: {
+          target,
+          purpose: 'signup',
+          fullName: name,
+          age: parseInt(age, 10),
+          sex: gender,
+          password,
+          devCode: response?.devCode,
+        },
+      });
+    } catch (err) {
+      setApiError(err.message || 'Failed to send OTP code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+
   }
 
   const strength = getStrength(password);
+
 
   return (
     <div className="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col relative overflow-x-hidden">

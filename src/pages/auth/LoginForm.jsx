@@ -1,17 +1,65 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logo from '../../assets/screen.png';
+import { loginWithPassword, sendOTP } from '../../services/authService';
 
 export default function LoginForm() {
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('hello123@gmail.com');
-  const [password, setPassword] = useState('••••••••');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState('');
+  const [failedAttempts, setFailedAttempts] = useState(0);
 
-  function handleSubmit(e) {
+  // Send OTP to email/phone and go to verification
+  async function handleSendOTPDirect(targetEmail = email) {
+    if (!targetEmail.trim()) {
+      setApiError('Please enter your email or phone number first.');
+      return;
+    }
+    setApiError('');
+    setLoading(true);
+
+    try {
+      const response = await sendOTP({ target: targetEmail.trim(), purpose: 'login' });
+      navigate('/otp', {
+        state: {
+          target: targetEmail.trim(),
+          purpose: 'login',
+          devCode: response?.devCode,
+        },
+      });
+    } catch (err) {
+      setApiError(err.message || 'Failed to send OTP verification code.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Handle password login submit
+  async function handleSubmit(e) {
     e.preventDefault();
-    navigate('/dashboard');
+    setApiError('');
+    setLoading(true);
+
+    try {
+      await loginWithPassword({ target: email.trim(), password });
+      navigate('/dashboard');
+    } catch (err) {
+      const nextFailCount = failedAttempts + 1;
+      setFailedAttempts(nextFailCount);
+
+      if (nextFailCount >= 3) {
+        setApiError('Incorrect password entered 3 times. Automatically switching to OTP verification...');
+        setTimeout(() => handleSendOTPDirect(email.trim()), 1200);
+      } else {
+        setApiError(err.message || `Incorrect password (${3 - nextFailCount} attempt${3 - nextFailCount === 1 ? '' : 's'} remaining).`);
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -49,6 +97,13 @@ export default function LoginForm() {
             </p>
           </div>
 
+          {/* API Error Box */}
+          {apiError && (
+            <div className="w-full mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-600 text-[13px] font-body text-center">
+              {apiError}
+            </div>
+          )}
+
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="w-full flex flex-col gap-3.5">
             
@@ -60,17 +115,14 @@ export default function LoginForm() {
                 </div>
               </div>
               <input
-                type="email"
+                type="text"
                 id="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email address"
+                placeholder="Email or Phone Number"
                 className="w-full h-11 pl-[52px] pr-16 bg-primary-fixed text-on-primary-fixed border-0 rounded-lg focus:ring-2 focus:ring-secondary transition-shadow font-body-md text-[15px] outline-none"
               />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 bg-surface-container-lowest rounded text-secondary font-label-sm text-[10px] uppercase tracking-wider shadow-xs">
-                Email
-              </div>
             </div>
 
             {/* Password Field */}
@@ -84,11 +136,13 @@ export default function LoginForm() {
                 type={showPassword ? 'text' : 'password'}
                 id="password"
                 required
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
                 className="w-full h-11 pl-[52px] pr-12 bg-primary-fixed text-on-primary-fixed border-0 rounded-lg focus:ring-2 focus:ring-secondary transition-shadow font-body-md text-[15px] outline-none"
               />
+
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -98,11 +152,20 @@ export default function LoginForm() {
               </button>
             </div>
 
-            <div className="flex justify-end w-full">
+            <div className="flex justify-between items-center w-full pt-1">
+              <button
+                type="button"
+                onClick={() => handleSendOTPDirect()}
+                className="font-label-sm text-[13px] font-semibold text-secondary hover:underline bg-transparent border-none cursor-pointer flex items-center gap-1"
+              >
+                <span className="material-symbols-outlined text-[15px]">sms</span>
+                Sign in with OTP
+              </button>
+
               <button
                 type="button"
                 onClick={() => navigate('/forgot-password')}
-                className="font-label-sm text-label-sm text-secondary hover:text-on-secondary-container transition-colors bg-transparent border-none cursor-pointer"
+                className="font-label-sm text-label-sm text-on-surface-variant hover:text-secondary transition-colors bg-transparent border-none cursor-pointer"
               >
                 Forgot password?
               </button>
@@ -110,9 +173,10 @@ export default function LoginForm() {
 
             <button
               type="submit"
-              className="w-full bg-secondary hover:bg-on-secondary-fixed-variant text-on-secondary py-3.5 px-6 rounded-lg font-label-sm text-label-sm flex items-center justify-center gap-2 transition-all active:scale-95 duration-200 mt-1 shadow-sm hover:shadow-md cursor-pointer"
+              disabled={loading}
+              className="w-full bg-secondary hover:bg-on-secondary-fixed-variant text-on-secondary py-3.5 px-6 rounded-lg font-label-sm text-label-sm flex items-center justify-center gap-2 transition-all active:scale-95 duration-200 mt-1 shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
             >
-              Log In
+              {loading ? 'Logging in...' : 'Log In'}
               <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
             </button>
           </form>

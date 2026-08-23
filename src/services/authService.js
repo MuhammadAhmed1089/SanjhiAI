@@ -16,6 +16,16 @@ export function sendOTP(payload) {
 }
 
 /**
+ * Login using Password.
+ * @param {{ target: string, password: string }} payload
+ */
+export async function loginWithPassword(payload) {
+  const data = await api.post(`${BASE}/login-password`, payload);
+  if (data.token) setToken(data.token);
+  return data;
+}
+
+/**
  * Verify OTP code.
  * @param {{ target: string, code: string, purpose: 'signup' | 'login' }} payload
  * @returns {Promise<{ token: string, user: object, isNew: boolean }>}
@@ -25,6 +35,7 @@ export async function verifyOTP(payload) {
   if (data.token) setToken(data.token);
   return data;
 }
+
 
 /**
  * Resend OTP (rate-limited on backend).

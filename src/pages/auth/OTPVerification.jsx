@@ -1,14 +1,21 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import TopAppBar from '../../components/TopAppBar';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
+import { verifyOTP, resendOTP, setupProfile } from '../../services/authService';
 
 export default function OTPVerification() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const { target = '+923000000000', purpose = 'signup', fullName, age, sex, password, devCode } = location.state || {};
+
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timeLeft, setTimeLeft] = useState(59);
-  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [resendStatus, setResendStatus] = useState('');
   const inputRefs = useRef([]);
 
   useEffect(() => {
@@ -23,7 +30,7 @@ export default function OTPVerification() {
     const newOtp = [...otp];
     newOtp[index] = val;
     setOtp(newOtp);
-    setError(false);
+    setErrorMessage('');
     if (val && index < 5) inputRefs.current[index + 1]?.focus();
   };
 
@@ -33,8 +40,52 @@ export default function OTPVerification() {
     }
   };
 
-  const handleVerify = () => {
-    navigate('/profile-setup');
+  const handleResend = async () => {
+    try {
+      setErrorMessage('');
+      const res = await resendOTP({ target, purpose });
+      setTimeLeft(59);
+      setResendStatus(res?.devCode ? `Code resent (Dev: ${res.devCode})` : 'New verification code sent!');
+    } catch (err) {
+      setErrorMessage(err.message || 'Failed to resend code');
+    }
+  };
+
+  const handleVerify = async () => {
+    const codeStr = otp.join('');
+    if (codeStr.length < 6) {
+      setErrorMessage('Please enter the full 6-digit verification code.');
+      return;
+    }
+
+    setLoading(true);
+    setErrorMessage('');
+
+    try {
+      // 1. Verify OTP with backend via authService (creates user in database)
+      const result = await verifyOTP({ target, code: codeStr, purpose, password });
+
+      // 2. Update user profile details in DB
+      if (fullName || password) {
+        await setupProfile({
+          full_name: fullName,
+          ...(age && { age: parseInt(age, 10) }),
+          ...(sex && { sex }),
+          ...(password && { password }),
+        });
+      }
+
+      // 3. Navigate to dashboard or profile setup
+      if (result.isNew && !fullName) {
+        navigate('/profile-setup');
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      setErrorMessage(err.message || 'Invalid or expired OTP code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -44,11 +95,21 @@ export default function OTPVerification() {
         <div className="flex-1 px-4 pt-8 pb-8 flex flex-col w-full">
           <div className="mb-8 w-full flex flex-col items-center text-center">
             <h1 className="font-headline text-[32px] leading-[40px] font-bold text-deep-navy mb-2 tracking-tight">
-              Verify your number
+              Verify your code
             </h1>
             <p className="font-body text-[16px] text-on-surface-variant px-4">
-              Code sent to <span className="font-semibold text-deep-navy">+92 3XX XXX XX45</span>
+              Code sent to <span className="font-semibold text-deep-navy">{target}</span>
             </p>
+            {devCode && (
+              <div className="mt-2 px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-700 text-[12px] font-mono">
+                Local Dev Code: <strong>{devCode}</strong>
+              </div>
+            )}
+            {resendStatus && (
+              <div className="mt-2 text-teal-emerald text-[13px] font-body">
+                {resendStatus}
+              </div>
+            )}
           </div>
           <div className="w-full flex flex-col items-center mb-8">
             <div className="flex justify-center items-center gap-1 mb-2 w-full max-w-sm px-2">
@@ -64,15 +125,15 @@ export default function OTPVerification() {
                   onKeyDown={(e) => handleKeyDown(i, e)}
                   autoFocus={i === 0}
                   className={`otp-input w-12 h-14 bg-surface-container-lowest border rounded-xl text-center font-headline text-[36px] leading-[44px] text-deep-navy focus:outline-none transition-all shadow-sm ${
-                    error ? 'border-error bg-error-container/20 focus:border-error' : 'border-outline-variant/30 focus:border-teal-emerald focus:ring-1 focus:ring-teal-emerald'
+                    errorMessage ? 'border-red-500 bg-red-500/10 focus:border-red-500' : 'border-outline-variant/30 focus:border-teal-emerald focus:ring-1 focus:ring-teal-emerald'
                   }`}
                 />
               ))}
             </div>
-            {error && (
-              <div className="flex items-center justify-center text-error gap-1">
-                <Icon name="error" size={14} />
-                <span className="font-label text-[12px]">Invalid code. Please try again.</span>
+            {errorMessage && (
+              <div className="flex items-center justify-center text-red-600 gap-1 mt-2">
+                <Icon name="error" size={16} />
+                <span className="font-label text-[13px]">{errorMessage}</span>
               </div>
             )}
           </div>
@@ -86,12 +147,12 @@ export default function OTPVerification() {
                 </span>
               </div>
             ) : (
-              <button onClick={() => setTimeLeft(59)} className="mb-4 font-label text-[14px] text-teal-emerald hover:opacity-80 transition-colors">
+              <button onClick={handleResend} className="mb-4 font-label text-[14px] text-teal-emerald hover:opacity-80 transition-colors font-semibold">
                 Resend OTP
               </button>
             )}
-            <Button fullWidth onClick={handleVerify} className="h-14">
-              Verify
+            <Button fullWidth onClick={handleVerify} disabled={loading || otp.join('').length < 6} className="h-14">
+              {loading ? 'Verifying...' : 'Verify'}
             </Button>
           </div>
         </div>
@@ -99,3 +160,4 @@ export default function OTPVerification() {
     </div>
   );
 }
+
