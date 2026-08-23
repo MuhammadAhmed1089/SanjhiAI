@@ -66,9 +66,9 @@ export default function SignUpForm() {
           {/* Top App Bar */}
           <header className="w-full top-0 sticky bg-surface-container-lowest flex items-center px-4 py-4 z-20">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => navigate('/signup')}
               aria-label="Go back"
-              className="text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-full p-2 active:scale-95 duration-150"
+              className="text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-full p-2 active:scale-95 duration-150 cursor-pointer"
             >
               <span className="material-symbols-outlined">arrow_back</span>
             </button>

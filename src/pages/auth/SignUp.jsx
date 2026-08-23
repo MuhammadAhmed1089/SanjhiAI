@@ -11,7 +11,7 @@ export default function SignUp() {
         {/* Header with simple back button */}
         <div className="w-full flex items-center justify-between mb-4">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/')}
             className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-variant/50 transition-colors text-outline cursor-pointer"
             aria-label="Go back"
           >
