@@ -142,6 +142,25 @@ h1, h2, h3, h4, h5, h6 {
   -moz-appearance: textfield;
 }
 
+/* ── Skeleton Shimmer (YouTube-style) ── */
+@keyframes skeleton-sweep {
+  0% { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+.skeleton-bone {
+  background: linear-gradient(
+    90deg,
+    #e8f4f5 0%,
+    #d0eaec 20%,
+    #b8e0e4 40%,
+    #d0eaec 60%,
+    #e8f4f5 80%
+  );
+  background-size: 600px 100%;
+  animation: skeleton-sweep 1.6s ease-in-out infinite;
+}
+
+
 /* ── AI Pulse Animation ── */
 .ai-pulse {
   animation: pulse-border 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -200,6 +219,81 @@ h1, h2, h3, h4, h5, h6 {
   33% { transform: translate(20px, -30px) scale(1.05); }
   66% { transform: translate(-15px, 15px) scale(0.95); }
 }
+
+/* ── Dashboard Ambient Animations ── */
+
+/* Gentle vertical float */
+@keyframes float-y {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+.animate-float-y { animation: float-y 4s ease-in-out infinite; }
+.animate-float-y-slow { animation: float-y 7s ease-in-out infinite; }
+.animate-float-y-fast { animation: float-y 2.5s ease-in-out infinite; }
+
+/* Slow 360 rotation */
+@keyframes rotate-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-rotate-slow { animation: rotate-slow 18s linear infinite; }
+.animate-rotate-slow-rev { animation: rotate-slow 24s linear infinite reverse; }
+
+/* Pulsing glow ring */
+@keyframes glow-ring {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 105, 114, 0.25), 0 0 0 6px rgba(0, 105, 114, 0.08); }
+  50% { box-shadow: 0 0 0 8px rgba(0, 105, 114, 0.12), 0 0 0 18px rgba(0, 105, 114, 0.04); }
+}
+.animate-glow-ring { animation: glow-ring 3s ease-in-out infinite; }
+
+/* Shimmer sweep */
+@keyframes shimmer-sweep {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(0,105,114,0.06) 50%, transparent 100%);
+  background-size: 400px 100%;
+  animation: shimmer-sweep 2.4s ease-in-out infinite;
+}
+
+/* Horizontal ticker scroll */
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-ticker { animation: ticker-scroll 28s linear infinite; }
+.animate-ticker:hover { animation-play-state: paused; }
+
+/* Drifting particles */
+@keyframes drift-up {
+  0% { transform: translateY(0) translateX(0) scale(1); opacity: 0.6; }
+  50% { transform: translateY(-30px) translateX(10px) scale(1.1); opacity: 1; }
+  100% { transform: translateY(-60px) translateX(-5px) scale(0.8); opacity: 0; }
+}
+.particle { animation: drift-up ease-in-out infinite; }
+
+/* Breathing card border */
+@keyframes border-breathe {
+  0%, 100% { border-color: rgba(0, 105, 114, 0.20); }
+  50% { border-color: rgba(0, 105, 114, 0.50); }
+}
+.animate-border-breathe { animation: border-breathe 4s ease-in-out infinite; }
+
+/* Score number glow */
+@keyframes score-glow {
+  0%, 100% { text-shadow: 0 0 0px rgba(255,255,255,0); }
+  50% { text-shadow: 0 0 30px rgba(255,255,255,0.4), 0 0 60px rgba(255,255,255,0.15); }
+}
+.animate-score-glow { animation: score-glow 3.5s ease-in-out infinite; }
+
+/* Ping wave — large slow expand */
+@keyframes ping-slow {
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+.animate-ping-slow { animation: ping-slow 2.5s ease-out infinite; }
+
 
 /* Fade-up entrance for the glass card */
 .animate-fade-up {

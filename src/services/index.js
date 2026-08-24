@@ -12,8 +12,10 @@
 export { default as api, setToken, clearToken } from '../api';
 
 export * as authService from './authService';
+export * as dashboardService from './dashboardService';
 export * as committeeService from './committeeService';
 export * as memberService from './memberService';
 export * as paymentService from './paymentService';
 export * as supportService from './supportService';
 export * as adminService from './adminService';
+

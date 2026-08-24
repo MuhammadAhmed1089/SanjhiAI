@@ -5,6 +5,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import { testConnection } from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 
 dotenv.config();
 
@@ -26,6 +27,10 @@ app.use(express.json());
 
 // Auth Routes
 app.use('/api/auth', authRoutes);
+
+// Dashboard Routes
+app.use('/api/dashboard', dashboardRoutes);
+
 
 // Health check
 app.get('/', (req, res) => {
