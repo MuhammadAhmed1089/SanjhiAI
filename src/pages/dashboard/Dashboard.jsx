@@ -187,8 +187,8 @@ export default function Dashboard() {
           />
         ))}
 
-        {/* Sanjhi logo watermark */}
-        <img src={logo} alt="" aria-hidden className="absolute bottom-[-40px] right-[-40px] w-[420px] sm:w-[520px] opacity-[0.04] select-none animate-float-y-slow"
+        {/* Sanjhi logo watermark - Responsive for all screen sizes */}
+        <img src={logo} alt="" aria-hidden className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[500px] md:w-[720px] lg:w-[950px] xl:w-[1150px] opacity-[0.04] select-none pointer-events-none transition-all duration-300"
           style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(85%) saturate(1450%) hue-rotate(152deg)' }} />
       </div>
 

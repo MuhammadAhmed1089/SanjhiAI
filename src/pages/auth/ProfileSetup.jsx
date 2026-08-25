@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import TopAppBar from '../../components/TopAppBar';
+import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
-import Button from '../../components/Button';
+import logo from '../../assets/screen.png';
 import { setupProfile } from '../../services/authService';
 
 export default function ProfileSetup() {
@@ -10,9 +10,27 @@ export default function ProfileSetup() {
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [ripples, setRipples] = useState({});
+
+  function triggerRipple(e, key) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setRipples((prev) => ({
+      ...prev,
+      [key]: { x: e.clientX - rect.left, y: e.clientY - rect.top, k: Date.now() },
+    }));
+    setTimeout(() => {
+      setRipples((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    }, 600);
+  }
 
   const handleFinish = async (e) => {
     e?.preventDefault();
+    if (e) triggerRipple(e, 'finish');
+
     if (!displayName.trim()) {
       setErrorMsg('Display name is required');
       return;
@@ -32,83 +50,110 @@ export default function ProfileSetup() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body antialiased">
-      <header className="w-full top-0 sticky bg-background flex items-center px-container-margin-mobile md:px-container-margin-desktop h-16 max-w-[1280px] mx-auto z-40">
-        <div onClick={() => navigate(-1)} className="flex items-center text-teal-emerald hover:opacity-80 transition-opacity active:scale-95 duration-200 cursor-pointer">
-          <span className="material-symbols-outlined mr-2" data-weight="fill">arrow_back</span>
-        </div>
-        <div className="font-headline-md text-headline-md text-deep-navy ml-4">
-          Sanjhi
-        </div>
-      </header>
+    <AuthAmbientBackground showTicker={true}>
+      <div className="w-full max-w-md mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[calc(100vh-36px)]">
+        
+        {/* Main Glass Card with Rich Box Shadow */}
+        <main className="w-full bg-white/85 backdrop-blur-2xl border border-[#006972]/20 shadow-[0_24px_70px_-15px_rgba(0,105,114,0.22),0_0_0_1px_rgba(0,105,114,0.1)] rounded-3xl p-6 sm:p-8 animate-fade-up relative z-10 flex flex-col items-center">
+          
+          {/* Header */}
+          <div className="w-full flex items-center justify-between mb-4">
+            <button
+              onClick={() => navigate(-1)}
+              aria-label="Go back"
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-[#006972]/5 hover:bg-[#006972]/15 border border-[#006972]/15 text-[#006972] transition-colors cursor-pointer active:scale-95"
+            >
+              <Icon name="arrow_back" size={20} />
+            </button>
 
-      <main className="flex-grow flex flex-col items-center justify-center px-container-margin-mobile md:px-container-margin-desktop py-stack-lg max-w-[1280px] mx-auto w-full relative z-10">
-        <div className="w-full max-w-md flex flex-col items-center space-y-stack-lg">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-label text-[11px] font-bold border border-emerald-200">
+              Final Step
+            </span>
+          </div>
 
-          <div className="text-center space-y-stack-sm w-full">
-            <h1 className="font-display-lg-mobile text-display-lg-mobile text-deep-navy md:font-display-lg md:text-display-lg">
+          {/* Logo & Headline */}
+          <div className="mb-6 w-full flex flex-col items-center text-center">
+            <img
+              alt="Sanjhi Logo"
+              src={logo}
+              className="w-20 h-20 sm:w-24 sm:h-24 mb-2 object-contain drop-shadow-sm"
+            />
+            <h1 className="font-headline text-[26px] sm:text-[32px] font-bold text-deep-navy tracking-tight mb-1">
               Set up your profile
             </h1>
-            <p className="font-body-md text-body-md text-on-surface-variant">
-              Let the community get to know you.
+            <p className="font-body text-[14px] text-on-surface-variant max-w-xs">
+              Let your savings pool members recognize you
             </p>
           </div>
 
-          <div className="flex flex-col items-center space-y-stack-md pt-stack-md w-full relative group">
+          {/* Profile Avatar Upload Mock */}
+          <div className="flex flex-col items-center my-4 relative group">
             <div className="relative cursor-pointer">
-              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-surface-container-lowest border border-outline-variant/30 flex items-center justify-center overflow-hidden shadow-sm transition-transform duration-300 group-hover:scale-105">
-                <span className="material-symbols-outlined text-outline-variant text-6xl" data-weight="fill">person</span>
-                <input accept="image/*" className="hidden" type="file"/>
+              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-[#006972]/10 border-2 border-[#006972]/30 flex items-center justify-center overflow-hidden shadow-inner transition-transform duration-300 group-hover:scale-105">
+                <Icon name="person" size={56} className="text-[#006972]" />
               </div>
-
-              <div className="absolute bottom-0 right-0 md:bottom-2 md:right-2 w-10 h-10 bg-teal-emerald rounded-full flex items-center justify-center text-on-primary shadow-sm ring-4 ring-surface cursor-pointer hover:bg-secondary-container hover:text-on-secondary-container transition-colors duration-200">
-                <span className="material-symbols-outlined text-[20px]">photo_camera</span>
+              <div className="absolute bottom-0 right-0 w-9 h-9 bg-[#006972] text-white rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-pointer hover:scale-110 transition-transform">
+                <Icon name="photo_camera" size={18} />
               </div>
             </div>
-            <label className="font-label-lg text-label-lg text-teal-emerald cursor-pointer hover:underline">
-              Add photo
-            </label>
+            <span className="font-label text-[12px] font-bold text-[#006972] mt-2 cursor-pointer hover:underline">
+              Add Profile Photo
+            </span>
           </div>
 
           {errorMsg && (
-            <div className="w-full p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-600 text-[13px] font-body text-center">
+            <div className="w-full mb-4 p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-[13px] font-body text-center">
               {errorMsg}
             </div>
           )}
 
-          <form onSubmit={handleFinish} className="w-full space-y-stack-lg pt-stack-sm flex flex-col">
-            <div className="w-full space-y-unit">
-              <label className="font-label-sm text-label-sm text-on-surface-variant ml-2" htmlFor="displayName">
-                Display Name <span className="text-error">*</span>
+          <form onSubmit={handleFinish} className="w-full space-y-4 mt-2">
+            <div className="space-y-1 text-left">
+              <label className="block font-label text-[13px] font-bold text-deep-navy" htmlFor="displayName">
+                Display Name <span className="text-rose-500">*</span>
               </label>
-              <div className="relative">
+              <div className="relative group">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#006972]/10 flex items-center justify-center text-[#006972] group-focus-within:bg-[#006972] group-focus-within:text-white transition-all">
+                  <Icon name="badge" size={18} />
+                </div>
                 <input
                   id="displayName"
+                  type="text"
+                  required
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full bg-surface-container-lowest border border-outline-variant/30 text-on-surface font-body-lg text-body-lg rounded-xl px-4 py-3 md:py-4 focus:border-teal-emerald focus:ring-1 focus:ring-teal-emerald transition-colors duration-200 shadow-sm"
-                  placeholder="e.g., Anika S."
-                  required
-                  type="text"
+                  placeholder="e.g. Anika S."
+                  className="w-full h-12 pl-13 pr-4 bg-white border border-[#006972]/20 rounded-2xl focus:border-[#006972] focus:ring-4 focus:ring-[#006972]/10 transition-all font-body text-[14px] text-deep-navy outline-none shadow-sm"
                 />
               </div>
             </div>
 
-            <div className="h-4"></div>
-
-            <div className="w-full pt-stack-md mt-auto">
-              <button
-                type="submit"
-                disabled={loading || !displayName.trim()}
-                className="w-full bg-teal-emerald text-white font-label-lg text-label-lg py-4 px-6 rounded-full transition-all duration-300 flex items-center justify-center active:scale-95 disabled:opacity-50"
-              >
-                {loading ? 'Saving...' : 'Finish'}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={loading || !displayName.trim()}
+              className="relative overflow-hidden w-full bg-[#006972] hover:bg-[#00575f] text-white py-3.5 px-6 rounded-2xl font-label text-[15px] font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98] duration-200 shadow-lg shadow-[#006972]/25 hover:shadow-xl cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed border-none mt-4"
+            >
+              {ripples.finish && (
+                <span
+                  className="absolute rounded-full bg-white/30 w-32 h-32 -translate-x-1/2 -translate-y-1/2 animate-ping pointer-events-none"
+                  style={{ left: ripples.finish.x, top: ripples.finish.y }}
+                />
+              )}
+              {loading ? (
+                <>
+                  <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  Saving Profile...
+                </>
+              ) : (
+                <>
+                  Complete Setup
+                  <Icon name="arrow_forward" size={18} />
+                </>
+              )}
+            </button>
           </form>
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </AuthAmbientBackground>
   );
 }
-

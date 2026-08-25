@@ -69,6 +69,7 @@
   --font-headline: 'Plus Jakarta Sans', sans-serif;
   --font-body: 'Be Vietnam Pro', sans-serif;
   --font-label: 'Be Vietnam Pro', sans-serif;
+  --font-urdu: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif;
 
   /* ── Border Radius ── */
   --radius-sm: 0.25rem;
@@ -341,6 +342,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 .logo-3d:hover {
   transform: translateY(-5px) scale(1.02);
+}
+
+.logo-3d-white {
+  filter: brightness(0) invert(1) drop-shadow(1px 1px 0 #004d54) drop-shadow(2px 2px 0 #003a3f) drop-shadow(3px 3px 0 #00282c) drop-shadow(4px 4px 10px rgba(0, 0, 0, 0.35));
+  transition: transform 0.3s ease;
+}
+.logo-3d-white:hover {
+  transform: scale(1.03);
 }
 
 .logo-3d-green {

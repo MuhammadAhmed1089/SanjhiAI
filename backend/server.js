@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import { testConnection } from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
+import committeeRoutes from './routes/committeeRoutes.js';
 
 dotenv.config();
 
@@ -30,6 +31,9 @@ app.use('/api/auth', authRoutes);
 
 // Dashboard Routes
 app.use('/api/dashboard', dashboardRoutes);
+
+// Committee Routes
+app.use('/api/committees', committeeRoutes);
 
 
 // Health check

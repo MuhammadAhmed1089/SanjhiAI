@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
 import logo from '../../assets/screen.png';
 import { COUNTRIES, DEFAULT_COUNTRY, validatePhone } from '../../data/countries';
@@ -24,6 +25,7 @@ export default function SignUpForm() {
   const [countrySearch, setCountrySearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
+  const [ripples, setRipples] = useState({});
   const pickerRef = useRef(null);
 
   useEffect(() => {
@@ -34,15 +36,31 @@ export default function SignUpForm() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  function triggerRipple(e, key) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setRipples((prev) => ({
+      ...prev,
+      [key]: { x: e.clientX - rect.left, y: e.clientY - rect.top, k: Date.now() },
+    }));
+    setTimeout(() => {
+      setRipples((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    }, 600);
+  }
+
   const phoneResult = isPhone ? validatePhone(phone, country) : { valid: false, message: '' };
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const passwordsMatch = password && confirmPass && password === confirmPass;
   const passwordStrong = password.length >= 8;
 
   const filteredCountries = COUNTRIES.filter(
-    (c) => c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
-           c.dial.includes(countrySearch) ||
-           c.code.toLowerCase().includes(countrySearch.toLowerCase())
+    (c) =>
+      c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+      c.dial.includes(countrySearch) ||
+      c.code.toLowerCase().includes(countrySearch.toLowerCase())
   );
 
   function handlePhoneChange(e) {
@@ -74,151 +92,184 @@ export default function SignUpForm() {
     } finally {
       setLoading(false);
     }
-
   }
 
   const strength = getStrength(password);
-
+  const isFormValid =
+    name &&
+    age &&
+    gender &&
+    (isPhone ? phoneResult.valid : emailValid) &&
+    passwordStrong &&
+    passwordsMatch;
 
   return (
-    <div className="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col relative overflow-x-hidden">
-      {/* Decorative Background Elements */}
-      <div className="absolute inset-0 jali-pattern pointer-events-none z-0"></div>
-      <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-secondary-container/20 to-transparent pointer-events-none z-0"></div>
-
-      {/* Main Content Area */}
-      <main className="flex-grow flex items-center justify-center p-4 md:p-16 relative z-10">
-        <div className="w-full max-w-lg bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/10 overflow-hidden flex flex-col relative">
+    <AuthAmbientBackground showTicker={true}>
+      <div className="w-full max-w-lg mx-auto px-3 sm:px-4 py-4 sm:py-8 flex flex-col items-center justify-center min-h-[calc(100vh-36px)]">
+        
+        {/* Main Glass Card - Mobile Responsive */}
+        <main className="w-full bg-white/85 backdrop-blur-2xl border border-[#006972]/20 shadow-[0_24px_70px_-15px_rgba(0,105,114,0.22),0_0_0_1px_rgba(0,105,114,0.1)] rounded-2xl sm:rounded-3xl overflow-hidden animate-fade-up relative z-10 flex flex-col">
           
-          {/* Top App Bar */}
-          <header className="w-full top-0 sticky bg-surface-container-lowest flex items-center px-4 py-4 z-20">
+          {/* Top Bar */}
+          <header className="w-full flex items-center justify-between px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
             <button
               onClick={() => navigate('/signup')}
               aria-label="Go back"
-              className="text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-full p-2 active:scale-95 duration-150 cursor-pointer"
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-[#006972]/5 hover:bg-[#006972]/15 border border-[#006972]/15 text-[#006972] transition-colors cursor-pointer active:scale-95"
             >
-              <span className="material-symbols-outlined">arrow_back</span>
+              <Icon name="arrow_back" size={20} />
             </button>
+
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#006972]/10 text-[#006972] font-label text-[11px] font-bold border border-[#006972]/20">
+              Step 2 of 2
+            </span>
           </header>
 
-          <div className="px-4 md:px-6 pb-8 flex flex-col items-center">
-            {/* Logo & Brand Header */}
-            <div className="mb-6 flex flex-col items-center">
+          <div className="px-4 sm:px-8 pb-6 sm:pb-8 flex flex-col items-center">
+            
+            {/* Header / Natural Logo */}
+            <div className="mb-4 sm:mb-6 flex flex-col items-center text-center">
               <img
-                alt="Sanjhi Handshake Logo"
+                alt="Sanjhi Logo"
                 src={logo}
-                className="w-32 h-32 md:w-36 md:h-36 mb-4 object-contain logo-green drop-shadow-md"
+                className="w-18 h-18 sm:w-24 sm:h-24 mb-2 object-contain drop-shadow-sm"
               />
-              <h1 className="font-headline text-[24px] font-semibold text-on-surface text-center mb-1">
-                Create Account
+              <h1 className="font-headline text-[24px] sm:text-[32px] font-bold text-deep-navy tracking-tight mb-1">
+                Enter Details
               </h1>
-              <p className="font-body text-[16px] text-on-surface-variant text-center">
-                {isPhone ? 'Sign up with your phone number to join the community.' : 'Sign up with your email address to join the community.'}
+              <p className="font-body text-[13px] sm:text-[14px] text-on-surface-variant max-w-xs">
+                {isPhone
+                  ? 'Sign up with your phone number for instant OTP setup.'
+                  : 'Sign up with your email address for secure verification.'}
               </p>
             </div>
 
-            {/* Form Area */}
-            <form onSubmit={handleSubmit} className="w-full space-y-3.5">
+            {/* API Error Box */}
+            {apiError && (
+              <div className="w-full mb-4 p-3 sm:p-3.5 bg-rose-50 border border-rose-200 rounded-xl sm:rounded-2xl text-rose-700 text-[12px] sm:text-[13px] font-body flex items-start gap-2 animate-fade-in shadow-sm">
+                <Icon name="error" size={18} className="shrink-0 mt-0.5 text-rose-600" />
+                <span>{apiError}</span>
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="w-full space-y-3.5 sm:space-y-4">
               
               {/* Full Name */}
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <div className="bg-[#006972] text-white rounded-full w-8 h-8 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-sm">person</span>
+              <div className="space-y-1 text-left">
+                <label className="block font-label text-[12px] font-bold text-deep-navy">Full Name</label>
+                <div className="relative group">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#006972]/10 flex items-center justify-center text-[#006972] group-focus-within:bg-[#006972] group-focus-within:text-white transition-all">
+                    <Icon name="person" size={18} />
                   </div>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Enter your full name"
+                    className="w-full h-11 sm:h-12 pl-12 pr-4 bg-white border border-[#006972]/20 rounded-xl sm:rounded-2xl focus:border-[#006972] focus:ring-4 focus:ring-[#006972]/10 transition-all font-body text-[14px] text-deep-navy outline-none shadow-sm"
+                  />
                 </div>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Full Name"
-                  className="block w-full pl-14 pr-4 py-3 bg-surface border border-outline-variant/30 rounded-lg text-on-surface focus:ring-2 focus:ring-[#006972] focus:border-[#006972] transition-shadow outline-none"
-                  id="fullName"
-                />
               </div>
 
               {/* Age & Gender Grid */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
                 {/* Age */}
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
-                    <div className="bg-[#765a05] text-white rounded-full w-8 h-8 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-sm">cake</span>
+                <div className="space-y-1 text-left">
+                  <label className="block font-label text-[12px] font-bold text-deep-navy">Age</label>
+                  <div className="relative group">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-700 group-focus-within:bg-amber-500 group-focus-within:text-white transition-all">
+                      <Icon name="cake" size={18} />
                     </div>
+                    <input
+                      type="number"
+                      required
+                      value={age}
+                      onChange={(e) => setAge(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                      placeholder="e.g. 24"
+                      className="w-full h-11 sm:h-12 pl-12 pr-2 bg-white border border-[#006972]/20 rounded-xl sm:rounded-2xl focus:border-[#006972] focus:ring-4 focus:ring-[#006972]/10 transition-all font-body text-[14px] text-deep-navy outline-none shadow-sm"
+                    />
                   </div>
-                  <input
-                    type="number"
-                    value={age}
-                    onChange={(e) => setAge(e.target.value.replace(/\D/g, '').slice(0, 3))}
-                    placeholder="Age"
-                    className="block w-full pl-12 pr-4 py-3 bg-surface border border-outline-variant/30 rounded-lg text-on-surface focus:ring-2 focus:ring-[#006972] focus:border-[#006972] transition-shadow outline-none"
-                    id="age"
-                  />
                 </div>
 
                 {/* Gender */}
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
-                    <div className="bg-[#525f71] text-white rounded-full w-8 h-8 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-sm">wc</span>
+                <div className="space-y-1 text-left">
+                  <label className="block font-label text-[12px] font-bold text-deep-navy">Gender</label>
+                  <div className="relative group">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#006972]/10 flex items-center justify-center text-[#006972] group-focus-within:bg-[#006972] group-focus-within:text-white transition-all">
+                      <Icon name="wc" size={18} />
+                    </div>
+                    <select
+                      required
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value)}
+                      className="w-full h-11 sm:h-12 pl-12 pr-7 bg-white border border-[#006972]/20 rounded-xl sm:rounded-2xl focus:border-[#006972] focus:ring-4 focus:ring-[#006972]/10 transition-all font-body text-[13px] sm:text-[14px] text-deep-navy outline-none cursor-pointer appearance-none shadow-sm"
+                    >
+                      <option value="" disabled>Select</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                    <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant">
+                      <Icon name="expand_more" size={18} />
                     </div>
                   </div>
-                  <select
-                    value={gender}
-                    onChange={(e) => setGender(e.target.value)}
-                    className="block w-full pl-12 pr-8 py-3 bg-surface border border-outline-variant/30 rounded-lg text-on-surface-variant focus:ring-2 focus:ring-[#006972] focus:border-[#006972] transition-shadow appearance-none outline-none cursor-pointer"
-                    id="gender"
-                  >
-                    <option value="" disabled>Gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                  </select>
                 </div>
               </div>
 
-              {/* Phone or Email */}
+              {/* Phone or Email Input */}
               {isPhone ? (
-                <div className="relative" ref={pickerRef}>
+                <div className="space-y-1 text-left" ref={pickerRef}>
+                  <label className="block font-label text-[12px] font-bold text-deep-navy">Phone Number</label>
                   <div className="flex gap-2">
-                    {/* Country Code Dropdown */}
+                    {/* Country Selector */}
                     <div className="relative w-1/3">
                       <button
                         type="button"
                         onClick={() => setShowCountryPicker(!showCountryPicker)}
-                        className="w-full h-[50px] pl-3 pr-8 bg-surface border border-outline-variant/30 rounded-lg text-on-surface flex items-center gap-1.5 focus:ring-2 focus:ring-[#006972] outline-none transition-shadow"
+                        className="w-full h-11 sm:h-12 px-2.5 bg-white border border-[#006972]/20 rounded-xl sm:rounded-2xl flex items-center justify-between text-deep-navy focus:border-[#006972] focus:ring-4 focus:ring-[#006972]/10 outline-none transition-all cursor-pointer shadow-sm"
                       >
-                        <span className="text-xl">{country.flag ? <img src={country.flag} alt="" className="w-5 h-4 object-cover rounded-sm inline" /> : '🇵🇰'}</span>
-                        <span className="text-sm font-semibold">{country.dial}</span>
+                        <span className="flex items-center gap-1 font-bold text-[12px] sm:text-[13px]">
+                          {country.flag ? (
+                            <img src={country.flag} alt="" className="w-4.5 h-3.5 object-cover rounded-sm" />
+                          ) : (
+                            '🇵🇰'
+                          )}
+                          {country.dial}
+                        </span>
+                        <Icon name="expand_more" size={15} className="text-on-surface-variant" />
                       </button>
-                      <div className="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
-                        <span className="material-symbols-outlined text-on-surface-variant text-sm">expand_more</span>
-                      </div>
 
-                      {/* Country picker popup */}
+                      {/* Dropdown Modal */}
                       {showCountryPicker && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-outline-variant/30 rounded-xl shadow-xl z-50 overflow-hidden">
-                          <div className="p-2 border-b border-outline-variant/20">
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-[#006972]/20 rounded-2xl shadow-2xl z-50 overflow-hidden animate-slide-down">
+                          <div className="p-2 border-b border-[#006972]/10 bg-slate-50">
                             <input
                               type="text"
-                              placeholder="Search country..."
+                              placeholder="Search..."
                               value={countrySearch}
                               onChange={(e) => setCountrySearch(e.target.value)}
-                              className="w-full bg-surface border border-outline-variant/20 rounded-md px-3 py-1.5 text-sm outline-none"
+                              className="w-full bg-white border border-[#006972]/20 rounded-xl px-2.5 py-1 text-xs outline-none focus:border-[#006972]"
                               autoFocus
                             />
                           </div>
-                          <div className="max-h-48 overflow-y-auto">
+                          <div className="max-h-40 overflow-y-auto">
                             {filteredCountries.map((c) => (
                               <button
                                 key={c.code + c.dial}
                                 type="button"
-                                onClick={() => { setCountry(c); setPhone(''); setShowCountryPicker(false); setCountrySearch(''); }}
-                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-[#006972]/10 text-left text-sm"
+                                onClick={() => {
+                                  setCountry(c);
+                                  setPhone('');
+                                  setShowCountryPicker(false);
+                                  setCountrySearch('');
+                                }}
+                                className="w-full flex items-center gap-2 px-2.5 py-2 hover:bg-[#006972]/10 text-left text-xs transition-colors"
                               >
-                                <img src={c.flag} alt="" className="w-5 h-3.5 object-cover rounded-sm" />
-                                <span className="flex-1 truncate">{c.name}</span>
-                                <span className="text-xs text-on-surface-variant font-medium">{c.dial}</span>
+                                <img src={c.flag} alt="" className="w-4 h-3 object-cover rounded-sm" />
+                                <span className="flex-1 truncate font-medium">{c.name}</span>
+                                <span className="text-on-surface-variant font-bold">{c.dial}</span>
                               </button>
                             ))}
                           </div>
@@ -226,12 +277,10 @@ export default function SignUpForm() {
                       )}
                     </div>
 
-                    {/* Number Input */}
-                    <div className="relative w-2/3">
-                      <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
-                        <div className="bg-[#006972] text-white rounded-full w-8 h-8 flex items-center justify-center">
-                          <span className="material-symbols-outlined text-sm">smartphone</span>
-                        </div>
+                    {/* Phone Input */}
+                    <div className="relative w-2/3 group">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#006972]/10 flex items-center justify-center text-[#006972] group-focus-within:bg-[#006972] group-focus-within:text-white transition-all">
+                        <Icon name="smartphone" size={18} />
                       </div>
                       <input
                         type="tel"
@@ -240,149 +289,183 @@ export default function SignUpForm() {
                         onChange={handlePhoneChange}
                         placeholder="300 1234567"
                         maxLength={country.maxLength}
-                        className="block w-full pl-12 pr-4 py-3 bg-surface border border-outline-variant/30 rounded-lg text-on-surface focus:ring-2 focus:ring-[#006972] focus:border-[#006972] transition-shadow outline-none"
-                        id="phone"
+                        className="w-full h-11 sm:h-12 pl-12 pr-3 bg-white border border-[#006972]/20 rounded-xl sm:rounded-2xl focus:border-[#006972] focus:ring-4 focus:ring-[#006972]/10 transition-all font-body text-[14px] text-deep-navy outline-none shadow-sm"
                       />
                     </div>
                   </div>
                   {phone && phoneResult.message && (
-                    <p className={`text-[12px] font-medium mt-1 ml-1 ${phoneResult.valid ? 'text-[#006972]' : 'text-amber-600'}`}>
-                      {phoneResult.valid ? '✓ ' : ''}{phoneResult.message}
+                    <p
+                      className={`text-[11px] sm:text-[12px] font-semibold mt-1 ml-1 ${
+                        phoneResult.valid ? 'text-emerald-600' : 'text-amber-600'
+                      }`}
+                    >
+                      {phoneResult.valid ? '✓ ' : ''}
+                      {phoneResult.message}
                     </p>
                   )}
                 </div>
               ) : (
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <div className="bg-[#3a5a72] text-white rounded-full w-8 h-8 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-sm">mail</span>
+                <div className="space-y-1 text-left">
+                  <label className="block font-label text-[12px] font-bold text-deep-navy">Email Address</label>
+                  <div className="relative group">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#006972]/10 flex items-center justify-center text-[#006972] group-focus-within:bg-[#006972] group-focus-within:text-white transition-all">
+                      <Icon name="mail" size={18} />
                     </div>
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="name@domain.com"
+                      className="w-full h-11 sm:h-12 pl-12 pr-4 bg-white border border-[#006972]/20 rounded-xl sm:rounded-2xl focus:border-[#006972] focus:ring-4 focus:ring-[#006972]/10 transition-all font-body text-[14px] text-deep-navy outline-none shadow-sm"
+                    />
                   </div>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email Address"
-                    className="block w-full pl-14 pr-4 py-3 bg-surface border border-outline-variant/30 rounded-lg text-on-surface focus:ring-2 focus:ring-[#006972] focus:border-[#006972] transition-shadow outline-none"
-                    id="email"
-                  />
                 </div>
               )}
 
               {/* Password */}
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <div className="bg-[#4a5670] text-white rounded-full w-8 h-8 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-sm">lock</span>
+              <div className="space-y-1 text-left">
+                <label className="block font-label text-[12px] font-bold text-deep-navy">Password</label>
+                <div className="relative group">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#006972]/10 flex items-center justify-center text-[#006972] group-focus-within:bg-[#006972] group-focus-within:text-white transition-all">
+                    <Icon name="lock" size={18} />
                   </div>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="At least 8 characters"
+                    className="w-full h-11 sm:h-12 pl-12 pr-11 bg-white border border-[#006972]/20 rounded-xl sm:rounded-2xl focus:border-[#006972] focus:ring-4 focus:ring-[#006972]/10 transition-all font-body text-[14px] text-deep-navy outline-none shadow-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-on-surface-variant hover:text-[#006972] transition-colors cursor-pointer"
+                  >
+                    <Icon name={showPassword ? 'visibility_off' : 'visibility'} size={18} />
+                  </button>
                 </div>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Password"
-                  className="block w-full pl-14 pr-12 py-3 bg-surface border border-outline-variant/30 rounded-lg text-on-surface focus:ring-2 focus:ring-[#006972] focus:border-[#006972] transition-shadow outline-none"
-                  id="password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-on-surface-variant hover:text-on-surface outline-none"
-                >
-                  <span className="material-symbols-outlined">{showPassword ? 'visibility_off' : 'visibility'}</span>
-                </button>
               </div>
 
-              {/* Password Strength Indicator */}
-              <div className="flex gap-1 mt-2 mb-2 px-1">
-                {[1, 2, 3, 4].map((level) => {
-                  const active = strength >= level;
-                  const colors = ['bg-red-400', 'bg-orange-400', 'bg-amber-400', 'bg-[#006972]'];
-                  return (
-                    <div
-                      key={level}
-                      className={`h-1 flex-1 rounded-full transition-all duration-300 ${active ? colors[strength - 1] : 'bg-surface-variant'}`}
-                    />
-                  );
-                })}
-              </div>
+              {/* Password Strength Visual Meter */}
+              {password && (
+                <div className="space-y-1 px-1">
+                  <div className="flex gap-1.5">
+                    {[1, 2, 3, 4].map((level) => {
+                      const active = strength >= level;
+                      const colors = ['bg-rose-500', 'bg-amber-500', 'bg-amber-400', 'bg-emerald-600'];
+                      return (
+                        <div
+                          key={level}
+                          className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                            active ? colors[strength - 1] : 'bg-[#006972]/10'
+                          }`}
+                        />
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] font-semibold text-right text-on-surface-variant">
+                    Strength: {['Weak', 'Fair', 'Good', 'Strong'][Math.max(0, strength - 1)]}
+                  </p>
+                </div>
+              )}
 
               {/* Confirm Password */}
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <div className="bg-[#3a7060] text-white rounded-full w-8 h-8 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-sm">lock_reset</span>
+              <div className="space-y-1 text-left">
+                <label className="block font-label text-[12px] font-bold text-deep-navy">Confirm Password</label>
+                <div className="relative group">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#006972]/10 flex items-center justify-center text-[#006972] group-focus-within:bg-[#006972] group-focus-within:text-white transition-all">
+                    <Icon name="lock_reset" size={18} />
                   </div>
+                  <input
+                    type={showConfirm ? 'text' : 'password'}
+                    required
+                    value={confirmPass}
+                    onChange={(e) => setConfirmPass(e.target.value)}
+                    placeholder="Re-enter password"
+                    className="w-full h-11 sm:h-12 pl-12 pr-11 bg-white border border-[#006972]/20 rounded-xl sm:rounded-2xl focus:border-[#006972] focus:ring-4 focus:ring-[#006972]/10 transition-all font-body text-[14px] text-deep-navy outline-none shadow-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-on-surface-variant hover:text-[#006972] transition-colors cursor-pointer"
+                  >
+                    <Icon name={showConfirm ? 'visibility_off' : 'visibility'} size={18} />
+                  </button>
                 </div>
-                <input
-                  type={showConfirm ? 'text' : 'password'}
-                  value={confirmPass}
-                  onChange={(e) => setConfirmPass(e.target.value)}
-                  placeholder="Confirm Password"
-                  className="block w-full pl-14 pr-12 py-3 bg-surface border border-outline-variant/30 rounded-lg text-on-surface focus:ring-2 focus:ring-[#006972] focus:border-[#006972] transition-shadow outline-none"
-                  id="confirmPassword"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirm(!showConfirm)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-on-surface-variant hover:text-on-surface outline-none"
-                >
-                  <span className="material-symbols-outlined">{showConfirm ? 'visibility_off' : 'visibility'}</span>
-                </button>
-              </div>
 
-              {confirmPass && !passwordsMatch && (
-                <p className="text-[12px] text-red-500 ml-1">Passwords don't match</p>
-              )}
-              {confirmPass && passwordsMatch && (
-                <p className="text-[12px] text-[#006972] ml-1">✓ Passwords match</p>
-              )}
+                {confirmPass && !passwordsMatch && (
+                  <p className="text-[11px] sm:text-[12px] font-medium text-rose-600 ml-1">Passwords don't match</p>
+                )}
+                {confirmPass && passwordsMatch && (
+                  <p className="text-[11px] sm:text-[12px] font-medium text-emerald-600 ml-1">✓ Passwords match</p>
+                )}
+              </div>
 
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={!name || !age || !gender || (isPhone ? !phoneResult.valid : !emailValid) || !passwordStrong || !passwordsMatch}
-                className="w-full bg-[#82d3de] text-[#001f23] hover:bg-[#006972] hover:text-white font-semibold py-4 px-6 rounded-full flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 shadow-sm mt-6 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                disabled={!isFormValid || loading}
+                onClick={(e) => triggerRipple(e, 'create')}
+                className="relative overflow-hidden w-full bg-[#006972] hover:bg-[#00575f] text-white py-3.5 px-6 rounded-xl sm:rounded-2xl font-label text-[15px] font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98] duration-200 mt-4 shadow-lg shadow-[#006972]/25 hover:shadow-xl cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed border-none"
               >
-                Create Account
-                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                {ripples.create && (
+                  <span
+                    className="absolute rounded-full bg-white/30 w-32 h-32 -translate-x-1/2 -translate-y-1/2 animate-ping pointer-events-none"
+                    style={{ left: ripples.create.x, top: ripples.create.y }}
+                  />
+                )}
+                {loading ? (
+                  <>
+                    <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    Sending Code...
+                  </>
+                ) : (
+                  <>
+                    Create Account & Send Code
+                    <Icon name="arrow_forward" size={18} />
+                  </>
+                )}
               </button>
             </form>
 
             {/* Footer Links */}
-            <div className="mt-6 flex flex-col items-center gap-2">
-              <p className="font-body text-[16px] text-on-surface-variant">
+            <div className="mt-5 flex flex-col items-center gap-2">
+              <p className="font-body text-[13px] sm:text-[14px] text-on-surface-variant">
                 Already have an account?{' '}
-                <button onClick={() => navigate('/login')} className="text-[#006972] font-bold hover:underline bg-transparent border-none cursor-pointer">
+                <button
+                  onClick={() => navigate('/login')}
+                  className="text-[#006972] font-bold hover:underline underline-offset-4 bg-transparent border-none cursor-pointer"
+                >
                   Log in
                 </button>
               </p>
               <button
                 onClick={() => navigate(isPhone ? '/signup/email' : '/signup/phone')}
-                className="font-semibold text-sm text-on-surface-variant hover:text-on-surface flex items-center gap-1 transition-colors bg-transparent border-none cursor-pointer"
+                className="font-label text-[12px] sm:text-[13px] font-semibold text-[#006972] hover:underline flex items-center gap-1 transition-colors bg-transparent border-none cursor-pointer"
               >
-                <span className="material-symbols-outlined text-sm">swap_horiz</span>
-                {isPhone ? 'Use email instead' : 'Use phone instead'}
+                <Icon name="swap_horiz" size={16} />
+                {isPhone ? 'Use email address instead' : 'Use phone number instead'}
               </button>
             </div>
           </div>
 
-          {/* Trust Tip Card */}
-          <div className="bg-surface-container-low border-t border-outline-variant/10 p-4 flex items-start gap-4">
-            <div className="bg-[#ffdf96] text-[#251a00] rounded-full p-2 flex-shrink-0 mt-1">
-              <span className="material-symbols-outlined">verified_user</span>
+          {/* Trust Banner */}
+          <div className="bg-[#006972]/8 border-t border-[#006972]/15 p-3.5 sm:p-4 flex items-center gap-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#006972]/15 text-[#006972] flex items-center justify-center shrink-0">
+              <Icon name="verified_user" size={18} />
             </div>
-            <div>
-              <h4 className="font-semibold text-sm text-on-surface mb-1">Building Community Trust</h4>
-              <p className="font-body text-sm text-on-surface-variant leading-relaxed">
-                Sanjhi relies on authentic profiles to maintain a safe, shared environment for everyone to exchange resources securely.
+            <div className="text-left">
+              <h4 className="font-headline text-[12px] sm:text-[13px] font-bold text-deep-navy">Verified Community Savings</h4>
+              <p className="font-body text-[10px] sm:text-[11px] text-on-surface-variant leading-tight">
+                Authentic profiles help keep your committee savings safe and secure.
               </p>
             </div>
           </div>
-
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </AuthAmbientBackground>
   );
 }
 

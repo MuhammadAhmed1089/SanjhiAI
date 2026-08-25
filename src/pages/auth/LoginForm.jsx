@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logo from '../../assets/screen.png';
+import AuthAmbientBackground from '../../components/AuthAmbientBackground';
+import Icon from '../../components/Icon';
 import { loginWithPassword, sendOTP } from '../../services/authService';
 
 export default function LoginForm() {
@@ -12,11 +14,27 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
   const [failedAttempts, setFailedAttempts] = useState(0);
+  const [ripples, setRipples] = useState({});
+
+  function triggerRipple(e, key) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setRipples((prev) => ({
+      ...prev,
+      [key]: { x: e.clientX - rect.left, y: e.clientY - rect.top, k: Date.now() },
+    }));
+    setTimeout(() => {
+      setRipples((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    }, 600);
+  }
 
   // Send OTP to email/phone and go to verification
   async function handleSendOTPDirect(targetEmail = email) {
     if (!targetEmail.trim()) {
-      setApiError('Please enter your email or phone number first.');
+      setApiError('Please enter your registered email or phone number first.');
       return;
     }
     setApiError('');
@@ -55,7 +73,10 @@ export default function LoginForm() {
         setApiError('Incorrect password entered 3 times. Automatically switching to OTP verification...');
         setTimeout(() => handleSendOTPDirect(email.trim()), 1200);
       } else {
-        setApiError(err.message || `Incorrect password (${3 - nextFailCount} attempt${3 - nextFailCount === 1 ? '' : 's'} remaining).`);
+        setApiError(
+          err.message ||
+            `Incorrect password (${3 - nextFailCount} attempt${3 - nextFailCount === 1 ? '' : 's'} remaining).`
+        );
       }
     } finally {
       setLoading(false);
@@ -63,146 +84,164 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="bg-background text-on-background font-body-md min-h-screen py-6 px-4 overflow-y-auto flex items-center justify-center relative jali-pattern">
-      {/* Ambient glowing orbs (Decorative) */}
-      <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-secondary-fixed opacity-20 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
-      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-tertiary-fixed opacity-20 rounded-full blur-[100px] translate-x-1/3 translate-y-1/3 pointer-events-none"></div>
-
-      <main className="w-full max-w-[460px] relative z-10 my-auto">
-        <div className="bg-surface-container-lowest rounded-xl p-5 md:p-8 shadow-[0_24px_64px_-12px_rgba(0,105,114,0.08),0_0_0_1px_rgba(116,119,125,0.1)] flex flex-col items-center">
+    <AuthAmbientBackground showTicker={true}>
+      <div className="w-full max-w-md mx-auto px-3 sm:px-4 py-4 sm:py-8 flex flex-col items-center justify-center min-h-[calc(100vh-36px)]">
+        
+        {/* Main Glassmorphic Card with Rich Box Shadow - Mobile Responsive */}
+        <main className="w-full bg-white/85 backdrop-blur-2xl border border-[#006972]/20 shadow-[0_24px_70px_-15px_rgba(0,105,114,0.22),0_0_0_1px_rgba(0,105,114,0.1)] rounded-2xl sm:rounded-3xl p-5 sm:p-8 animate-fade-up relative z-10">
           
-          {/* Header area with back button */}
-          <div className="w-full flex items-center justify-between mb-2">
+          {/* Header navigation bar */}
+          <div className="w-full flex items-center justify-start mb-2">
             <button
               onClick={() => navigate('/')}
-              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-variant/50 transition-colors text-outline cursor-pointer"
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-[#006972]/5 hover:bg-[#006972]/15 border border-[#006972]/15 text-[#006972] transition-colors cursor-pointer active:scale-95"
               aria-label="Go back"
             >
-              <span className="material-symbols-outlined text-sm">arrow_back</span>
+              <Icon name="arrow_back" size={20} />
             </button>
-            <div className="w-9 h-9"></div> {/* Spacer */}
           </div>
 
+          {/* Logo & Heading - Clean Natural Logo */}
           <div className="text-center mb-6 w-full flex flex-col items-center">
-            <img
-              alt="Sanjhi Handshake Logo"
-              src={logo}
-              className="w-20 h-20 md:w-28 md:h-28 mb-3 object-contain logo-green drop-shadow-md"
-            />
-            <h1 className="text-[26px] md:text-[38px] leading-tight font-bold text-primary mb-1 font-display-lg">
+            <div className="relative mb-2 cursor-pointer" onClick={() => navigate('/')}>
+              <img
+                alt="Sanjhi Logo"
+                src={logo}
+                className="w-20 h-20 sm:w-26 sm:h-26 object-contain drop-shadow-sm"
+              />
+            </div>
+            <h1 className="text-[24px] sm:text-[30px] leading-tight font-bold text-deep-navy mb-1 font-headline">
               Welcome Back
             </h1>
-            <p className="font-body-md text-[14px] md:text-[16px] text-on-surface-variant">
-              Log in to your Sanjhi account
+            <p className="font-body text-[13px] sm:text-[14px] text-on-surface-variant">
+              Log in to access your committees & savings ledger
             </p>
           </div>
 
           {/* API Error Box */}
           {apiError && (
-            <div className="w-full mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-600 text-[13px] font-body text-center">
-              {apiError}
+            <div className="w-full mb-4 p-3 sm:p-3.5 bg-rose-50 border border-rose-200 rounded-xl sm:rounded-2xl text-rose-700 text-[12px] sm:text-[13px] font-body flex items-start gap-2 animate-fade-in shadow-sm">
+              <Icon name="error" size={18} className="shrink-0 mt-0.5 text-rose-600" />
+              <span>{apiError}</span>
             </div>
           )}
 
           {/* Login Form */}
-          <form onSubmit={handleSubmit} className="w-full flex flex-col gap-3.5">
+          <form onSubmit={handleSubmit} className="w-full space-y-3.5 sm:space-y-4">
             
-            {/* Email Field */}
-            <div className="relative group">
-              <div className="absolute left-0 top-0 h-full w-12 flex items-center justify-center text-on-surface-variant group-focus-within:text-secondary transition-colors z-10 pointer-events-none">
-                <div className="w-9 h-9 bg-secondary rounded-full flex items-center justify-center text-on-primary">
-                  <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>mail</span>
+            {/* Email / Phone Field */}
+            <div className="space-y-1 text-left">
+              <label htmlFor="email" className="block font-label text-[12px] sm:text-[13px] font-bold text-deep-navy">
+                Email or Phone Number
+              </label>
+              <div className="relative group">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#006972]/10 flex items-center justify-center text-[#006972] group-focus-within:bg-[#006972] group-focus-within:text-white transition-all duration-200">
+                  <Icon name="mail" size={18} />
                 </div>
+                <input
+                  type="text"
+                  id="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="e.g. name@email.com or +92300..."
+                  className="w-full h-11 sm:h-12 pl-12 pr-4 bg-white border border-[#006972]/20 rounded-xl sm:rounded-2xl focus:border-[#006972] focus:ring-4 focus:ring-[#006972]/10 transition-all font-body text-[14px] text-deep-navy outline-none shadow-sm"
+                />
               </div>
-              <input
-                type="text"
-                id="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email or Phone Number"
-                className="w-full h-11 pl-[52px] pr-16 bg-primary-fixed text-on-primary-fixed border-0 rounded-lg focus:ring-2 focus:ring-secondary transition-shadow font-body-md text-[15px] outline-none"
-              />
             </div>
 
             {/* Password Field */}
-            <div className="relative group">
-              <div className="absolute left-0 top-0 h-full w-12 flex items-center justify-center text-on-surface-variant group-focus-within:text-secondary transition-colors z-10 pointer-events-none">
-                <div className="w-9 h-9 bg-surface-tint rounded-full flex items-center justify-center text-on-primary">
-                  <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>lock</span>
+            <div className="space-y-1 text-left">
+              <label htmlFor="password" className="block font-label text-[12px] sm:text-[13px] font-bold text-deep-navy">
+                Password
+              </label>
+              <div className="relative group">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#006972]/10 flex items-center justify-center text-[#006972] group-focus-within:bg-[#006972] group-focus-within:text-white transition-all duration-200">
+                  <Icon name="lock" size={18} />
                 </div>
-              </div>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                id="password"
-                required
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                className="w-full h-11 pl-[52px] pr-12 bg-primary-fixed text-on-primary-fixed border-0 rounded-lg focus:ring-2 focus:ring-secondary transition-shadow font-body-md text-[15px] outline-none"
-              />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  required
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full h-11 sm:h-12 pl-12 pr-11 bg-white border border-[#006972]/20 rounded-xl sm:rounded-2xl focus:border-[#006972] focus:ring-4 focus:ring-[#006972]/10 transition-all font-body text-[14px] text-deep-navy outline-none shadow-sm"
+                />
 
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-0 top-0 h-full w-11 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-sm">{showPassword ? 'visibility_off' : 'visibility'}</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-on-surface-variant hover:text-[#006972] transition-colors cursor-pointer"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  <Icon name={showPassword ? 'visibility_off' : 'visibility'} size={18} />
+                </button>
+              </div>
             </div>
 
+            {/* Secondary Action Links */}
             <div className="flex justify-between items-center w-full pt-1">
               <button
                 type="button"
                 onClick={() => handleSendOTPDirect()}
-                className="font-label-sm text-[13px] font-semibold text-secondary hover:underline bg-transparent border-none cursor-pointer flex items-center gap-1"
+                className="font-label text-[12px] sm:text-[13px] font-bold text-[#006972] hover:underline bg-transparent border-none cursor-pointer flex items-center gap-1"
               >
-                <span className="material-symbols-outlined text-[15px]">sms</span>
+                <Icon name="sms" size={15} />
                 Sign in with OTP
               </button>
 
               <button
                 type="button"
                 onClick={() => navigate('/forgot-password')}
-                className="font-label-sm text-label-sm text-on-surface-variant hover:text-secondary transition-colors bg-transparent border-none cursor-pointer"
+                className="font-label text-[12px] sm:text-[13px] font-medium text-on-surface-variant hover:text-[#006972] transition-colors bg-transparent border-none cursor-pointer"
               >
                 Forgot password?
               </button>
             </div>
 
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-secondary hover:bg-on-secondary-fixed-variant text-on-secondary py-3.5 px-6 rounded-lg font-label-sm text-label-sm flex items-center justify-center gap-2 transition-all active:scale-95 duration-200 mt-1 shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
+              onClick={(e) => triggerRipple(e, 'submit')}
+              className="relative overflow-hidden w-full bg-[#006972] hover:bg-[#00575f] text-white py-3.5 px-6 rounded-xl sm:rounded-2xl font-label text-[15px] font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98] duration-200 mt-2 shadow-lg shadow-[#006972]/25 hover:shadow-xl cursor-pointer disabled:opacity-50 border-none"
             >
-              {loading ? 'Logging in...' : 'Log In'}
-              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+              {ripples.submit && (
+                <span
+                  className="absolute rounded-full bg-white/30 w-32 h-32 -translate-x-1/2 -translate-y-1/2 animate-ping pointer-events-none"
+                  style={{ left: ripples.submit.x, top: ripples.submit.y }}
+                />
+              )}
+              {loading ? (
+                <>
+                  <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  Logging in...
+                </>
+              ) : (
+                <>
+                  Log In
+                  <Icon name="arrow_forward" size={18} />
+                </>
+              )}
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="font-body-md text-[14px] text-on-surface-variant">
+          {/* Bottom Switch Link */}
+          <div className="mt-5 pt-4 border-t border-[#006972]/10 text-center">
+            <p className="font-body text-[13px] sm:text-[14px] text-on-surface-variant">
               Don't have an account?{' '}
               <button
                 onClick={() => navigate('/signup')}
-                className="text-secondary font-bold hover:underline underline-offset-4 decoration-2 bg-transparent border-none cursor-pointer"
+                className="text-[#006972] font-bold hover:underline underline-offset-4 bg-transparent border-none cursor-pointer"
               >
-                Sign up
+                Create Account
               </button>
             </p>
           </div>
-        </div>
-      </main>
-
-      {/* Floating Action Button */}
-      <button
-        onClick={() => navigate('/dashboard')}
-        className="fixed bottom-8 right-8 w-12 h-12 bg-secondary text-on-secondary rounded-full shadow-lg flex items-center justify-center hover:bg-on-secondary-fixed-variant transition-colors active:scale-90 z-50 hidden md:flex cursor-pointer"
-        aria-label="Dashboard widgets"
-      >
-        <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>widgets</span>
-      </button>
-    </div>
+        </main>
+      </div>
+    </AuthAmbientBackground>
   );
 }

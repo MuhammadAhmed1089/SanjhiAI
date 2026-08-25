@@ -1,122 +1,231 @@
-import { useNavigate } from 'react-router-dom';
-import TopAppBar from '../../components/TopAppBar';
+import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
-import Button from '../../components/Button';
 
 export default function SetSchedule() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const formData = location.state || {
+    name: 'Sanjhi Savings Pool',
+    contribution: 5000,
+    capacity: 10,
+  };
+
+  const [interval, setIntervalVal] = useState('1 month');
+  const [payoutOrder, setPayoutOrder] = useState('fixed');
+  const [ripples, setRipples] = useState({});
+
+  function triggerRipple(e, key) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setRipples((prev) => ({
+      ...prev,
+      [key]: { x: e.clientX - rect.left, y: e.clientY - rect.top, k: Date.now() },
+    }));
+    setTimeout(() => {
+      setRipples((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    }, 600);
+  }
+
+  const numMembers = formData.capacity || 10;
+  const durationLabel = `${numMembers} Cycles (${interval === '15 days' ? Math.ceil(numMembers / 2) + ' Months' : numMembers + ' Months'})`;
+
+  function handleContinue(e) {
+    triggerRipple(e, 'continue');
+    navigate('/committee/link-account', {
+      state: {
+        ...formData,
+        interval,
+        payoutOrder,
+        duration: durationLabel,
+      },
+    });
+  }
+
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body antialiased">
-<header className="bg-background text-primary font-headline-md text-headline-md w-full top-0 bg-background flex items-center px-margin-mobile w-full h-16 sticky z-40">
-<button className="mr-sm text-primary hover:bg-surface-container-low transition-colors rounded-full p-2 active:scale-95 transition-transform duration-200 flex items-center justify-center">
-<span className="material-symbols-outlined">arrow_back</span>
-</button>
-<h1 className="font-headline-md text-headline-md text-primary ml-sm truncate tracking-tight">Set the Schedule</h1>
-</header>
+    <AuthAmbientBackground showTicker={true}>
+      <div className="w-full max-w-2xl mx-auto px-3 sm:px-6 py-4 sm:py-8 flex flex-col items-center justify-center min-h-[calc(100vh-36px)]">
+        
+        {/* Main Glass Card matching User Dashboard */}
+        <main className="w-full bg-white/85 backdrop-blur-2xl border border-[#006972]/20 shadow-[0_24px_70px_-15px_rgba(0,105,114,0.22),0_0_0_1px_rgba(0,105,114,0.1)] rounded-2xl sm:rounded-3xl p-5 sm:p-8 animate-fade-up relative z-10">
+          
+          {/* Header Navigation & Step Indicator */}
+          <header className="w-full flex items-center justify-between mb-6 border-b border-[#006972]/10 pb-4">
+            <button
+              onClick={() => navigate('/committee/create', { state: formData })}
+              aria-label="Go back to Step 1"
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-[#006972]/5 hover:bg-[#006972]/15 border border-[#006972]/15 text-[#006972] transition-colors cursor-pointer active:scale-95"
+            >
+              <Icon name="arrow_back" size={20} />
+            </button>
 
-<main className="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop py-md">
+            <div className="text-center">
+              <h1 className="font-headline text-[20px] sm:text-[24px] font-bold text-deep-navy">
+                Set Schedule & Rules
+              </h1>
+              <p className="font-body text-[12px] sm:text-[13px] text-on-surface-variant">
+                Step 2 of 4: Interval & Payout Order
+              </p>
+            </div>
 
-<div className="flex items-center space-x-sm mb-lg">
-<div className="h-2 flex-1 rounded-full bg-secondary"></div>
-<div className="h-2 flex-1 rounded-full bg-secondary"></div>
-<div className="h-2 flex-1 rounded-full bg-surface-container-high"></div>
-<span className="font-label-sm text-label-sm text-on-surface-variant ml-sm">Step 2 of 3</span>
-</div>
-<div className="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#006972]/10 text-[#006972] font-label text-[11px] font-bold border border-[#006972]/20">
+              2 / 4
+            </span>
+          </header>
 
-<div className="md:col-span-8 space-y-xl">
+          {/* Progress Bar */}
+          <div className="w-full bg-[#006972]/10 h-2 rounded-full mb-6 overflow-hidden">
+            <div className="bg-[#006972] h-full w-2/4 rounded-full transition-all duration-500" />
+          </div>
 
-<section className="space-y-md">
-<div className="flex items-center space-x-sm">
-<span className="material-symbols-outlined text-secondary">calendar_month</span>
-<h2 className="font-headline-md text-headline-md text-on-background">Collection Interval</h2>
-</div>
-<p className="font-body-md text-body-md text-on-surface-variant">How often should members contribute to the pool?</p>
-<div className="flex bg-surface-container-low p-xs rounded-lg border border-secondary/10">
-<button className="flex-1 py-sm px-md rounded-md font-label-sm text-label-sm segmented-control-inactive hover:bg-surface-variant transition-colors">Every 15 days</button>
-<button className="flex-1 py-sm px-md rounded-md font-label-sm text-label-sm segmented-control-active shadow-sm transition-colors">Every 1 month</button>
-<button className="flex-1 py-sm px-md rounded-md font-label-sm text-label-sm segmented-control-inactive hover:bg-surface-variant transition-colors">Every 2 months</button>
-</div>
-</section>
+          <div className="space-y-6 text-left">
+            
+            {/* Collection Interval Section */}
+            <section className="space-y-2">
+              <div className="flex items-center gap-2 text-deep-navy font-headline text-[15px] font-bold">
+                <Icon name="calendar_month" size={20} className="text-[#006972]" />
+                <span>Collection Interval</span>
+              </div>
+              <p className="font-body text-[13px] text-on-surface-variant">
+                How often should members contribute to the pool?
+              </p>
+              
+              <div className="grid grid-cols-3 gap-2 bg-[#006972]/5 p-1.5 rounded-2xl border border-[#006972]/15">
+                {[
+                  { id: '15 days', label: '15 Days' },
+                  { id: '1 month', label: 'Every 1 Month' },
+                  { id: '2 months', label: 'Every 2 Months' },
+                ].map((opt) => {
+                  const active = interval === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setIntervalVal(opt.id)}
+                      className={`py-3 px-2 rounded-xl font-label text-[13px] font-bold transition-all cursor-pointer border-none ${
+                        active
+                          ? 'bg-[#006972] text-white shadow-md'
+                          : 'bg-transparent text-deep-navy/70 hover:bg-[#006972]/10'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
 
-<section>
-<div className="bg-surface rounded-xl border border-secondary/10 p-lg relative overflow-hidden jali-border">
-<div className="flex flex-col md:flex-row md:items-center justify-between">
-<div>
-<div className="flex items-center space-x-sm mb-xs">
-<span className="material-symbols-outlined text-secondary">schedule</span>
-<h3 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Total Duration</h3>
-</div>
-<div className="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-background">
-                                    10 Months
-                                </div>
-</div>
-<div className="mt-md md:mt-0 md:text-right">
-<p className="font-body-md text-body-md text-on-surface-variant bg-surface-container-low px-md py-sm rounded-lg inline-block">
-                                    Based on 10 members at 1 month intervals.
-                                </p>
-</div>
-</div>
-</div>
-</section>
+            {/* Calculated Total Duration Banner */}
+            <section className="p-4 bg-gradient-to-r from-[#006972]/10 to-amber-500/10 rounded-2xl border border-[#006972]/20 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-1.5 text-on-surface-variant font-label text-[12px] font-bold uppercase tracking-wider">
+                  <Icon name="schedule" size={16} className="text-[#006972]" />
+                  Total Committee Duration
+                </div>
+                <h3 className="font-headline text-[22px] sm:text-[26px] font-bold text-deep-navy mt-0.5">
+                  {durationLabel}
+                </h3>
+              </div>
+              <span className="text-[12px] font-body text-on-surface-variant bg-white px-3 py-1.5 rounded-xl border border-[#006972]/15 text-center">
+                {numMembers} members at {interval} interval
+              </span>
+            </section>
 
-<section className="space-y-md">
-<div className="flex items-center space-x-sm">
-<span className="material-symbols-outlined text-secondary">account_tree</span>
-<h2 className="font-headline-md text-headline-md text-on-background">Payout Order</h2>
-</div>
-<p className="font-body-md text-body-md text-on-surface-variant">Determine how the pool is distributed to members each cycle.</p>
-<div className="grid grid-cols-1 md:grid-cols-3 gap-md">
+            {/* Payout Order Options */}
+            <section className="space-y-2">
+              <div className="flex items-center gap-2 text-deep-navy font-headline text-[15px] font-bold">
+                <Icon name="account_tree" size={20} className="text-[#006972]" />
+                <span>Payout Distribution Method</span>
+              </div>
+              <p className="font-body text-[13px] text-on-surface-variant">
+                Select how payout rotation is assigned to members.
+              </p>
 
-<div className="bg-surface rounded-lg border-2 border-secondary p-md relative cursor-pointer active:scale-95 transition-transform">
-<div className="absolute top-md right-md">
-<span className="material-symbols-outlined text-secondary">check_circle</span>
-</div>
-<span className="material-symbols-outlined text-secondary mb-sm text-3xl">list_alt</span>
-<h3 className="font-label-sm text-label-sm text-on-background mb-xs">Fixed Order</h3>
-<p className="font-body-md text-body-md text-on-surface-variant text-sm">Sequence is predetermined and agreed upon by all members.</p>
-</div>
-
-<div className="bg-surface-container-low rounded-lg border border-secondary/10 p-md relative opacity-60 cursor-not-allowed">
-<span className="absolute top-0 right-0 bg-surface-variant text-on-surface-variant font-label-sm text-[10px] px-2 py-1 rounded-bl-lg rounded-tr-lg tracking-wider">PHASE 2</span>
-<span className="material-symbols-outlined text-outline mb-sm text-3xl">casino</span>
-<h3 className="font-label-sm text-label-sm text-on-surface-variant mb-xs">Lottery</h3>
-<p className="font-body-md text-body-md text-outline text-sm">Winner is chosen randomly each cycle.</p>
-</div>
-
-<div className="bg-surface-container-low rounded-lg border border-secondary/10 p-md relative opacity-60 cursor-not-allowed">
-<span className="absolute top-0 right-0 bg-surface-variant text-on-surface-variant font-label-sm text-[10px] px-2 py-1 rounded-bl-lg rounded-tr-lg tracking-wider">PHASE 2</span>
-<span className="material-symbols-outlined text-outline mb-sm text-3xl">gavel</span>
-<h3 className="font-label-sm text-label-sm text-on-surface-variant mb-xs">Bidding</h3>
-<p className="font-body-md text-body-md text-outline text-sm">Members bid for the payout based on need.</p>
-</div>
-</div>
-</section>
-</div>
-
-<div className="hidden md:block md:col-span-4 pl-lg border-l border-secondary/10">
-<div className="sticky top-24">
-<h3 className="font-headline-md text-headline-md text-on-background mb-md">Why set a schedule?</h3>
-<p className="font-body-md text-body-md text-on-surface-variant mb-md">
-                        A clear schedule ensures every member knows exactly when their contribution is due and when they can expect their payout. The fixed order method is the most traditional and reliable approach for new committees.
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                
+                {/* Fixed Order (Recommended) */}
+                <div
+                  onClick={() => setPayoutOrder('fixed')}
+                  className={`p-4 rounded-2xl border-2 transition-all cursor-pointer relative flex flex-col justify-between ${
+                    payoutOrder === 'fixed'
+                      ? 'border-[#006972] bg-[#006972]/5 shadow-md'
+                      : 'border-[#006972]/15 bg-white hover:border-[#006972]/40'
+                  }`}
+                >
+                  {payoutOrder === 'fixed' && (
+                    <span className="absolute top-3 right-3 text-[#006972]">
+                      <Icon name="check_circle" size={18} />
+                    </span>
+                  )}
+                  <div>
+                    <Icon name="list_alt" size={26} className="text-[#006972] mb-2" />
+                    <h4 className="font-headline text-[14px] font-bold text-deep-navy">Fixed Order</h4>
+                    <p className="font-body text-[11px] text-on-surface-variant mt-1 leading-tight">
+                      Sequence is agreed upon in advance by all members.
                     </p>
-<div className="bg-secondary-fixed/30 p-md rounded-lg flex items-start space-x-sm">
-<span className="material-symbols-outlined text-on-secondary-container mt-1">info</span>
-<p className="font-label-sm text-label-sm text-on-secondary-container">
-                            You can invite members in the next step. The duration is calculated based on the number of invites you plan to send.
-                        </p>
-</div>
-</div>
-</div>
-</div>
+                  </div>
+                </div>
 
-<div className="fixed bottom-0 left-0 w-full bg-surface p-md md:p-lg border-t border-secondary/10 flex justify-end z-30">
-<button onClick={() => navigate('/committee/link-account')} className="bg-secondary text-on-secondary hover:bg-on-secondary-fixed-variant transition-colors font-label-sm text-label-sm py-sm px-[24px] rounded-full active:scale-95 duration-200 flex items-center shadow-[0_4px_14px_0_rgba(0,105,114,0.15)]">
-                Continue
-                <span className="material-symbols-outlined ml-sm">arrow_forward</span>
-</button>
-</div>
-</main>
-    </div>
+                {/* Lottery (Phase 2) */}
+                <div className="p-4 rounded-2xl border border-[#006972]/10 bg-slate-50 opacity-60 relative cursor-not-allowed">
+                  <span className="absolute top-2 right-2 bg-amber-500/20 text-amber-800 font-label text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">
+                    Coming Soon
+                  </span>
+                  <Icon name="casino" size={26} className="text-on-surface-variant mb-2" />
+                  <h4 className="font-headline text-[14px] font-bold text-deep-navy">Lottery Draw</h4>
+                  <p className="font-body text-[11px] text-on-surface-variant mt-1 leading-tight">
+                    Payout recipient is drawn randomly each cycle.
+                  </p>
+                </div>
+
+                {/* Bidding (Phase 2) */}
+                <div className="p-4 rounded-2xl border border-[#006972]/10 bg-slate-50 opacity-60 relative cursor-not-allowed">
+                  <span className="absolute top-2 right-2 bg-amber-500/20 text-amber-800 font-label text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">
+                    Coming Soon
+                  </span>
+                  <Icon name="gavel" size={26} className="text-on-surface-variant mb-2" />
+                  <h4 className="font-headline text-[14px] font-bold text-deep-navy">Bidding Auction</h4>
+                  <p className="font-body text-[11px] text-on-surface-variant mt-1 leading-tight">
+                    Members bid based on urgent financial need.
+                  </p>
+                </div>
+
+              </div>
+            </section>
+
+            {/* Action Buttons */}
+            <div className="pt-4 flex gap-3">
+              <button
+                type="button"
+                onClick={() => navigate('/committee/create', { state: formData })}
+                className="w-1/3 py-3.5 px-4 rounded-2xl font-label text-[14px] font-bold text-[#006972] border border-[#006972]/30 hover:bg-[#006972]/5 transition-all cursor-pointer bg-white"
+              >
+                Back
+              </button>
+              
+              <button
+                type="button"
+                onClick={handleContinue}
+                className="relative overflow-hidden w-2/3 bg-[#006972] hover:bg-[#00575f] text-white py-3.5 px-6 rounded-2xl font-label text-[15px] font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg shadow-[#006972]/25 hover:shadow-xl cursor-pointer border-none"
+              >
+                {ripples.continue && (
+                  <span
+                    className="absolute rounded-full bg-white/30 w-32 h-32 -translate-x-1/2 -translate-y-1/2 animate-ping pointer-events-none"
+                    style={{ left: ripples.continue.x, top: ripples.continue.y }}
+                  />
+                )}
+                Continue to Account
+                <Icon name="arrow_forward" size={18} />
+              </button>
+            </div>
+
+          </div>
+        </main>
+      </div>
+    </AuthAmbientBackground>
   );
 }

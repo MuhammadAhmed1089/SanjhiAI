@@ -1,107 +1,167 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logo from '../../assets/screen.png';
+import AuthAmbientBackground from '../../components/AuthAmbientBackground';
+import Icon from '../../components/Icon';
 
 export default function Welcome() {
   const navigate = useNavigate();
+  const [ripples, setRipples] = useState({});
+
+  function triggerRipple(e, key) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setRipples((prev) => ({
+      ...prev,
+      [key]: { x: e.clientX - rect.left, y: e.clientY - rect.top, k: Date.now() },
+    }));
+    setTimeout(() => {
+      setRipples((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    }, 600);
+  }
 
   return (
-    <div className="h-screen w-screen flex flex-col lg:flex-row bg-white overflow-hidden">
-      {/* ── Left Panel ── */}
-      <div className="relative w-full lg:w-1/2 h-[33%] md:h-[38%] lg:h-full bg-white lg:bg-[#006972] flex flex-col justify-between py-2 px-6 md:p-8 lg:p-16 overflow-hidden shrink-0">
-        {/* Soft texture overlay */}
-        <div className="absolute inset-0 opacity-10 pointer-events-none"
-             style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.35) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+    <AuthAmbientBackground showTicker={true}>
+      <div className="w-full max-w-5xl mx-auto px-3 sm:px-6 py-4 sm:py-8 lg:py-12 flex flex-col items-center justify-center min-h-[calc(100vh-36px)]">
+        
+        {/* Main Card Container with Glassmorphism & Box Shadow */}
+        <div className="w-full bg-white/90 backdrop-blur-xl border border-[#006972]/20 shadow-[0_24px_70px_-12px_rgba(0,105,114,0.22),0_0_0_1px_rgba(0,105,114,0.12)] rounded-2xl sm:rounded-3xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 animate-fade-up">
+          
+          {/* Left Hero Panel (Teal Banner) */}
+          <div className="lg:col-span-6 bg-[#006972] text-white p-6 sm:p-10 lg:p-12 relative overflow-hidden flex flex-col justify-between min-h-[240px] sm:min-h-[300px] lg:min-h-[480px]">
+            {/* Subtle dot pattern inside teal banner */}
+            <div
+              className="absolute inset-0 opacity-15 pointer-events-none"
+              style={{
+                backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.9) 1px, transparent 1px)',
+                backgroundSize: '20px 20px',
+              }}
+            />
 
-        {/* Center logo */}
-        <div className="relative z-10 flex flex-col items-center text-center my-auto">
-          <img
-            alt="Sanjhi Logo"
-            src={logo}
-            className="w-40 md:w-64 object-contain logo-3d-green block lg:hidden"
-          />
-          <img
-            alt="Sanjhi Logo"
-            src={logo}
-            className="w-80 object-contain logo-3d hidden lg:block"
-          />
-        </div>
+            {/* Glowing background light */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Bottom tagline / English caption */}
-        <div className="relative z-10 w-full text-center lg:text-left">
-          <h2 className="text-[#006972] lg:text-white font-headline text-[16px] md:text-[32px] lg:text-[42px] leading-tight font-bold">
-            Collective Sharing.<br />Shared Success.
-          </h2>
-        </div>
+            {/* Decorative wave connector (Desktop) */}
+            <div className="hidden lg:block absolute top-0 -right-px h-full w-14 z-20">
+              <svg viewBox="0 0 100 600" preserveAspectRatio="none" className="h-full w-full">
+                <path d="M0,0 C60,100 20,250 60,350 C90,430 20,500 40,600 L100,600 L100,0 Z" fill="white" />
+              </svg>
+            </div>
 
-        {/* Decorative wave shape on right edge (desktop only) */}
-        <div className="hidden lg:block absolute top-0 -right-[1px] h-full w-16 z-20 glossy-wave">
-          <svg viewBox="0 0 100 800" preserveAspectRatio="none" className="h-full w-full">
-            <path d="M0,0 C60,150 20,300 60,450 C90,580 20,650 40,800 L100,800 L100,0 Z" fill="white" />
-          </svg>
-        </div>
-      </div>
+            {/* Premium 3D Styled White & Teal Logo (Still without dancing animation) */}
+            <div className="relative z-10 flex flex-col items-center text-center my-auto py-2 sm:py-6">
+              <div className="relative">
+                <img
+                  alt="Sanjhi Logo"
+                  src={logo}
+                  className="w-36 sm:w-48 lg:w-56 object-contain relative z-10 logo-3d-white cursor-default"
+                />
+              </div>
+            </div>
 
-      {/* ── Right Panel ── */}
-      <div className="relative w-full lg:w-1/2 flex-1 flex flex-col justify-start lg:justify-center pt-2 p-4 md:p-12 lg:p-16 bg-white dotted-pattern overflow-y-auto lg:overflow-visible">
-        <div className="max-w-md mx-auto lg:mx-0 w-full flex flex-col gap-3 md:gap-5">
-          {/* Heading */}
-          <div className="flex flex-col items-center text-center lg:items-end lg:text-right w-full">
-            <h1 className="font-headline text-[24px] md:text-[40px] font-bold text-[#006972] leading-tight">
-              Welcome to Sanjhi
-            </h1>
-            <p className="font-headline text-[16px] md:text-[22px] text-[#006972] mt-0.5">
-              سانجھی میں خوش آمدید
-            </p>
-          </div>
-
-          {/* Buttons */}
-          <div className="flex flex-col gap-3 md:gap-4 mt-1">
-            <button
-              onClick={() => navigate('/signup')}
-              className="w-full py-3.5 md:py-4 rounded-full font-label text-[15px] font-bold text-white bg-[#006972] active:scale-[0.98] transition-all shadow-md hover-glow"
-            >
-              Get Started
-            </button>
-            <button
-              onClick={() => navigate('/login')}
-              className="w-full py-3.5 md:py-4 rounded-full font-label text-[15px] font-bold text-[#006972] border-2 border-[#006972] bg-white active:scale-[0.98] transition-all hover-glow"
-            >
-              Login
-            </button>
-          </div>
-
-          {/* How it works */}
-          <div>
-            <h3 className="font-label text-[13px] md:text-[14px] font-semibold text-deep-navy mb-3 md:mb-4">
-              How it works
-            </h3>
-            <div className="grid grid-cols-3 gap-3">
-              <Feature icon="groups" label="Join a Group" />
-              <Feature icon="swap_horiz" label="Share Resources" />
-              <Feature icon="verified_user" label="Build Trust Together" />
+            {/* Bottom Tagline */}
+            <div className="relative z-10 space-y-1.5 text-center lg:text-left">
+              <h2 className="font-headline text-[20px] sm:text-[28px] lg:text-[36px] font-bold leading-tight tracking-tight text-white">
+                Collective Savings.<br />Shared Success.
+              </h2>
+              <p className="font-body text-[12px] sm:text-[14px] text-white/80 max-w-sm mx-auto lg:mx-0">
+                Empowering peer-to-peer committee groups with transparent ledger security and AI guidance.
+              </p>
             </div>
           </div>
+
+          {/* Right Action Panel */}
+          <div className="lg:col-span-6 p-5 sm:p-8 lg:p-12 flex flex-col justify-between space-y-6 sm:space-y-8 bg-white/80">
+            
+            {/* Header & Nastaliq Urdu Text starting exactly where "Welcome to Sanjhi" ends */}
+            <div className="w-fit flex flex-col items-start relative">
+              <h1 className="font-headline text-[24px] sm:text-[34px] font-bold text-deep-navy tracking-tight leading-tight whitespace-nowrap">
+                Welcome to Sanjhi
+              </h1>
+              
+              {/* Urdu Nastaliq Text right-aligned inside the title container so it starts right under the 'i' of Sanjhi */}
+              <div className="w-full flex justify-end pt-0.5">
+                <p className="font-urdu text-[18px] sm:text-[22px] font-bold text-[#006972] leading-tight text-right whitespace-nowrap" dir="rtl">
+                  سانجھی میں خوش آمدید
+                </p>
+              </div>
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="space-y-3 w-full">
+              <button
+                onClick={(e) => {
+                  triggerRipple(e, 'getStarted');
+                  navigate('/signup');
+                }}
+                className="relative overflow-hidden w-full py-3.5 sm:py-4 rounded-2xl font-label text-[15px] font-bold text-white bg-[#006972] hover:bg-[#00575f] active:scale-[0.98] transition-all shadow-lg shadow-[#006972]/25 hover:shadow-xl flex items-center justify-center gap-2 cursor-pointer border-none"
+              >
+                {ripples.getStarted && (
+                  <span
+                    className="absolute rounded-full bg-white/30 w-32 h-32 -translate-x-1/2 -translate-y-1/2 animate-ping pointer-events-none"
+                    style={{ left: ripples.getStarted.x, top: ripples.getStarted.y }}
+                  />
+                )}
+                Get Started
+                <Icon name="arrow_forward" size={18} />
+              </button>
+
+              <button
+                onClick={(e) => {
+                  triggerRipple(e, 'login');
+                  navigate('/login');
+                }}
+                className="relative overflow-hidden w-full py-3.5 sm:py-4 rounded-2xl font-label text-[15px] font-bold text-[#006972] border-2 border-[#006972]/30 hover:border-[#006972] bg-white hover:bg-[#006972]/5 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {ripples.login && (
+                  <span
+                    className="absolute rounded-full bg-[#006972]/20 w-32 h-32 -translate-x-1/2 -translate-y-1/2 animate-ping pointer-events-none"
+                    style={{ left: ripples.login.x, top: ripples.login.y }}
+                  />
+                )}
+                Log In to Account
+              </button>
+            </div>
+
+            {/* How It Works Cards */}
+            <div className="space-y-2.5 pt-2 border-t border-[#006972]/10">
+              <h3 className="font-label text-[12px] sm:text-[13px] font-bold text-deep-navy uppercase tracking-wider text-left">
+                How It Works
+              </h3>
+              <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
+                <FeatureCard icon="groups" title="Join a Pool" desc="Connect & save" />
+                <FeatureCard icon="swap_horiz" title="Fair Payouts" desc="Monthly rotation" />
+                <FeatureCard icon="verified_user" title="Build Trust" desc="Verifiable ledger" />
+              </div>
+            </div>
+
+          </div>
         </div>
 
-        {/* Floating grid/menu button */}
+        {/* Quick floating dashboard shortcut button */}
         <button
           onClick={() => navigate('/dashboard')}
-          className="absolute bottom-4 right-4 md:bottom-6 md:right-6 w-11 h-11 md:w-12 md:h-12 rounded-full bg-[#006972] text-white flex items-center justify-center shadow-lg hover:bg-[#005a62] active:scale-95 transition-all z-30"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#006972] text-white flex items-center justify-center shadow-xl shadow-[#006972]/30 hover:bg-[#00575f] active:scale-90 transition-all z-50 cursor-pointer border border-white/30 group"
+          title="Direct to Dashboard Demo"
         >
-          <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>apps</span>
+          <Icon name="dashboard" size={20} className="group-hover:rotate-12 transition-transform" />
         </button>
       </div>
-    </div>
+    </AuthAmbientBackground>
   );
 }
 
-function Feature({ icon, label }) {
+function FeatureCard({ icon, title, desc }) {
   return (
-    <div className="flex flex-col items-center text-center gap-3 hover-glow-icon cursor-pointer">
-      <div className="w-14 h-14 rounded-full bg-[#006972]/5 flex items-center justify-center text-[#006972] icon-bg border border-transparent hover:border-[#006972]/20">
-        <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>{icon}</span>
+    <div className="flex flex-col items-center text-center p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-white border border-[#006972]/15 hover:border-[#006972]/40 hover:bg-[#006972]/5 hover:-translate-y-1 transition-all duration-200 cursor-pointer group shadow-sm">
+      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#006972]/10 flex items-center justify-center text-[#006972] mb-1 sm:mb-1.5 group-hover:scale-110 group-hover:bg-[#006972] group-hover:text-white transition-all duration-300">
+        <Icon name={icon} size={18} />
       </div>
-      <span className="font-body text-[12px] md:text-[13px] font-medium text-on-surface leading-tight">{label}</span>
+      <span className="font-headline text-[11px] sm:text-[12px] font-bold text-deep-navy leading-tight">{title}</span>
+      <span className="font-body text-[9px] sm:text-[10px] text-on-surface-variant leading-tight mt-0.5 hidden xs:block">{desc}</span>
     </div>
   );
 }
