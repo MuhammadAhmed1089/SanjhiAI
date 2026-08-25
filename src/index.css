@@ -184,6 +184,24 @@ h1, h2, h3, h4, h5, h6 {
     inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
+.gradient-border-card {
+  position: relative;
+  background: #ffffff;
+  background-clip: padding-box;
+  border: solid 2px transparent;
+  border-radius: 1rem;
+}
+
+.gradient-border-card::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  z-index: -1;
+  margin: -2px;
+  border-radius: inherit;
+  background: linear-gradient(to right, #00535b, #a9ece5);
+}
+
 /* Animated gradient blobs — full-screen fixed layer */
 .blob {
   position: absolute;

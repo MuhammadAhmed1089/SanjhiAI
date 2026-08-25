@@ -83,7 +83,7 @@ export default function Welcome() {
               </h1>
               
               {/* Urdu Nastaliq Text right-aligned inside the title container so it starts right under the 'i' of Sanjhi */}
-              <div className="w-full flex justify-end pt-0.5">
+              <div className="w-full flex justify-end pt-6">
                 <p className="font-urdu text-[18px] sm:text-[22px] font-bold text-[#006972] leading-tight text-right whitespace-nowrap" dir="rtl">
                   سانجھی میں خوش آمدید
                 </p>

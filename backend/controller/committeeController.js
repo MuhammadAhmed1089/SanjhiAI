@@ -1,4 +1,105 @@
 import { query, pool } from '../config/db.js';
+import Groq from 'groq-sdk';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+
+const SYSTEM_EXTRACTION_PROMPT = `You are an expert multilingual assistant for a Pakistani Peer-to-Peer Savings Committee (Kameti / BC / Chit Fund) app called Sanjhi.
+Extract committee parameters from user input which can be in English, Urdu (Arabic script), Roman Urdu (English alphabet Urdu like "18 members, har mahine 2500 dena, commitee ka name Sabzazar Al-Kareem store"), or Hindi.
+
+Extract the following JSON schema strictly:
+{
+  "name": string (The name of the committee. If mentioned in quotes or with "name ...", extract the exact name cleanly without extra quotes. If no name specified, return a meaningful title like "Savings Pool"),
+  "contribution_amount": number (The periodic contribution amount in PKR per member, e.g. 2500, 5000. Convert Urdu terms like "5 hazar" -> 5000, "dus hazar" -> 10000),
+  "capacity": number (Total number of members/slots, e.g. 18. Understand terms like "18 members", "18 log", "18 banday", "18 afraad", "18 mahine duration"),
+  "interval_type": "15_days" | "1_month" | "2_months" (Default to "1_month" unless specified like "15 din", "har 15 din" -> "15_days", "do mahine" -> "2_months")
+}
+
+Return ONLY valid JSON matching this schema. No explanations, no markdown formatting outside of JSON.`;
+
+/**
+ * Fallback smart regex parser for Roman Urdu, Urdu and English if Groq is unavailable
+ */
+function fallbackLocalParse(text) {
+  let name = '';
+  // Check for quotes e.g. "Sabzazar Al-Kareem store" or '...'
+  const nameQuoteMatch = text.match(/["']([^"']+)["']/);
+  if (nameQuoteMatch) {
+    name = nameQuoteMatch[1].trim();
+  } else {
+    const nameMatch = text.match(/(?:name|naam|nam)\s*(?:is|hoga|rakho|:)?\s*([a-zA-Z0-9\s\-]+?)(?:\s*(?:hoga|rakho|aur|with|$))/i);
+    if (nameMatch && nameMatch[1].trim().length > 2) {
+      name = nameMatch[1].trim();
+    } else {
+      name = 'Sanjhi Savings Pool';
+    }
+  }
+
+  // Capacity / members
+  const memberMatch = text.match(/(\d+)\s*(?:members?|log|banday|afraad|person|people|mahine|months?)/i);
+  const capacity = memberMatch ? parseInt(memberMatch[1], 10) : 10;
+
+  // Contribution amount
+  let contribution_amount = 5000;
+  const thousandMatch = text.match(/(\d+)\s*(?:hazar|hazaar|k\b)/i);
+  const directAmountMatch = text.match(/(?:Rs\.?|pkr|inr|\$)?\s*(\d{3,7})/i);
+  
+  if (thousandMatch) {
+    contribution_amount = parseInt(thousandMatch[1], 10) * 1000;
+  } else if (directAmountMatch) {
+    contribution_amount = parseInt(directAmountMatch[1], 10);
+  }
+
+  let interval_type = '1_month';
+  if (/15\s*(?:din|days?)/i.test(text)) interval_type = '15_days';
+  if (/2\s*(?:mahine|months?)/i.test(text)) interval_type = '2_months';
+
+  return {
+    name,
+    contribution_amount,
+    capacity,
+    interval_type,
+  };
+}
+
+/**
+ * POST /api/committees/parse-ai-text
+ * Parses natural language text prompt into structured committee params
+ */
+export async function parseCommitteeAIText(req, res) {
+  try {
+    const { text } = req.body;
+    if (!text || typeof text !== 'string') {
+      return res.status(400).json({ error: 'Text prompt is required.' });
+    }
+
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey || apiKey === 'your_groq_api_key_here' || apiKey.trim() === '') {
+      // Local fallback parser
+      const parsed = fallbackLocalParse(text);
+      return res.status(200).json({ parsed });
+    }
+
+    const groq = new Groq({ apiKey });
+
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        { role: 'system', content: SYSTEM_EXTRACTION_PROMPT },
+        { role: 'user', content: `Extract from this text: "${text}"` }
+      ],
+      model: 'llama-3.3-70b-versatile',
+      response_format: { type: 'json_object' },
+    });
+
+    const parsedContent = JSON.parse(chatCompletion.choices[0].message.content);
+    return res.status(200).json({ parsed: parsedContent });
+  } catch (error) {
+    console.error('Error in parseCommitteeAIText, using fallback:', error.message);
+    const parsed = fallbackLocalParse(req.body?.text || '');
+    return res.status(200).json({ parsed });
+  }
+}
+
 
 /**
  * Maps frontend interval input to database ENUM: '15_days', '1_month', '2_months'
@@ -275,40 +376,45 @@ export async function getCommittee(req, res) {
 }
 
 /**
- * POST /api/committees/parse-ai
- * Parses natural language prompt into structured committee params
+ * POST /api/committees/parse-ai-audio
+ * Parses natural language audio prompt into structured committee params
  */
-export async function parseCommitteeAI(req, res) {
+export async function parseCommitteeAIAudio(req, res) {
+  const tempFilePath = path.join(os.tmpdir(), `audio-${Date.now()}.webm`);
   try {
-    const { text } = req.body;
-    if (!text || typeof text !== 'string') {
-      return res.status(400).json({ error: 'Text prompt is required for AI parsing.' });
-    }
+    if (!req.file) return res.status(400).json({ error: 'Audio file is required.' });
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    fs.writeFileSync(tempFilePath, req.file.buffer);
 
-    const numMatch = text.match(/(\d+)\s*(people|members|person|users)/i);
-    const amountMatch = text.match(/(?:Rs\.?|INR|\$)\s*([\d,]+)|([\d,]+)\s*(?:rupees|monthly|rs)/i);
-
-    let capacity = numMatch ? parseInt(numMatch[1], 10) : 10;
-    let contribution_amount = amountMatch ? parseFloat((amountMatch[1] || amountMatch[2]).replace(/,/g, '')) : 5000;
-    
-    let interval_type = '1_month';
-    if (/15\s*days?/i.test(text)) interval_type = '15_days';
-    if (/2\s*months?/i.test(text)) interval_type = '2_months';
-
-    const name = text.length > 30 ? `${text.slice(0, 25)}... Fund` : `${text} Pool`;
-
-    return res.status(200).json({
-      parsed: {
-        name,
-        contribution_amount,
-        capacity,
-        interval_type,
-        duration_cycles: capacity,
-      },
+    // Transcribe
+    const transcription = await groq.audio.transcriptions.create({
+      file: fs.createReadStream(tempFilePath),
+      model: "whisper-large-v3-turbo",
     });
+
+    // Extract
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [{
+        role: "system",
+        content: SYSTEM_EXTRACTION_PROMPT
+      }, {
+        role: "user",
+        content: `Extract from this text: "${transcription.text}"`
+      }],
+      model: "llama-3.3-70b-versatile",
+      response_format: { type: "json_object" },
+    });
+    
+    return res.status(200).json({ parsed: JSON.parse(chatCompletion.choices[0].message.content), transcript: transcription.text });
   } catch (error) {
-    console.error('Error in parseCommitteeAI:', error);
-    return res.status(500).json({ error: 'Failed to parse AI prompt.' });
+    console.error('Error in parseCommitteeAIAudio:', error);
+    if (req.body?.text) {
+      const parsed = fallbackLocalParse(req.body.text);
+      return res.status(200).json({ parsed, transcript: req.body.text });
+    }
+    return res.status(500).json({ error: 'Failed to process audio.' });
+  } finally {
+    if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
   }
 }
 

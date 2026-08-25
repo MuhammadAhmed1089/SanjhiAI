@@ -14,7 +14,69 @@ export default function CreateCommittee() {
   const [contribution, setContribution] = useState(initialData.contribution || '5000');
   const [capacity, setCapacity] = useState(initialData.capacity || '10');
   const [isParsing, setIsParsing] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState(null);
   const [ripples, setRipples] = useState({});
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks = [];
+      
+      recorder.ondataavailable = (e) => chunks.push(e.data);
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+        handleAudioUpload(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+    } catch (err) {
+      console.error('Recording failed:', err);
+      alert('Microphone access denied or failed.');
+    }
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      setIsRecording(false);
+    }
+  }
+
+  async function handleAudioUpload(audioBlob) {
+    setIsParsing(true);
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'prompt.webm');
+    
+    try {
+      const response = await fetch('/api/committees/parse-ai-audio', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      
+      // Update the textarea with the transcription
+      if (data.transcript) {
+        setAiPrompt(data.transcript);
+      }
+      
+      // Populate fields from parsed JSON
+      if (data.parsed) {
+        setName(data.parsed.name || '');
+        setContribution(data.parsed.contribution_amount?.toString() || '');
+        setCapacity(data.parsed.capacity?.toString() || '');
+      }
+    } catch (err) {
+      console.error('Parsing failed:', err);
+      alert('Failed to process audio. Please try again.');
+    } finally {
+      setIsParsing(false);
+    }
+  }
 
   function triggerRipple(e, key) {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -31,22 +93,31 @@ export default function CreateCommittee() {
     }, 600);
   }
 
-  function handleAiParse() {
+  async function handleAiParse() {
     if (!aiPrompt.trim()) return;
     setIsParsing(true);
-    setTimeout(() => {
-      // Smart AI Parsing Mock
-      const numMatch = aiPrompt.match(/(\d+)\s*(people|members|person)/i);
-      const amountMatch = aiPrompt.match(/(?:Rs\.?|INR|\$)\s*([\d,]+)|([\d,]+)\s*(?:rupees|monthly|rs)/i);
+    
+    try {
+      const response = await fetch('/api/committees/parse-ai-text', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: aiPrompt }),
+      });
+      const data = await response.json();
       
-      if (numMatch) setCapacity(numMatch[1]);
-      if (amountMatch) {
-        const val = (amountMatch[1] || amountMatch[2]).replace(/,/g, '');
-        setContribution(val);
+      if (data.parsed) {
+        setName(data.parsed.name || '');
+        setContribution(data.parsed.contribution_amount?.toString() || '');
+        setCapacity(data.parsed.capacity?.toString() || '');
       }
-      if (!name) setName('AI Generated Savings Pool');
+    } catch (err) {
+      console.error('Text parsing failed:', err);
+      alert('Failed to process text. Please try again.');
+    } finally {
       setIsParsing(false);
-    }, 800);
+    }
   }
 
   const numMembers = parseInt(capacity, 10) || 0;
@@ -70,115 +141,111 @@ export default function CreateCommittee() {
       <div className="w-full max-w-2xl mx-auto px-3 sm:px-6 py-4 sm:py-8 flex flex-col items-center justify-center min-h-[calc(100vh-36px)]">
         
         {/* Main Glass Card matching User Dashboard */}
-        <main className="w-full bg-white/85 backdrop-blur-2xl border border-[#006972]/20 shadow-[0_24px_70px_-15px_rgba(0,105,114,0.22),0_0_0_1px_rgba(0,105,114,0.1)] rounded-2xl sm:rounded-3xl p-5 sm:p-8 animate-fade-up relative z-10">
+        <main className="max-w-2xl w-full bg-white rounded-2xl border border-[#006972]/15 shadow-[0_4px_20px_rgba(0,0,0,0.05)] overflow-hidden p-6 sm:p-10 animate-fade-up relative z-10">
           
           {/* Header Navigation & Step Indicator */}
-          <header className="w-full flex items-center justify-between mb-6 border-b border-[#006972]/10 pb-4">
+          <header className="w-full flex items-center justify-between mb-8">
             <button
               onClick={() => navigate('/dashboard')}
               aria-label="Go to Dashboard"
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-[#006972]/5 hover:bg-[#006972]/15 border border-[#006972]/15 text-[#006972] transition-colors cursor-pointer active:scale-95"
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-[#006972]/5 hover:bg-[#006972]/15 text-[#006972] transition-colors cursor-pointer active:scale-95"
             >
               <Icon name="arrow_back" size={20} />
             </button>
 
-            <div className="text-center">
-              <h1 className="font-headline text-[20px] sm:text-[24px] font-bold text-deep-navy">
+            <div className="text-center flex-1">
+              <h1 className="font-headline text-[24px] font-bold text-deep-navy mb-1">
                 Create a Committee
               </h1>
-              <p className="font-body text-[12px] sm:text-[13px] text-on-surface-variant">
+              <p className="font-label text-[12px] text-on-surface-variant">
                 Step 1 of 4: Basic Information
               </p>
             </div>
 
-            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#006972]/10 text-[#006972] font-label text-[11px] font-bold border border-[#006972]/20">
-              1 / 4
+            <span className="w-10 h-10 flex items-center justify-center rounded-full bg-[#006972]/5 text-[#006972] font-label text-[14px] font-bold">
+              1/4
             </span>
           </header>
 
           {/* Progress Bar */}
-          <div className="w-full bg-[#006972]/10 h-2 rounded-full mb-6 overflow-hidden">
+          <div className="w-full bg-[#006972]/10 h-2 rounded-full mb-8 overflow-hidden">
             <div className="bg-[#006972] h-full w-1/4 rounded-full transition-all duration-500" />
           </div>
 
           {/* AI Setup Assistant Card */}
-          <section className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1.5 text-[#006972] font-headline text-[14px] font-bold">
-                <Icon name="auto_awesome" size={18} className="text-amber-500 animate-pulse" />
-                <span>AI Fast Setup</span>
+          <section className="gradient-border-card p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 text-[#006972] font-label text-[14px] font-bold">
+                <Icon name="auto_awesome" size={18} className="text-[#006972] animate-pulse" />
+                AI Fast Setup
               </div>
               <button
                 type="button"
                 onClick={() => setIsAiMode(!isAiMode)}
-                className="font-label text-[12px] font-bold text-[#006972] hover:underline bg-transparent border-none cursor-pointer flex items-center gap-1"
+                className="font-label text-[12px] text-on-surface-variant hover:text-[#006972] transition-colors flex items-center gap-1"
               >
-                <Icon name={isAiMode ? 'edit_note' : 'auto_awesome'} size={15} />
+                <Icon name={isAiMode ? 'visibility_off' : 'auto_awesome'} size={16} />
                 {isAiMode ? 'Hide AI Helper' : 'Use AI Helper'}
               </button>
             </div>
 
             {isAiMode && (
-              <div className="bg-gradient-to-br from-[#006972]/8 to-amber-500/5 border border-[#006972]/20 rounded-2xl p-4 shadow-sm relative overflow-hidden transition-all">
-                <div className="relative">
-                  <textarea
-                    rows={3}
-                    value={aiPrompt}
-                    onChange={(e) => setAiPrompt(e.target.value)}
-                    placeholder="Describe your committee in plain words, e.g. 10 friends, Rs. 5000 monthly, starting next month..."
-                    className="w-full bg-white/80 border border-[#006972]/15 rounded-xl p-3 text-[14px] font-body text-deep-navy placeholder:text-on-surface-variant/60 focus:border-[#006972] focus:ring-2 focus:ring-[#006972]/10 outline-none resize-none shadow-inner"
-                  />
-                  <button
-                    type="button"
-                    title="Voice dictation mock"
-                    className="absolute bottom-3 right-3 p-1.5 rounded-full text-[#006972] hover:bg-[#006972]/10 transition-colors"
-                  >
-                    <Icon name="mic" size={18} />
-                  </button>
-                </div>
-
-                <div className="mt-3 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={handleAiParse}
-                    disabled={isParsing || !aiPrompt.trim()}
-                    className="bg-[#006972] hover:bg-[#00575f] text-white font-label text-[13px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer border-none disabled:opacity-50"
-                  >
-                    {isParsing ? (
-                      <>
-                        <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Parsing...
-                      </>
-                    ) : (
-                      <>
-                        <Icon name="auto_awesome" size={16} />
-                        Auto Fill Details
-                      </>
-                    )}
-                  </button>
-                </div>
+              <div className="relative bg-[#006972]/5 rounded-xl p-4 mb-4 border border-[#006972]/10">
+                <textarea
+                  rows={3}
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  placeholder="Describe your committee in plain words, e.g. 10 friends, Rs. 5000 monthly, starting next month..."
+                  className="w-full bg-transparent border-none p-0 focus:ring-0 resize-none text-deep-navy placeholder:text-on-surface-variant/60 font-body text-[16px] h-24 outline-none"
+                />
+              </div>
+            )}
+            
+            {isAiMode && (
+              <div className="flex items-center justify-between mt-4">
+                {/* Auto Fill Details */}
+                <button
+                  type="button"
+                  onClick={handleAiParse}
+                  disabled={isParsing || !aiPrompt.trim()}
+                  className="bg-[#006972]/30 text-[#006972] hover:bg-[#006972]/40 transition-colors px-4 py-2 rounded-full font-label text-[12px] font-bold flex items-center gap-2 disabled:opacity-50"
+                >
+                  <Icon name="magic_button" size={16} />
+                  Auto Fill Details
+                </button>
+                
+                {/* Mic Circle */}
+                <button
+                  type="button"
+                  onClick={isRecording ? stopRecording : startRecording}
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-md ${isRecording ? 'bg-red-500 animate-pulse' : 'bg-[#006972] text-white hover:bg-[#00575f]'}`}
+                >
+                  <Icon name={isRecording ? 'stop' : 'mic'} size={24} />
+                </button>
               </div>
             )}
           </section>
 
           {/* Divider */}
-          <div className="flex items-center gap-3 my-6 opacity-40">
-            <div className="h-px bg-[#006972] flex-grow" />
-            <span className="font-label text-[11px] font-bold text-deep-navy uppercase tracking-wider">Form Details</span>
-            <div className="h-px bg-[#006972] flex-grow" />
+          <div className="relative flex items-center py-5 mb-4">
+            <div className="flex-grow border-t border-[#006972]/30"></div>
+            <span className="flex-shrink-0 mx-4 text-on-surface-variant font-label text-[12px] uppercase tracking-wider">Form Details</span>
+            <div className="flex-grow border-t border-[#006972]/30"></div>
           </div>
 
           {/* Form Fields */}
-          <form onSubmit={(e) => { e.preventDefault(); handleContinue(e); }} className="space-y-4 text-left">
+          <form onSubmit={(e) => { e.preventDefault(); handleContinue(e); }} className="space-y-6 mb-8">
             
             {/* Committee Name */}
-            <div className="space-y-1">
-              <label htmlFor="committee-name" className="block font-label text-[13px] font-bold text-deep-navy">
+            <div>
+              <label htmlFor="committee-name" className="block font-label text-[14px] text-deep-navy mb-2">
                 Committee Name
               </label>
-              <div className="relative group">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#006972]/10 flex items-center justify-center text-[#006972] group-focus-within:bg-[#006972] group-focus-within:text-white transition-all">
-                  <Icon name="label" size={18} />
+              <div className="relative flex items-center">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="w-8 h-8 rounded bg-[#d6e4f9]/40 flex items-center justify-center">
+                    <Icon name="label" size={18} className="text-[#006972]" />
+                  </div>
                 </div>
                 <input
                   id="committee-name"
@@ -187,23 +254,23 @@ export default function CreateCommittee() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Diwali Savings Fund 2026"
-                  className="w-full h-12 pl-13 pr-4 bg-white border border-[#006972]/20 rounded-2xl focus:border-[#006972] focus:ring-4 focus:ring-[#006972]/10 transition-all font-body text-[14px] text-deep-navy outline-none shadow-sm"
+                  className="block w-full pl-14 pr-3 py-3 border border-[#c4c6cc] rounded-xl bg-[#f5f4e8] focus:ring-[#000000] focus:border-[#000000] transition-colors text-deep-navy outline-none"
                 />
               </div>
             </div>
 
             {/* Grid: Contribution & Member Capacity */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
               {/* Monthly Contribution */}
-              <div className="space-y-1">
-                <label htmlFor="contribution" className="block font-label text-[13px] font-bold text-deep-navy">
+              <div>
+                <label htmlFor="contribution" className="block font-label text-[14px] text-deep-navy mb-2">
                   Monthly Contribution
                 </label>
-                <div className="relative group">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-label text-[13px] font-bold text-[#006972]">
-                    Rs.
-                  </span>
+                <div className="relative flex items-center">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="font-label text-[14px] text-[#006972] ml-1">Rs.</span>
+                  </div>
                   <input
                     id="contribution"
                     type="number"
@@ -212,19 +279,19 @@ export default function CreateCommittee() {
                     value={contribution}
                     onChange={(e) => setContribution(e.target.value.replace(/\D/g, ''))}
                     placeholder="5000"
-                    className="w-full h-12 pl-12 pr-4 bg-white border border-[#006972]/20 rounded-2xl focus:border-[#006972] focus:ring-4 focus:ring-[#006972]/10 transition-all font-body text-[14px] text-deep-navy outline-none shadow-sm font-semibold"
+                    className="block w-full pl-12 pr-3 py-3 border border-[#c4c6cc] rounded-xl bg-[#f5f4e8] focus:ring-[#000000] focus:border-[#000000] transition-colors text-deep-navy outline-none"
                   />
                 </div>
               </div>
 
               {/* Number of Members */}
-              <div className="space-y-1">
-                <label htmlFor="capacity" className="block font-label text-[13px] font-bold text-deep-navy">
+              <div>
+                <label htmlFor="capacity" className="block font-label text-[14px] text-deep-navy mb-2">
                   Member Capacity
                 </label>
-                <div className="relative group">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#006972]/10 flex items-center justify-center text-[#006972] group-focus-within:bg-[#006972] group-focus-within:text-white transition-all">
-                    <Icon name="groups" size={18} />
+                <div className="relative flex items-center">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Icon name="group" size={20} className="text-[#006972] ml-1" />
                   </div>
                   <input
                     id="capacity"
@@ -235,45 +302,37 @@ export default function CreateCommittee() {
                     value={capacity}
                     onChange={(e) => setCapacity(e.target.value.replace(/\D/g, ''))}
                     placeholder="10"
-                    className="w-full h-12 pl-13 pr-4 bg-white border border-[#006972]/20 rounded-2xl focus:border-[#006972] focus:ring-4 focus:ring-[#006972]/10 transition-all font-body text-[14px] text-deep-navy outline-none shadow-sm font-semibold"
+                    className="block w-full pl-12 pr-3 py-3 border border-[#c4c6cc] rounded-xl bg-[#f5f4e8] focus:ring-[#000000] focus:border-[#000000] transition-colors text-deep-navy outline-none"
                   />
                 </div>
               </div>
             </div>
-
-            {/* Total Pool Expected Live Summary Box */}
-            <div className="mt-4 p-4 bg-[#006972]/8 rounded-2xl border border-[#006972]/15 flex items-start gap-3">
-              <div className="w-9 h-9 rounded-full bg-[#006972]/15 text-[#006972] flex items-center justify-center shrink-0">
-                <Icon name="account_balance_wallet" size={20} />
-              </div>
-              <div>
-                <h4 className="font-headline text-[13px] font-bold text-deep-navy">Total Pool Expected per Cycle</h4>
-                <p className="font-body text-[12px] text-on-surface-variant leading-relaxed mt-0.5">
-                  With <strong className="text-[#006972] font-bold">{numMembers || 0} members</strong> contributing{' '}
-                  <strong className="text-[#006972] font-bold">Rs. {monthlyContrib.toLocaleString()}</strong> each, the total monthly payout pool is{' '}
-                  <strong className="text-[#006972] font-bold">Rs. {totalPool.toLocaleString()}</strong>.
-                </p>
-              </div>
-            </div>
-
-            {/* Submit / Continue Button */}
-            <div className="pt-4">
-              <button
-                type="submit"
-                onClick={(e) => triggerRipple(e, 'continue')}
-                className="relative overflow-hidden w-full bg-[#006972] hover:bg-[#00575f] text-white py-3.5 px-6 rounded-2xl font-label text-[15px] font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg shadow-[#006972]/25 hover:shadow-xl cursor-pointer border-none"
-              >
-                {ripples.continue && (
-                  <span
-                    className="absolute rounded-full bg-white/30 w-32 h-32 -translate-x-1/2 -translate-y-1/2 animate-ping pointer-events-none"
-                    style={{ left: ripples.continue.x, top: ripples.continue.y }}
-                  />
-                )}
-                Continue to Schedule
-                <Icon name="arrow_forward" size={18} />
-              </button>
-            </div>
           </form>
+
+          {/* Info Box */}
+          <div className="bg-[#a1eff9]/20 rounded-xl p-5 mb-8 flex gap-4 items-start border border-[#a1eff9]/30">
+            <div className="w-10 h-10 rounded-full bg-[#9eecf6] flex-shrink-0 flex items-center justify-center text-[#0c6d76] mt-1">
+              <Icon name="account_balance_wallet" size={24} />
+            </div>
+            <div>
+              <h4 className="font-label text-[14px] text-deep-navy mb-1">Total Pool Expected per Cycle</h4>
+              <p className="font-body text-[14px] text-on-surface-variant/80">
+                With <strong className="font-bold text-[#006972]">{numMembers || 0} members</strong> contributing{' '}
+                <strong className="font-bold text-[#006972]">Rs. {monthlyContrib.toLocaleString()}</strong> each, the total monthly payout pool is{' '}
+                <strong className="font-bold text-[#006972]">Rs. {totalPool.toLocaleString()}</strong>.
+              </p>
+            </div>
+          </div>
+
+          {/* Submit / Continue Button */}
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); handleContinue(e); }}
+            className="w-full bg-[#000000] hover:bg-[#3a4859] text-[#ffffff] font-label text-[14px] py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+          >
+            Continue to Schedule
+            <Icon name="arrow_forward" size={20} />
+          </button>
         </main>
       </div>
     </AuthAmbientBackground>
