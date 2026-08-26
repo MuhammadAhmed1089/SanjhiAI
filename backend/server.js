@@ -7,6 +7,8 @@ import { initWhatsAppGateway } from './utilities/whatsappGateway.js';
 import authRoutes from './routes/authRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import committeeRoutes from './routes/committeeRoutes.js';
+import initAssistantRoutes from './routes/assistantRoutes.js';
+import initNotificationRoutes from './routes/notificationRoutes.js';
 
 dotenv.config();
 
@@ -41,6 +43,12 @@ app.use('/api/dashboard', dashboardRoutes);
 
 // Committee Routes
 app.use('/api/committees', committeeRoutes);
+
+// Assistant Routes
+initAssistantRoutes(app);
+
+// Notification Routes
+initNotificationRoutes(app);
 
 
 // Health check

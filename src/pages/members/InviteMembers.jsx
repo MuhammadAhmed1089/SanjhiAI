@@ -1,123 +1,132 @@
-import TopAppBar from '../../components/TopAppBar';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
-import Button from '../../components/Button';
 
 export default function InviteMembers() {
+  const navigate = useNavigate();
+  const [search, setSearch] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy(text) {
+    navigator.clipboard.writeText(text).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body antialiased">
-<div className="fixed inset-0 pointer-events-none pattern-overlay z-[-1]"></div>
+    <AuthAmbientBackground showTicker={false}>
+      <div className="w-full max-w-2xl mx-auto px-3 sm:px-6 py-4 sm:py-8 flex flex-col min-h-[calc(100vh-36px)] gap-5">
 
-<header className="w-full top-0 sticky bg-surface dark:bg-surface-dim border-b border-outline-variant/15 z-40 transition-colors">
-<div className="flex items-center justify-between px-margin-mobile md:px-margin-desktop h-16 w-full max-w-[1280px] mx-auto">
-<div className="flex items-center gap-4">
-<button aria-label="Go back" className="p-2 -ml-2 rounded-full hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors active:scale-95 duration-150 text-secondary dark:text-secondary-fixed-dim">
-<span className="material-symbols-outlined">arrow_back</span>
-</button>
-<h1 className="text-headline-md font-headline-md text-secondary dark:text-secondary-fixed-dim">Invite Members</h1>
-</div>
-<div></div> 
-</div>
-</header>
+        {/* Header */}
+        <header className="w-full flex items-center justify-between">
+          <button
+            onClick={() => navigate(-1)}
+            aria-label="Go back"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/60 hover:bg-white/80 text-[#006972] transition-colors cursor-pointer active:scale-95 backdrop-blur-md border border-[#006972]/15 shadow-sm"
+          >
+            <Icon name="arrow_back" size={20} />
+          </button>
+          <h1 className="font-headline text-[22px] sm:text-[24px] font-bold text-deep-navy tracking-tight">
+            Invite Members
+          </h1>
+          <div className="w-10" />
+        </header>
 
-<main className="flex-1 w-full max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop py-lg flex flex-col gap-lg">
+        {/* Invite Code Card */}
+        <section className="bg-white/90 backdrop-blur-md rounded-2xl border border-[#006972]/15 shadow-md p-6 flex flex-col gap-5 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-[#006972] rounded-t-2xl" />
 
-<section className="bg-surface-container-lowest border border-outline-variant/15 rounded-xl p-lg flex flex-col gap-lg shadow-[0_4px_24px_rgba(15,28,44,0.02)]">
+          {/* Code Display */}
+          <div className="flex flex-col items-center py-2 text-center">
+            <span className="font-label text-[11px] text-on-surface-variant uppercase tracking-wider mb-3">Invite Code</span>
+            <div className="flex items-center gap-3">
+              <span className="font-headline text-[36px] sm:text-[42px] font-bold text-[#006972] tracking-tight">SANJHI-782K</span>
+              <button
+                onClick={() => handleCopy('SANJHI-782K')}
+                aria-label="Copy code"
+                className="w-10 h-10 rounded-full bg-[#006972]/10 hover:bg-[#006972]/20 text-[#006972] flex items-center justify-center transition-all active:scale-90"
+              >
+                <Icon name={copied ? 'check' : 'content_copy'} size={20} />
+              </button>
+            </div>
+            <button className="mt-3 font-label text-[13px] text-[#006972] underline-offset-2 underline hover:no-underline transition-all">
+              Regenerate Invite
+            </button>
+          </div>
 
-<div className="flex flex-col items-center justify-center py-sm">
-<span className="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-2">Invite Code</span>
-<div className="flex items-center gap-3">
-<span className="text-display-lg-mobile md:text-display-lg font-display-lg-mobile md:font-display-lg text-primary-container tracking-tight">SANJHI-782K</span>
-<button aria-label="Copy code" className="p-2 rounded-full bg-surface-container hover:bg-surface-variant transition-colors text-secondary">
-<span className="material-symbols-outlined">content_copy</span>
-</button>
-</div>
-<button className="mt-4 text-label-sm font-label-sm text-secondary underline hover:text-on-secondary-container transition-colors">Regenerate Invite</button>
-</div>
+          <div className="h-px w-full bg-[#006972]/10" />
 
-<div className="h-px w-full bg-outline-variant/20"></div>
+          {/* Invite Link Row */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <span className="font-label text-[11px] text-on-surface-variant block mb-1">Invite Link</span>
+              <span className="font-body text-[14px] text-deep-navy break-all">sanjhi.app/join/782k</span>
+            </div>
+            <button
+              onClick={() => handleCopy('https://sanjhi.app/join/782k')}
+              className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#006972] text-white font-label text-[13px] font-semibold hover:bg-[#00575f] transition-all shadow-md active:scale-95"
+            >
+              <Icon name="share" size={18} />
+              Share Link
+            </button>
+          </div>
+        </section>
 
-<div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-<div>
-<span className="text-label-sm font-label-sm text-on-surface-variant block mb-1">Invite Link</span>
-<span className="text-body-md font-body-md text-on-surface break-all">sanjhi.app/join/782k</span>
-</div>
-<div className="flex gap-2 w-full md:w-auto">
-<button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-lg py-3 rounded-lg bg-secondary text-on-secondary hover:bg-on-secondary-container transition-colors active:scale-95 duration-150 shadow-[0_4px_12px_rgba(0,105,114,0.15)]">
-<span className="material-symbols-outlined">share</span>
-<span className="text-label-sm font-label-sm">Share</span>
-</button>
-</div>
-</div>
-</section>
+        {/* Divider */}
+        <div className="flex items-center gap-4">
+          <div className="h-px flex-1 bg-[#006972]/15" />
+          <span className="font-label text-[11px] text-on-surface-variant uppercase tracking-widest">or add directly</span>
+          <div className="h-px flex-1 bg-[#006972]/15" />
+        </div>
 
-<div className="flex items-center gap-4 py-sm opacity-60">
-<div className="h-px flex-1 bg-outline-variant"></div>
-<span className="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-widest">or add directly</span>
-<div className="h-px flex-1 bg-outline-variant"></div>
-</div>
+        {/* Search Section */}
+        <section className="flex flex-col gap-4">
+          <div className="relative flex items-center">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Icon name="search" size={20} className="text-[#006972]" />
+            </div>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Add by User ID or phone"
+              className="block w-full pl-11 pr-4 py-3.5 border border-[#c4c6cc] rounded-xl bg-[#f5f4e8] focus:border-[#006972] outline-none transition-colors text-deep-navy font-body text-[15px] placeholder:text-on-surface-variant/50"
+            />
+          </div>
 
-<section className="flex flex-col gap-4">
+          {/* Search Result */}
+          <div className="bg-white/90 backdrop-blur-md border border-[#006972]/15 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-4">
+              <img alt="Avatar" className="w-12 h-12 rounded-full object-cover border-2 border-[#006972]/15" src="/avatar.svg" />
+              <div>
+                <span className="font-headline text-[15px] font-bold text-deep-navy block">Zaid Ahmed</span>
+                <span className="font-label text-[12px] text-on-surface-variant">@zaid_99</span>
+              </div>
+            </div>
+            <button className="px-4 py-2 rounded-xl bg-[#006972]/10 hover:bg-[#006972] hover:text-white text-[#006972] font-label text-[13px] font-semibold transition-all active:scale-95">
+              Add
+            </button>
+          </div>
+        </section>
 
-<div className="relative w-full">
-<div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-<span className="material-symbols-outlined text-outline">search</span>
-</div>
-<input className="w-full pl-12 pr-4 py-4 bg-surface-container-lowest border-outline-variant/30 border rounded-xl text-body-md font-body-md text-on-surface placeholder-on-surface-variant/60 focus:ring-2 focus:ring-secondary focus:border-secondary transition-all outline-none shadow-sm" placeholder="Add by User ID" type="text"/>
-</div>
+        {/* Pool Capacity Progress */}
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-[#006972]/15 shadow-sm p-4 flex items-center gap-4 mt-auto">
+          <div className="w-10 h-10 rounded-full bg-[#006972]/10 flex items-center justify-center text-[#006972] flex-shrink-0">
+            <Icon name="group" size={22} />
+          </div>
+          <div className="flex-1 flex flex-col gap-2">
+            <div className="flex justify-between items-center w-full">
+              <span className="font-label text-[13px] text-deep-navy font-semibold">Pool Capacity</span>
+              <span className="font-label text-[13px] text-[#006972] font-bold">3 of 10</span>
+            </div>
+            <div className="w-full h-2 bg-[#006972]/10 rounded-full overflow-hidden">
+              <div className="h-full bg-[#006972] rounded-full w-[30%] transition-all duration-500" />
+            </div>
+          </div>
+        </div>
 
-<div className="bg-surface-container-lowest/80 backdrop-blur-md border border-outline-variant/15 rounded-xl p-4 flex items-center justify-between shadow-sm">
-<div className="flex items-center gap-4">
-<img alt="Avatar" className="w-12 h-12 rounded-full object-cover border border-outline-variant/20" src="/avatar.svg"/>
-<div className="flex flex-col">
-<span className="text-body-md font-body-md text-on-surface font-semibold">Zaid Ahmed</span>
-<span className="text-label-sm font-label-sm text-on-surface-variant">@zaid_99</span>
-</div>
-</div>
-<button className="px-4 py-2 rounded-lg bg-surface-container hover:bg-secondary hover:text-on-secondary transition-colors text-secondary text-label-sm font-label-sm active:scale-95">
-                    Add
-                </button>
-</div>
-</section>
-
-<div className="flex-1"></div>
-
-<div className="w-full bg-surface-container rounded-xl p-4 border border-outline-variant/10 flex items-center gap-4 mt-auto mb-4 md:mb-8">
-<span className="material-symbols-outlined text-tertiary">group</span>
-<div className="flex-1 flex flex-col gap-2">
-<div className="flex justify-between items-center w-full">
-<span className="text-label-sm font-label-sm text-on-surface">Pool Capacity</span>
-<span className="text-label-sm font-label-sm text-secondary font-bold">3 of 10</span>
-</div>
-
-<div className="w-full h-2 bg-outline-variant/20 rounded-full overflow-hidden">
-<div className="h-full bg-tertiary rounded-full w-[30%]"></div>
-</div>
-</div>
-</div>
-</main>
-
-<nav className="fixed bottom-0 left-0 w-full flex justify-around items-center py-3 px-4 pb-safe bg-surface-container dark:bg-surface-container-lowest border-t border-outline-variant/10 z-50 shadow-sm md:hidden block">
-
-<a className="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-1 hover:bg-surface-variant/50 dark:hover:bg-surface-container-high active:scale-90 transition-all duration-200 ease-in-out rounded-lg" href="#">
-<span className="material-symbols-outlined">home</span>
-<span className="text-label-sm font-label-sm mt-1">Home</span>
-</a>
-
-<a className="flex flex-col items-center justify-center bg-secondary-container dark:bg-on-secondary-fixed-variant text-on-secondary-container dark:text-secondary-fixed rounded-full px-5 py-1 hover:bg-surface-variant/50 dark:hover:bg-surface-container-high active:scale-90 transition-all duration-200 ease-in-out" href="#">
-<span className="material-symbols-outlined">account_balance_wallet</span>
-<span className="text-label-sm font-label-sm mt-1">Pools</span>
-</a>
-
-<a className="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-1 hover:bg-surface-variant/50 dark:hover:bg-surface-container-high active:scale-90 transition-all duration-200 ease-in-out rounded-lg" href="#">
-<span className="material-symbols-outlined">groups</span>
-<span className="text-label-sm font-label-sm mt-1">Connect</span>
-</a>
-
-<a className="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-1 hover:bg-surface-variant/50 dark:hover:bg-surface-container-high active:scale-90 transition-all duration-200 ease-in-out rounded-lg" href="#">
-<span className="material-symbols-outlined">person</span>
-<span className="text-label-sm font-label-sm mt-1">Profile</span>
-</a>
-</nav>
-    </div>
+      </div>
+    </AuthAmbientBackground>
   );
 }

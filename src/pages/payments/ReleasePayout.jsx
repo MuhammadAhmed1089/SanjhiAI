@@ -1,87 +1,95 @@
-import TopAppBar from '../../components/TopAppBar';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
-import Button from '../../components/Button';
 
 export default function ReleasePayout() {
+  const navigate = useNavigate();
+  const [confirmed, setConfirmed] = useState(false);
+
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body antialiased">
-<header className="flex items-center px-margin-mobile md:px-margin-desktop py-sm w-full sticky top-0 bg-background/90 backdrop-blur-md z-50 border-b border-outline-variant/30">
-<button className="p-2 mr-2 rounded-full hover:bg-surface-container-low transition-colors text-on-surface flex items-center justify-center active:scale-95">
-<span className="material-symbols-outlined">arrow_back</span>
-</button>
-<h1 className="font-headline-md text-headline-md-mobile md:text-headline-md text-primary tracking-tight">Release Payout</h1>
-</header>
-<main className="flex-1 px-margin-mobile md:px-margin-desktop py-lg w-full max-w-2xl mx-auto flex flex-col gap-lg pb-xl">
-<div className="relative overflow-hidden bg-secondary text-on-secondary rounded-xl p-lg shadow-sm border border-secondary-fixed/20 flex flex-col items-center text-center">
-<div className="absolute inset-0 opacity-10 pointer-events-none">
-<svg height="100%" width="100%" xmlns="http://www.w3.org/2000/svg">
-<defs>
-<pattern height="40" patternunits="userSpaceOnUse" width="40">
-<path d="M20 0 L40 20 L20 40 L0 20 Z" fill="none" stroke="currentColor" stroke-width="1"></path>
-<circle cx="20" cy="20" fill="currentColor" r="3"></circle>
-</pattern>
-</defs>
-<rect fill="url(#jali)" height="100%" width="100%"></rect>
-</svg>
-</div>
-<div className="relative z-10 flex flex-col items-center gap-sm">
-<div className="w-16 h-16 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center mb-2 shadow-[0_0_24px_rgba(159,240,251,0.4)]">
-<span className="material-symbols-outlined icon-fill text-[32px]">celebration</span>
-</div>
-<h2 className="font-headline-md text-headline-md-mobile md:text-headline-md">Ready for Release</h2>
-<p className="font-body-md text-body-md max-w-md text-on-secondary/90">
-                    All members have paid their contributions for this cycle. You can now safely release the pool payout to <strong>Rahul Sharma</strong>.
-                </p>
-</div>
-</div>
-<section className="bg-surface-container-lowest rounded-xl border border-outline-variant p-lg flex flex-col gap-md relative overflow-hidden">
-<div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-tertiary-container to-secondary"></div>
-<h3 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Recipient Details</h3>
-<div className="flex items-center gap-md">
-<div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden bg-surface-container-low border border-outline-variant flex-shrink-0">
-<img className="w-full h-full object-cover" src="/avatar.svg"/>
-</div>
-<div className="flex-1">
-<h4 className="font-headline-md text-headline-md-mobile md:text-headline-md text-on-surface">Rahul Sharma</h4>
-<p className="font-body-md text-body-md text-on-surface-variant flex items-center gap-xs mt-1">
-<span className="material-symbols-outlined text-[18px] text-tertiary">verified_user</span> Verified Pool Member
-                    </p>
-</div>
-</div>
-<hr className="border-outline-variant/40 my-2"/>
-<div className="flex justify-between items-center bg-surface-container-low p-md rounded-lg border border-outline-variant/30">
-<div className="flex items-center gap-md">
-<div className="w-12 h-12 rounded-full bg-surface-container-lowest flex items-center justify-center border border-outline-variant/50 shadow-sm">
-<span className="material-symbols-outlined text-secondary icon-fill">account_balance</span>
-</div>
-<div>
-<p className="font-label-sm text-label-sm text-on-surface-variant">Linked Account</p>
-<p className="font-body-lg text-body-lg text-on-surface font-medium tracking-wide">JazzCash - 0300****123</p>
-</div>
-</div>
-</div>
-</section>
-<section className="bg-surface-container-lowest rounded-xl border border-outline-variant p-lg flex justify-between items-end">
-<div>
-<p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-2">Payout Amount</p>
-<p className="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-primary tracking-tight">₹ 1,20,000</p>
-</div>
-<div className="text-right">
-<p className="font-body-md text-body-md text-on-surface-variant">Cycle</p>
-<p className="font-body-lg text-body-lg text-on-surface font-medium">October 2023</p>
-</div>
-</section>
-<div className="mt-lg flex flex-col items-center gap-md pt-md">
-<button className="w-full md:w-auto bg-secondary hover:bg-on-secondary-fixed-variant text-on-secondary font-label-sm text-label-sm py-4 px-8 rounded-full transition-all duration-200 flex justify-center items-center gap-sm active:scale-95 shadow-[0_8px_32px_-8px_rgba(0,105,114,0.5)]">
-<span className="material-symbols-outlined icon-fill">send_money</span>
-<span className="text-base tracking-wide">Mark Payout as Sent</span>
-</button>
-<p className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-xs mt-2 opacity-80">
-<span className="material-symbols-outlined text-[16px]">lock</span>
-                This action is high-stakes, secure, and irreversible.
-            </p>
-</div>
-</main>
-    </div>
+    <AuthAmbientBackground showTicker={false}>
+      <div className="w-full max-w-2xl mx-auto px-3 sm:px-6 py-4 sm:py-8 flex flex-col min-h-[calc(100vh-36px)] gap-5">
+
+        {/* Header */}
+        <header className="w-full flex items-center justify-between">
+          <button
+            onClick={() => navigate(-1)}
+            aria-label="Go back"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/60 hover:bg-white/80 text-[#006972] transition-colors cursor-pointer active:scale-95 backdrop-blur-md border border-[#006972]/15 shadow-sm"
+          >
+            <Icon name="arrow_back" size={20} />
+          </button>
+          <h1 className="font-headline text-[22px] sm:text-[24px] font-bold text-deep-navy tracking-tight">
+            Release Payout
+          </h1>
+          <div className="w-10" />
+        </header>
+
+        {/* Ready Banner */}
+        <section className="bg-[#006972] rounded-2xl p-6 sm:p-8 flex flex-col items-center text-center relative overflow-hidden shadow-lg shadow-[#006972]/25">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="w-16 h-16 rounded-full bg-white/15 backdrop-blur-md border-2 border-white/30 flex items-center justify-center mb-4 relative z-10 shadow-md">
+            <Icon name="celebration" size={32} className="text-white" />
+          </div>
+          <h2 className="font-headline text-[22px] font-bold text-white mb-2 relative z-10">Ready for Release</h2>
+          <p className="font-body text-[14px] text-white/85 max-w-xs leading-relaxed relative z-10">
+            All members have paid their contributions for this cycle. You can now safely release the payout to <strong className="text-white">Rahul Sharma</strong>.
+          </p>
+        </section>
+
+        {/* Recipient Details */}
+        <section className="bg-white/90 backdrop-blur-md rounded-2xl border border-[#006972]/15 shadow-md p-5 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-[#006972] rounded-t-2xl" />
+          <h3 className="font-label text-[11px] text-on-surface-variant uppercase tracking-wider mb-4">Recipient Details</h3>
+          <div className="flex items-center gap-4 mb-4">
+            <img src="/avatar.svg" alt="Rahul Sharma" className="w-16 h-16 rounded-full object-cover border-2 border-[#006972]/20 shadow-sm" />
+            <div>
+              <h4 className="font-headline text-[18px] font-bold text-deep-navy">Rahul Sharma</h4>
+              <p className="font-label text-[12px] text-[#006972] flex items-center gap-1 mt-1">
+                <Icon name="verified_user" size={14} /> Verified Pool Member
+              </p>
+            </div>
+          </div>
+          <div className="bg-[#f5f4e8] rounded-xl p-4 flex items-center gap-4">
+            <div className="w-11 h-11 rounded-full bg-[#006972]/10 flex items-center justify-center text-[#006972]">
+              <Icon name="account_balance" size={22} />
+            </div>
+            <div>
+              <p className="font-label text-[11px] text-on-surface-variant mb-0.5">Linked Account</p>
+              <p className="font-body text-[14px] text-deep-navy font-semibold tracking-wide">JazzCash — 0300****123</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Payout Amount */}
+        <section className="bg-white/90 backdrop-blur-md rounded-2xl border border-[#006972]/15 shadow-sm p-5 flex justify-between items-end">
+          <div>
+            <p className="font-label text-[11px] text-on-surface-variant uppercase tracking-wider mb-2">Payout Amount</p>
+            <p className="font-headline text-[38px] sm:text-[44px] font-bold text-[#006972] leading-none">Rs. 1,20,000</p>
+          </div>
+          <div className="text-right pb-1">
+            <p className="font-label text-[11px] text-on-surface-variant mb-1">Cycle</p>
+            <p className="font-body text-[15px] text-deep-navy font-semibold">October 2026</p>
+          </div>
+        </section>
+
+        {/* Action */}
+        <div className="flex flex-col items-center gap-3 mt-2">
+          <button
+            onClick={() => setConfirmed(true)}
+            disabled={confirmed}
+            className="w-full bg-[#006972] hover:bg-[#00575f] disabled:opacity-70 text-white font-label text-[15px] py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-[#006972]/25 hover:shadow-xl transform hover:-translate-y-0.5 active:scale-[0.98]"
+          >
+            <Icon name={confirmed ? 'check_circle' : 'send_money'} size={22} />
+            {confirmed ? 'Payout Marked as Sent!' : 'Mark Payout as Sent'}
+          </button>
+          <p className="font-label text-[12px] text-on-surface-variant flex items-center gap-1.5 opacity-80">
+            <Icon name="lock" size={14} /> This action is high-stakes, secure, and irreversible.
+          </p>
+        </div>
+
+      </div>
+    </AuthAmbientBackground>
   );
 }

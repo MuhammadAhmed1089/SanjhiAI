@@ -3,6 +3,7 @@ import Groq from 'groq-sdk';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { createNotification } from './notificationController.js';
 
 const SYSTEM_EXTRACTION_PROMPT = `You are an expert multilingual assistant for a Pakistani Peer-to-Peer Savings Committee (Kameti / BC / Chit Fund) app called Sanjhi.
 Extract committee parameters from user input which can be in English, Urdu (Arabic script), Roman Urdu (English alphabet Urdu like "18 members, har mahine 2500 dena, commitee ka name Sabzazar Al-Kareem store"), or Hindi.
@@ -22,7 +23,6 @@ Return ONLY valid JSON matching this schema. No explanations, no markdown format
  */
 function fallbackLocalParse(text) {
   let name = '';
-  // Check for quotes e.g. "Sabzazar Al-Kareem store" or '...'
   const nameQuoteMatch = text.match(/["']([^"']+)["']/);
   if (nameQuoteMatch) {
     name = nameQuoteMatch[1].trim();
@@ -35,11 +35,9 @@ function fallbackLocalParse(text) {
     }
   }
 
-  // Capacity / members
   const memberMatch = text.match(/(\d+)\s*(?:members?|log|banday|afraad|person|people|mahine|months?)/i);
   const capacity = memberMatch ? parseInt(memberMatch[1], 10) : 10;
 
-  // Contribution amount
   let contribution_amount = 5000;
   const thousandMatch = text.match(/(\d+)\s*(?:hazar|hazaar|k\b)/i);
   const directAmountMatch = text.match(/(?:Rs\.?|pkr|inr|\$)?\s*(\d{3,7})/i);
@@ -62,10 +60,6 @@ function fallbackLocalParse(text) {
   };
 }
 
-/**
- * POST /api/committees/parse-ai-text
- * Parses natural language text prompt into structured committee params
- */
 export async function parseCommitteeAIText(req, res) {
   try {
     const { text } = req.body;
@@ -75,7 +69,6 @@ export async function parseCommitteeAIText(req, res) {
 
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey || apiKey === 'your_groq_api_key_here' || apiKey.trim() === '') {
-      // Local fallback parser
       const parsed = fallbackLocalParse(text);
       return res.status(200).json({ parsed });
     }
@@ -100,10 +93,6 @@ export async function parseCommitteeAIText(req, res) {
   }
 }
 
-
-/**
- * Maps frontend interval input to database ENUM: '15_days', '1_month', '2_months'
- */
 function normalizeIntervalType(input) {
   if (!input) return '1_month';
   const str = input.toString().toLowerCase().replace(/[\s-]/g, '_');
@@ -112,9 +101,6 @@ function normalizeIntervalType(input) {
   return '1_month';
 }
 
-/**
- * Maps frontend account provider input to database ENUM: 'jazzcash', 'easypaisa', 'bank'
- */
 function normalizeAccountType(input) {
   if (!input) return 'jazzcash';
   const str = input.toString().toLowerCase();
@@ -123,18 +109,12 @@ function normalizeAccountType(input) {
   return 'jazzcash';
 }
 
-/**
- * Helper to generate a unique random invite code (e.g., SANJHI-8492K)
- */
 function generateInviteCode() {
   const num = Math.floor(1000 + Math.random() * 9000);
   const char = String.fromCharCode(65 + Math.floor(Math.random() * 26));
   return `SANJHI-${num}${char}`;
 }
 
-/**
- * Helper to calculate cycle due dates given a start date & interval
- */
 function calculateDueDate(startDate, cycleIndex, intervalType) {
   const d = new Date(startDate);
   if (intervalType === '15_days') {
@@ -142,17 +122,11 @@ function calculateDueDate(startDate, cycleIndex, intervalType) {
   } else if (intervalType === '2_months') {
     d.setMonth(d.getMonth() + (cycleIndex - 1) * 2);
   } else {
-    // 1_month default
     d.setMonth(d.getMonth() + (cycleIndex - 1));
   }
   return d.toISOString().split('T')[0];
 }
 
-/**
- * POST /api/committees
- * Creates a new committee within an atomic PostgreSQL transaction.
- * Inserts: committees -> collection_accounts -> organizers -> members (founding) -> cycles
- */
 export async function createCommittee(req, res) {
   const client = await pool.connect();
 
@@ -169,7 +143,6 @@ export async function createCommittee(req, res) {
       capacity,
       interval_type,
       intervalType,
-      payout_order_type,
       collection_account,
       account_title,
       account_number,
@@ -201,10 +174,8 @@ export async function createCommittee(req, res) {
     const inviteCode = generateInviteCode();
     const inviteLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/join/${inviteCode}`;
 
-    // BEGIN TRANSACTION
     await client.query('BEGIN');
 
-    // 1. Insert Committee
     const committeeRes = await client.query(
       `INSERT INTO committees (
         created_by, name, contribution_amount, capacity, interval_type, duration_cycles, payout_order_type, status, invite_code, invite_link
@@ -215,7 +186,6 @@ export async function createCommittee(req, res) {
 
     const committee = committeeRes.rows[0];
 
-    // 2. Insert Collection Account
     const accountRes = await client.query(
       `INSERT INTO collection_accounts (
         committee_id, account_type, account_number, account_title, is_active
@@ -224,39 +194,36 @@ export async function createCommittee(req, res) {
       [committee.id, normProvider, accNum, accTitle]
     );
 
-    // 3. Insert Organizer Record
     await client.query(
       `INSERT INTO organizers (user_id, committee_id) VALUES ($1, $2)`,
       [userId, committee.id]
     );
 
-    // 4. Insert Founding Member (Organizer is turn 1 approved member)
     await client.query(
       `INSERT INTO members (user_id, committee_id, status, payout_turn_order, joined_at)
        VALUES ($1, $2, 'approved', 1, NOW())`,
       [userId, committee.id]
     );
 
-    // 5. Auto-generate initial Cycles 1..N
     const cycleStartDate = startDate ? new Date(startDate) : new Date();
     const cyclesCreated = [];
+    const poolPayoutAmount = amount * cap; // Total pool amount per cycle
 
     for (let i = 1; i <= cap; i++) {
       const dueDateStr = calculateDueDate(cycleStartDate, i, normInterval);
-      const recipientId = i === 1 ? userId : null; // Turn 1 is founding organizer
+      const recipientId = i === 1 ? userId : null;
 
       const cycleRes = await client.query(
         `INSERT INTO cycles (
-          committee_id, cycle_number, due_date, status, recipient_user_id, payout_status
-        ) VALUES ($1, $2, $3, 'collecting', $4, 'pending')
+          committee_id, cycle_number, due_date, status, recipient_user_id, payout_status, amount
+        ) VALUES ($1, $2, $3, 'collecting', $4, 'pending', $5)
         RETURNING *`,
-        [committee.id, i, dueDateStr, recipientId]
+        [committee.id, i, dueDateStr, recipientId, poolPayoutAmount]
       );
 
       cyclesCreated.push(cycleRes.rows[0]);
     }
 
-    // COMMIT TRANSACTION
     await client.query('COMMIT');
 
     return res.status(201).json({
@@ -277,10 +244,6 @@ export async function createCommittee(req, res) {
   }
 }
 
-/**
- * GET /api/committees
- * Fetches all committees the authenticated user belongs to (organizer, co-organizer, or member)
- */
 export async function getMyCommittees(req, res) {
   try {
     const userId = req.user?.userId;
@@ -316,14 +279,9 @@ export async function getMyCommittees(req, res) {
   }
 }
 
-/**
- * GET /api/committees/:id
- * Fetches a single committee by ID with members, active collection account, and current cycle
- */
 export async function getCommittee(req, res) {
   try {
     const { id } = req.params;
-    const userId = req.user?.userId;
 
     const committeeRes = await query(
       `SELECT c.*,
@@ -342,7 +300,6 @@ export async function getCommittee(req, res) {
 
     const committee = committeeRes.rows[0];
 
-    // Members list
     const membersRes = await query(
       `SELECT m.*, u.full_name, u.email, u.phone_number, u.profile_photo_url,
         ts.score AS trust_score
@@ -354,7 +311,6 @@ export async function getCommittee(req, res) {
       [id]
     );
 
-    // Active cycles
     const cyclesRes = await query(
       `SELECT cy.*, u.full_name AS recipient_name
        FROM cycles cy
@@ -375,10 +331,6 @@ export async function getCommittee(req, res) {
   }
 }
 
-/**
- * POST /api/committees/parse-ai-audio
- * Parses natural language audio prompt into structured committee params
- */
 export async function parseCommitteeAIAudio(req, res) {
   const tempFilePath = path.join(os.tmpdir(), `audio-${Date.now()}.webm`);
   try {
@@ -386,13 +338,11 @@ export async function parseCommitteeAIAudio(req, res) {
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
     fs.writeFileSync(tempFilePath, req.file.buffer);
 
-    // Transcribe
     const transcription = await groq.audio.transcriptions.create({
       file: fs.createReadStream(tempFilePath),
       model: "whisper-large-v3-turbo",
     });
 
-    // Extract
     const chatCompletion = await groq.chat.completions.create({
       messages: [{
         role: "system",
@@ -418,10 +368,6 @@ export async function parseCommitteeAIAudio(req, res) {
   }
 }
 
-/**
- * POST /api/committees/join
- * Joins a committee using an invite code
- */
 export async function joinByCode(req, res) {
   try {
     const userId = req.user?.userId;
@@ -445,35 +391,106 @@ export async function joinByCode(req, res) {
 
     const committee = committeeRes.rows[0];
 
-    // Check member count limit
-    const countRes = await query(
-      `SELECT COUNT(*) FROM members WHERE committee_id = $1 AND status = 'approved'`,
-      [committee.id]
+    const memberRes = await query(
+      `INSERT INTO members (user_id, committee_id, status, joined_at)
+       VALUES ($1, $2, 'pending', NOW())
+       ON CONFLICT (user_id, committee_id) DO UPDATE SET status = 'pending', joined_at = NOW()
+       RETURNING *`,
+      [userId, committee.id]
     );
 
-    const currentCount = parseInt(countRes.rows[0].count, 10);
-    if (currentCount >= committee.capacity) {
-      return res.status(400).json({ error: 'This committee pool is already at full capacity.' });
+    // Notify Organizer
+    const orgRes = await query(`SELECT user_id FROM organizers WHERE committee_id = $1`, [committee.id]);
+    if (orgRes.rows.length > 0) {
+      const orgUserId = orgRes.rows[0].user_id;
+      await createNotification(
+        orgUserId,
+        'join_request',
+        'in_app',
+        `A new participant requested to join your committee "${committee.name}".`,
+        committee.id
+      );
     }
 
-    // Insert or update member status
-    const nextTurn = currentCount + 1;
-
-    const memberRes = await query(
-      `INSERT INTO members (user_id, committee_id, status, payout_turn_order, joined_at)
-       VALUES ($1, $2, 'approved', $3, NOW())
-       ON CONFLICT (user_id, committee_id) DO UPDATE SET status = 'approved', joined_at = NOW()
-       RETURNING *`,
-      [userId, committee.id, nextTurn]
-    );
-
     return res.status(200).json({
-      message: 'Successfully joined committee pool!',
+      message: 'Join request submitted successfully. Waiting for organizer approval!',
       committee,
       member: memberRes.rows[0],
     });
   } catch (error) {
     console.error('Error joining committee by code:', error);
     return res.status(500).json({ error: 'Failed to join committee.' });
+  }
+}
+
+/**
+ * PATCH /api/committees/:id/requests/:memberId
+ * Organizer approves or rejects a member's join request
+ */
+export async function updateMemberRequestStatus(req, res) {
+  try {
+    const userId = req.user?.userId;
+    const { id: committeeId, memberId } = req.params;
+    const { status } = req.body; // 'approved' or 'rejected'
+
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status. Must be approved or rejected.' });
+    }
+
+    // Verify user is organizer of this committee
+    const orgRes = await query(
+      `SELECT * FROM organizers WHERE committee_id = $1 AND user_id = $2`,
+      [committeeId, userId]
+    );
+
+    if (orgRes.rows.length === 0) {
+      return res.status(403).json({ error: 'Only the organizer can approve or reject join requests.' });
+    }
+
+    let payoutTurnOrder = null;
+    if (status === 'approved') {
+      const countRes = await query(
+        `SELECT COUNT(*) FROM members WHERE committee_id = $1 AND status = 'approved'`,
+        [committeeId]
+      );
+      payoutTurnOrder = parseInt(countRes.rows[0].count, 10) + 1;
+    }
+
+    const updateRes = await query(
+      `UPDATE members 
+       SET status = $1, payout_turn_order = COALESCE($2, payout_turn_order)
+       WHERE id = $3 AND committee_id = $4
+       RETURNING *`,
+      [status, payoutTurnOrder, memberId, committeeId]
+    );
+
+    if (updateRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Member request not found.' });
+    }
+
+    const updatedMember = updateRes.rows[0];
+
+    // Fetch committee name for notification
+    const commRes = await query(`SELECT name FROM committees WHERE id = $1`, [committeeId]);
+    const commName = commRes.rows[0]?.name || 'Committee';
+
+    // Notify Member of Approval / Rejection
+    await createNotification(
+      updatedMember.user_id,
+      'approval_status',
+      'in_app',
+      status === 'approved'
+        ? `Your request to join "${commName}" has been approved by the organizer! 🎉`
+        : `Your request to join "${commName}" was declined by the organizer.`,
+      committeeId
+    );
+
+    return res.status(200).json({
+      message: `Member request successfully ${status}!`,
+      member: updatedMember,
+    });
+  } catch (error) {
+    console.error('Error updating member request status:', error);
+    return res.status(500).json({ error: 'Failed to update member status.' });
   }
 }

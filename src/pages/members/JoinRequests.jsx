@@ -1,137 +1,98 @@
-import TopAppBar from '../../components/TopAppBar';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
-import Button from '../../components/Button';
+
+const REQUESTS = [
+  { name: 'Ayesha Malik', score: 940, label: 'High Trust', avatar: '/avatar.svg' },
+  { name: 'Omar Farooq', score: 880, label: 'Trusted', avatar: '/avatar.svg' },
+  { name: 'Sara Khan', score: 915, label: 'Trusted', avatar: '/avatar.svg' },
+];
 
 export default function JoinRequests() {
+  const navigate = useNavigate();
+  const [requests, setRequests] = useState(REQUESTS);
+  const [decided, setDecided] = useState({});
+
+  function decide(name, action) {
+    setDecided((prev) => ({ ...prev, [name]: action }));
+    setTimeout(() => setRequests((prev) => prev.filter((r) => r.name !== name)), 600);
+  }
+
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body antialiased">
-<header className="w-full top-0 sticky bg-surface dark:bg-surface-dim border-b border-outline-variant/15 z-40 transition-colors">
-<div className="flex items-center justify-between px-margin-mobile md:px-margin-desktop h-16 w-full max-w-[1280px] mx-auto">
-<button className="text-secondary dark:text-secondary-fixed-dim hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors p-2 rounded-full active:scale-95 transition-transform duration-150 flex items-center justify-center">
-<span className="material-symbols-outlined text-[24px]">arrow_back</span>
-</button>
-<h1 className="text-headline-md font-headline-md text-secondary dark:text-secondary-fixed-dim tracking-tight">Sanjha</h1>
-<div className="w-10"></div> 
-</div>
-</header>
+    <AuthAmbientBackground showTicker={false}>
+      <div className="w-full max-w-2xl mx-auto px-3 sm:px-6 py-4 sm:py-8 flex flex-col min-h-[calc(100vh-36px)] gap-5">
 
-<main className="flex-grow pb-[80px] md:pb-8 pt-6 px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto w-full">
-<div className="mb-8">
-<h2 className="text-headline-md font-headline-md text-on-surface mb-2">Join Requests</h2>
-<p className="text-body-md font-body-md text-on-surface-variant">Review pending requests to join the committee.</p>
-</div>
+        {/* Header */}
+        <header className="w-full flex items-center justify-between">
+          <button
+            onClick={() => navigate(-1)}
+            aria-label="Go back"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/60 hover:bg-white/80 text-[#006972] transition-colors cursor-pointer active:scale-95 backdrop-blur-md border border-[#006972]/15 shadow-sm"
+          >
+            <Icon name="arrow_back" size={20} />
+          </button>
+          <div className="text-center flex-1">
+            <h1 className="font-headline text-[22px] sm:text-[24px] font-bold text-deep-navy tracking-tight">
+              Join Requests
+            </h1>
+          </div>
+          <div className="w-10" />
+        </header>
 
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <p className="font-body text-[13px] text-on-surface-variant text-center -mt-2">
+          Review pending requests to join the committee.
+        </p>
 
-<div className="bg-surface-container-lowest border border-outline-variant/15 rounded-lg p-6 jali-border-top hover:bg-surface-container transition-colors duration-200">
-<div className="flex items-start justify-between mb-4">
-<div className="flex items-center gap-4">
-<div className="w-12 h-12 rounded-full overflow-hidden border border-outline-variant/20 flex-shrink-0">
-<img alt="Avatar" className="w-full h-full object-cover" src="/avatar.svg"/>
-</div>
-<div>
-<h3 className="text-body-lg font-body-lg font-bold text-on-surface">Ayesha Malik</h3>
-<div className="flex items-center gap-1 mt-1">
-<span className="bg-tertiary-container text-on-tertiary-container text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-<span className="material-symbols-outlined text-[14px]">verified_user</span>
-                                    940 • High Trust
-                                </span>
-</div>
-</div>
-</div>
-</div>
-<div className="flex gap-3 mt-6">
-<button className="flex-1 bg-secondary text-on-secondary hover:bg-secondary/90 transition-colors font-label-sm text-label-sm py-2 px-lg rounded-full active:scale-95 flex items-center justify-center gap-2">
-<span className="material-symbols-outlined text-[18px]">check</span>
-                        Approve
-                    </button>
-<button className="flex-1 border border-error text-error hover:bg-error-container hover:text-on-error-container transition-colors font-label-sm text-label-sm py-2 px-4 rounded-full active:scale-95 flex items-center justify-center gap-2">
-<span className="material-symbols-outlined text-[18px]">close</span>
-                        Reject
-                    </button>
-</div>
-</div>
+        {/* Request Cards */}
+        <main className="flex flex-col gap-4">
+          {requests.length === 0 && (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 bg-white/60 rounded-full flex items-center justify-center mx-auto mb-4 border border-[#006972]/10">
+                <Icon name="task_alt" size={30} className="text-[#006972]/50" />
+              </div>
+              <p className="font-body text-[15px] text-on-surface-variant">All requests reviewed!</p>
+            </div>
+          )}
+          {requests.map((req) => (
+            <div
+              key={req.name}
+              className={`bg-white/90 backdrop-blur-md rounded-2xl border border-[#006972]/15 shadow-md p-5 transition-all ${decided[req.name] ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
+            >
+              <div className="flex items-center gap-4 mb-5">
+                <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[#006972]/20 flex-shrink-0 shadow-sm">
+                  <img alt={req.name} src={req.avatar} className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-headline text-[17px] font-bold text-deep-navy">{req.name}</h3>
+                  <span className="inline-flex items-center gap-1.5 bg-[#006972]/10 text-[#006972] px-2.5 py-0.5 rounded-full font-label text-[11px] font-semibold mt-1">
+                    <Icon name="verified_user" size={12} />
+                    {req.score} • {req.label}
+                  </span>
+                </div>
+              </div>
 
-<div className="bg-surface-container-lowest border border-outline-variant/15 rounded-lg p-6 jali-border-top hover:bg-surface-container transition-colors duration-200">
-<div className="flex items-start justify-between mb-4">
-<div className="flex items-center gap-4">
-<div className="w-12 h-12 rounded-full overflow-hidden border border-outline-variant/20 flex-shrink-0">
-<img alt="Avatar" className="w-full h-full object-cover" src="/avatar.svg"/>
-</div>
-<div>
-<h3 className="text-body-lg font-body-lg font-bold text-on-surface">Omar Farooq</h3>
-<div className="flex items-center gap-1 mt-1">
-<span className="bg-tertiary-container/80 text-on-tertiary-container text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-<span className="material-symbols-outlined text-[14px]">shield</span>
-                                    880
-                                </span>
-</div>
-</div>
-</div>
-</div>
-<div className="flex gap-3 mt-6">
-<button className="flex-1 bg-secondary text-on-secondary hover:bg-secondary/90 transition-colors font-label-sm text-label-sm py-2 px-lg rounded-full active:scale-95 flex items-center justify-center gap-2">
-<span className="material-symbols-outlined text-[18px]">check</span>
-                        Approve
-                    </button>
-<button className="flex-1 border border-error text-error hover:bg-error-container hover:text-on-error-container transition-colors font-label-sm text-label-sm py-2 px-4 rounded-full active:scale-95 flex items-center justify-center gap-2">
-<span className="material-symbols-outlined text-[18px]">close</span>
-                        Reject
-                    </button>
-</div>
-</div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => decide(req.name, 'approved')}
+                  className="flex-1 bg-[#006972] hover:bg-[#00575f] text-white font-label text-[13px] py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
+                >
+                  <Icon name="check" size={18} />
+                  Approve
+                </button>
+                <button
+                  onClick={() => decide(req.name, 'rejected')}
+                  className="flex-1 border-2 border-red-200 text-red-500 hover:bg-red-50 font-label text-[13px] py-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95"
+                >
+                  <Icon name="close" size={18} />
+                  Reject
+                </button>
+              </div>
+            </div>
+          ))}
+        </main>
 
-<div className="bg-surface-container-lowest border border-outline-variant/15 rounded-lg p-6 jali-border-top hover:bg-surface-container transition-colors duration-200">
-<div className="flex items-start justify-between mb-4">
-<div className="flex items-center gap-4">
-<div className="w-12 h-12 rounded-full overflow-hidden border border-outline-variant/20 flex-shrink-0">
-<img alt="Avatar" className="w-full h-full object-cover" src="/avatar.svg"/>
-</div>
-<div>
-<h3 className="text-body-lg font-body-lg font-bold text-on-surface">Sara Khan</h3>
-<div className="flex items-center gap-1 mt-1">
-<span className="bg-tertiary-container/90 text-on-tertiary-container text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-<span className="material-symbols-outlined text-[14px]">shield</span>
-                                    915
-                                </span>
-</div>
-</div>
-</div>
-</div>
-<div className="flex gap-3 mt-6">
-<button className="flex-1 bg-secondary text-on-secondary hover:bg-secondary/90 transition-colors font-label-sm text-label-sm py-2 px-lg rounded-full active:scale-95 flex items-center justify-center gap-2">
-<span className="material-symbols-outlined text-[18px]">check</span>
-                        Approve
-                    </button>
-<button className="flex-1 border border-error text-error hover:bg-error-container hover:text-on-error-container transition-colors font-label-sm text-label-sm py-2 px-4 rounded-full active:scale-95 flex items-center justify-center gap-2">
-<span className="material-symbols-outlined text-[18px]">close</span>
-                        Reject
-                    </button>
-</div>
-</div>
-</div>
-</main>
-
-<nav className="md:hidden fixed bottom-0 w-full z-50 bg-surface-container dark:bg-surface-container-lowest border-t border-outline-variant/10 shadow-sm">
-<div className="fixed bottom-0 left-0 w-full flex justify-around items-center py-3 px-4 pb-safe bg-surface-container dark:bg-surface-container-lowest">
-<a className="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-1 hover:bg-surface-variant/50 dark:hover:bg-surface-container-high active:scale-90 transition-all duration-200 ease-in-out rounded-full group" href="#">
-<span className="material-symbols-outlined mb-1 group-hover:text-secondary transition-colors">home</span>
-<span className="text-label-sm font-label-sm group-hover:text-secondary transition-colors">Home</span>
-</a>
-<a className="flex flex-col items-center justify-center bg-secondary-container dark:bg-on-secondary-fixed-variant text-on-secondary-container dark:text-secondary-fixed rounded-full px-5 py-1 hover:bg-surface-variant/50 dark:hover:bg-surface-container-high active:scale-90 transition-all duration-200 ease-in-out" href="#">
-<span className="material-symbols-outlined mb-1">account_balance_wallet</span>
-<span className="text-label-sm font-label-sm">Pools</span>
-</a>
-<a className="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-1 hover:bg-surface-variant/50 dark:hover:bg-surface-container-high active:scale-90 transition-all duration-200 ease-in-out rounded-full group" href="#">
-<span className="material-symbols-outlined mb-1 group-hover:text-secondary transition-colors">groups</span>
-<span className="text-label-sm font-label-sm group-hover:text-secondary transition-colors">Connect</span>
-</a>
-<a className="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-1 hover:bg-surface-variant/50 dark:hover:bg-surface-container-high active:scale-90 transition-all duration-200 ease-in-out rounded-full group" href="#">
-<span className="material-symbols-outlined mb-1 group-hover:text-secondary transition-colors">person</span>
-<span className="text-label-sm font-label-sm group-hover:text-secondary transition-colors">Profile</span>
-</a>
-</div>
-</nav>
-    </div>
+      </div>
+    </AuthAmbientBackground>
   );
 }

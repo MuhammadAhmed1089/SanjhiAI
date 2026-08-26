@@ -18,7 +18,7 @@ export default function CommitteeDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  const [activeTab, setActiveTab] = useState('ledger'); // 'ledger' | 'members' | 'progress'
+  const [activeTab, setActiveTab] = useState('ledger'); // 'ledger' | 'members' | 'requests' | 'progress'
   const [selectedCycle, setSelectedCycle] = useState(2);
   const [toastMessage, setToastMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -46,18 +46,8 @@ export default function CommitteeDetail() {
   });
 
   // Members list
-  const [members, setMembers] = useState([
-    { id: 'u1', name: 'Ali Khan (You)', role: 'Organizer', turn: 1, status: 'paid', paidAt: 'Today, 10:15 AM', photo: '/avatar.svg', phone: '03001234567', score: 850 },
-    { id: 'u2', name: 'Usman Tariq', role: 'Co-Organizer', turn: 2, status: 'paid', paidAt: 'Yesterday', photo: null, phone: '03129876543', score: 890 },
-    { id: 'u3', name: 'Priya Kapoor', role: 'Member', turn: 3, status: 'awaiting', paidAt: 'Pending Verification', photo: null, phone: '03334445556', score: 820 },
-    { id: 'u4', name: 'Ayesha Malik', role: 'Member', turn: 4, status: 'overdue', paidAt: 'Overdue (3 Days)', photo: null, phone: '03451122334', score: 710 },
-    { id: 'u5', name: 'Bilal Hassan', role: 'Member', turn: 5, status: 'paid', paidAt: 'Oct 24', photo: null, phone: '03017788990', score: 860 },
-    { id: 'u6', name: 'Zainab Fatima', role: 'Member', turn: 6, status: 'paid', paidAt: 'Oct 23', photo: null, phone: '03215544332', score: 875 },
-    { id: 'u7', name: 'Hamza Rashid', role: 'Member', turn: 7, status: 'paid', paidAt: 'Oct 22', photo: null, phone: '03348899001', score: 840 },
-    { id: 'u8', name: 'Saima Khan', role: 'Member', turn: 8, status: 'paid', paidAt: 'Oct 21', photo: null, phone: '03023344556', score: 830 },
-    { id: 'u9', name: 'Tariq Mehmood', role: 'Member', turn: 9, status: 'pending', paidAt: 'Not Paid', photo: null, phone: '03136677889', score: 810 },
-    { id: 'u10', name: 'Kashif Ali', role: 'Member', turn: 10, status: 'pending', paidAt: 'Not Paid', photo: null, phone: '03229988776', score: 800 },
-  ]);
+  const [members, setMembers] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
 
   useEffect(() => {
     async function loadDetails() {
@@ -65,13 +55,23 @@ export default function CommitteeDetail() {
         setLoading(true);
         const data = await getCommitteeById(id || '1');
         if (data?.committee) {
-          setCommittee((prev) => ({ ...prev, ...data.committee }));
+          setCommittee((prev) => ({
+            ...prev,
+            ...data.committee,
+            contributionAmount: parseFloat(data.committee.contribution_amount || data.committee.contributionAmount || 5000),
+            capacity: parseInt(data.committee.capacity, 10) || 10,
+            inviteCode: data.committee.invite_code || data.committee.inviteCode || 'SANJHI-8492K',
+            inviteLink: data.committee.invite_link || data.committee.inviteLink || '',
+          }));
         }
         if (data?.members && Array.isArray(data.members)) {
-          setMembers(data.members);
+          const approved = data.members.filter(m => m.status === 'approved');
+          const pending = data.members.filter(m => m.status === 'pending');
+          setMembers(approved.length > 0 ? approved : data.members);
+          setPendingRequests(pending);
         }
       } catch (err) {
-        // Fallback to local state if backend route is in development
+        console.error('Failed to load committee:', err);
       } finally {
         setLoading(false);
       }
@@ -79,36 +79,30 @@ export default function CommitteeDetail() {
     loadDetails();
   }, [id]);
 
-  function showToast(msg) {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(''), 3500);
-  }
+  async function handleRequestAction(memberId, actionStatus) {
+    try {
+      const token = localStorage.getItem('sanjhi_token');
+      const res = await fetch(`${BACKEND_URL}/api/committees/${id}/requests/${memberId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: actionStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update request');
 
-  // Handle member payment verification
-  function handleVerifyMember(member) {
-    setSelectedMemberToVerify(member);
-    setShowVerifyModal(true);
-  }
-
-  function confirmVerification() {
-    if (!selectedMemberToVerify) return;
-    setMembers((prev) =>
-      prev.map((m) => (m.id === selectedMemberToVerify.id ? { ...m, status: 'paid', paidAt: 'Verified Today ✓' } : m))
-    );
-    setShowVerifyModal(false);
-    showToast(`Payment for ${selectedMemberToVerify.name} verified successfully! ✓`);
-  }
-
-  // Handle sending payment reminder
-  function handleSendReminder(member) {
-    setSelectedMemberToRemind(member);
-    setShowReminderModal(true);
-  }
-
-  function confirmSendReminder() {
-    if (!selectedMemberToRemind) return;
-    setShowReminderModal(false);
-    showToast(`WhatsApp & SMS reminder sent to ${selectedMemberToRemind.name}! 📲`);
+      showToast(`Member request successfully ${actionStatus}!`);
+      // Move from pending to members if approved
+      const targetReq = pendingRequests.find(r => r.id === memberId);
+      setPendingRequests(prev => prev.filter(r => r.id !== memberId));
+      if (actionStatus === 'approved' && targetReq) {
+        setMembers(prev => [...prev, { ...targetReq, status: 'approved', turn: prev.length + 1 }]);
+      }
+    } catch (err) {
+      showToast(err.message || 'Action failed.');
+    }
   }
 
   const paidCount = members.filter((m) => m.status === 'paid').length;
@@ -258,26 +252,32 @@ export default function CommitteeDetail() {
         </section>
 
         {/* ════════════════════════════════════════════
-            NAVIGATION TABS (Ledger | Members | Progress)
+            NAVIGATION TABS (Ledger | Members | Requests | Progress)
         ════════════════════════════════════════════ */}
         <div className="flex items-center justify-between bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
           {[
-            { id: 'ledger', label: 'Ledger & Payments', icon: 'receipt_long' },
+            { id: 'ledger', label: 'Ledger', icon: 'receipt_long' },
             { id: 'members', label: `Members (${members.length})`, icon: 'groups' },
-            { id: 'progress', label: 'Schedule & Rotation', icon: 'timeline' },
+            { id: 'requests', label: `Requests (${pendingRequests.length})`, icon: 'person_add' },
+            { id: 'progress', label: 'Rotation', icon: 'timeline' },
           ].map((tab) => {
             const active = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 py-2.5 px-3 rounded-xl font-label text-[13px] font-bold transition-all cursor-pointer border-none flex items-center justify-center gap-2 ${
+                className={`flex-1 py-2.5 px-3 rounded-xl font-label text-[13px] font-bold transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 relative ${
                   active ? 'bg-[#006972] text-white shadow-md' : 'bg-transparent text-deep-navy/70 hover:bg-slate-200'
                 }`}
               >
                 <Icon name={tab.icon} size={18} />
                 <span className="hidden sm:inline">{tab.label}</span>
-                <span className="sm:hidden text-[11px]">{tab.id === 'ledger' ? 'Ledger' : tab.id === 'members' ? 'Members' : 'Rotation'}</span>
+                <span className="sm:hidden text-[11px]">{tab.id === 'ledger' ? 'Ledger' : tab.id === 'members' ? 'Members' : tab.id === 'requests' ? 'Reqs' : 'Rotation'}</span>
+                {tab.id === 'requests' && pendingRequests.length > 0 && (
+                  <span className="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px] font-bold animate-pulse">
+                    {pendingRequests.length}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -412,21 +412,77 @@ export default function CommitteeDetail() {
                       className="w-10 h-10 rounded-full object-cover border border-[#006972]/20"
                     />
                     <div>
-                      <p className="font-headline text-[14px] font-bold text-deep-navy">{member.name}</p>
-                      <p className="font-body text-[12px] text-on-surface-variant">{member.phone}</p>
+                      <p className="font-headline text-[14px] font-bold text-deep-navy">{member.name || member.full_name}</p>
+                      <p className="font-body text-[12px] text-on-surface-variant">{member.phone || member.phone_number}</p>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
                     <span className="font-label text-[11px] font-bold text-[#006972] bg-[#006972]/10 px-2.5 py-0.5 rounded-full block mb-1">
-                      Turn #{member.turn}
+                      Turn #{member.turn || member.payout_turn_order || 1}
                     </span>
                     <span className="font-label text-[10px] text-emerald-700 font-semibold">
-                      Trust: {member.score} pts
+                      Trust: {member.score || member.trust_score || 850} pts
                     </span>
                   </div>
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* ════════════════════════════════════════════
+            TAB 3: JOIN REQUESTS (Organizer Approval)
+        ════════════════════════════════════════════ */}
+        {activeTab === 'requests' && (
+          <div className="bg-white rounded-3xl border-2 border-[#006972]/12 shadow-sm overflow-hidden p-5 sm:p-6 space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between border-b border-[#006972]/10 pb-3">
+              <h3 className="font-headline text-[17px] font-bold text-[#006972] flex items-center gap-2">
+                <Icon name="person_add" size={20} />
+                Pending Join Requests ({pendingRequests.length})
+              </h3>
+            </div>
+
+            {pendingRequests.length === 0 ? (
+              <div className="text-center py-12 text-on-surface-variant font-body text-[14px]">
+                <Icon name="done_all" size={36} className="mx-auto mb-2 text-[#006972]/40" />
+                No pending join requests at the moment. Share your invite code to get more members!
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {pendingRequests.map((req) => (
+                  <div key={req.id} className="p-4 rounded-2xl bg-amber-50/50 border border-amber-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={req.profile_photo_url ? resolvePhotoUrl(req.profile_photo_url) : '/avatar.svg'}
+                        alt={req.full_name}
+                        className="w-12 h-12 rounded-full object-cover border border-[#006972]/20 bg-white"
+                      />
+                      <div>
+                        <p className="font-headline text-[15px] font-bold text-deep-navy">{req.full_name}</p>
+                        <p className="font-body text-[12px] text-on-surface-variant">
+                          {req.email || req.phone_number} • Trust Score: <strong className="text-emerald-700">{req.trust_score || 850} pts</strong>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => handleRequestAction(req.id, 'rejected')}
+                        className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-rose-700 font-label text-[12px] font-bold transition-all cursor-pointer border border-slate-200 flex items-center gap-1"
+                      >
+                        <Icon name="close" size={16} /> Reject
+                      </button>
+                      <button
+                        onClick={() => handleRequestAction(req.id, 'approved')}
+                        className="px-4 py-2 rounded-xl bg-[#006972] hover:bg-[#00575f] text-white font-label text-[12px] font-bold transition-all shadow-sm cursor-pointer border-none flex items-center gap-1"
+                      >
+                        <Icon name="check" size={16} /> Approve
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

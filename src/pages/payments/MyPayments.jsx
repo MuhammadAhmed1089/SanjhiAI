@@ -1,139 +1,136 @@
-import TopAppBar from '../../components/TopAppBar';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
-import Button from '../../components/Button';
+
+const HISTORY = [
+  { cycle: 'Cycle 1 (Oct)', status: 'on-time', amount: 'Rs. 5,000', date: 'Oct 05' },
+  { cycle: 'Cycle 12 (Sept)', status: 'on-time', amount: 'Rs. 5,000', date: 'Sep 08' },
+  { cycle: 'Cycle 11 (Aug)', status: 'late', amount: 'Rs. 5,000', date: 'Aug 15' },
+];
 
 export default function MyPayments() {
+  const navigate = useNavigate();
+  const [activeFilter, setActiveFilter] = useState('Diwali Fund');
+
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body antialiased">
-<header className="bg-background dark:bg-background w-full top-0 sticky z-40 flat no shadows flex justify-between items-center px-margin-mobile md:px-margin-desktop py-sm w-full">
-<button className="text-primary dark:text-on-primary hover:bg-surface-container-low transition-colors active:scale-95 transition-transform duration-200 p-2 rounded-full flex items-center justify-center">
-<span className="material-symbols-outlined">arrow_back</span>
-</button>
-<h1 className="font-headline-md text-headline-md-mobile md:text-headline-md text-primary dark:text-on-primary tracking-tight">My Payments</h1>
-<div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center">
+    <AuthAmbientBackground showTicker={false}>
+      <div className="w-full max-w-2xl mx-auto px-3 sm:px-6 py-4 sm:py-8 flex flex-col min-h-[calc(100vh-36px)] gap-5">
 
-</div>
-</header>
-<main className="flex-grow w-full max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop py-lg pb-[100px] md:pb-lg flex flex-col gap-lg">
+        {/* Header */}
+        <header className="w-full flex items-center justify-between">
+          <button
+            onClick={() => navigate(-1)}
+            aria-label="Go back"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/60 hover:bg-white/80 text-[#006972] transition-colors cursor-pointer active:scale-95 backdrop-blur-md border border-[#006972]/15 shadow-sm"
+          >
+            <Icon name="arrow_back" size={20} />
+          </button>
+          <h1 className="font-headline text-[22px] sm:text-[24px] font-bold text-deep-navy tracking-tight">
+            My Payments
+          </h1>
+          <div className="w-10" />
+        </header>
 
-<section className="grid grid-cols-1 md:grid-cols-2 gap-md">
-<div className="bg-primary-container text-on-primary rounded-xl p-lg ambient-shadow flex flex-col justify-between h-40 relative overflow-hidden">
+        {/* Stats Cards */}
+        <section className="grid grid-cols-2 gap-3">
+          <div className="bg-[#006972] rounded-2xl p-5 relative overflow-hidden">
+            <div className="absolute -right-6 -top-6 w-28 h-28 bg-white/10 rounded-full blur-xl" />
+            <p className="font-label text-[11px] text-white/70 uppercase tracking-wider mb-3">Trust Score</p>
+            <p className="font-headline text-[38px] font-bold text-white leading-none">940</p>
+            <p className="font-label text-[11px] text-white/80 mt-1 flex items-center gap-1">
+              <Icon name="trending_up" size={14} /> Top 5%
+            </p>
+          </div>
+          <div className="bg-white/90 backdrop-blur-md rounded-2xl p-5 border border-[#006972]/15 shadow-sm">
+            <p className="font-label text-[11px] text-on-surface-variant uppercase tracking-wider mb-3">On-time Rate</p>
+            <p className="font-headline text-[38px] font-bold text-emerald-600 leading-none">98%</p>
+            <p className="font-label text-[11px] text-on-surface-variant mt-1">Consistent</p>
+          </div>
+        </section>
 
-<div className="absolute -right-10 -top-10 w-40 h-40 bg-secondary rounded-full opacity-20 blur-2xl"></div>
-<h2 className="font-label-sm text-label-sm text-inverse-primary uppercase tracking-widest">Trust Score</h2>
-<div className="flex items-end gap-sm mt-auto">
-<span className="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg font-bold leading-none">940</span>
-<span className="text-inverse-primary mb-1 font-label-sm text-label-sm flex items-center"><span className="material-symbols-outlined text-[16px] mr-1">trending_up</span> Top 5%</span>
-</div>
-</div>
-<div className="glass-card rounded-xl p-lg flex flex-col justify-between h-40">
-<h2 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">On-time Rate</h2>
-<div className="flex items-end gap-sm mt-auto">
-<span className="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg font-bold text-secondary leading-none">98%</span>
-<span className="text-on-surface-variant mb-1 font-label-sm text-label-sm">Consistent</span>
-</div>
-</div>
-</section>
-
-<section className="w-full overflow-x-auto pb-sm scrollbar-hide">
-<div className="flex gap-sm min-w-max">
-<button className="bg-secondary text-on-secondary px-6 py-2 rounded-full font-label-sm text-label-sm transition-all shadow-sm">Diwali Fund</button>
-<button className="bg-surface-container-low text-on-surface-variant border border-outline-variant/30 hover:bg-surface-container transition-colors px-6 py-2 rounded-full font-label-sm text-label-sm">Home Renovation</button>
-</div>
-</section>
-
-<section className="bg-surface-container-lowest rounded-xl border border-secondary/15 p-lg relative">
-<div className="absolute top-0 left-0 w-full h-1 bg-secondary rounded-t-xl opacity-80"></div>
-<div className="flex justify-between items-start mb-6">
-<div>
-<h3 className="font-headline-md text-headline-md-mobile text-on-surface mb-1">Diwali Savings Fund</h3>
-<div className="inline-flex items-center gap-1 bg-tertiary-container/20 text-on-tertiary-container px-3 py-1 rounded-full font-label-sm text-label-sm">
-<span className="material-symbols-outlined text-[14px]" data-weight="fill">check_circle</span>
-                        Paid for Oct
-                    </div>
-</div>
-<div className="text-right">
-<p className="font-label-sm text-label-sm text-on-surface-variant">Contribution</p>
-<p className="font-headline-md text-headline-md-mobile text-primary">Rs. 5,000</p>
-</div>
-</div>
-<div className="grid grid-cols-2 gap-4 bg-surface-container-low rounded-lg p-md">
-<div>
-<p className="font-label-sm text-label-sm text-on-surface-variant mb-1">Next Due</p>
-<p className="font-body-lg text-body-lg text-on-surface font-medium">Nov 10, 2023</p>
-</div>
-<div>
-<p className="font-label-sm text-label-sm text-on-surface-variant mb-1">Your Payout Turn</p>
-<p className="font-body-lg text-body-lg text-secondary font-medium flex items-center gap-1">
-                        Cycle 10 <span className="text-on-surface-variant text-sm font-normal">(August)</span>
-</p>
-</div>
-</div>
-<button className="w-full mt-6 bg-secondary text-on-secondary py-3 rounded-lg font-label-sm text-label-sm hover:bg-secondary/90 transition-colors active:scale-[0.98]">
-                Make Next Payment
+        {/* Committee Filter Pills */}
+        <section className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {['Diwali Fund', 'Home Renovation'].map((name) => (
+            <button
+              key={name}
+              onClick={() => setActiveFilter(name)}
+              className={`flex-shrink-0 px-5 py-2 rounded-full font-label text-[13px] font-semibold transition-all ${
+                activeFilter === name
+                  ? 'bg-[#006972] text-white shadow-md shadow-[#006972]/25'
+                  : 'bg-white/70 text-on-surface-variant border border-[#006972]/15 hover:border-[#006972]/40'
+              }`}
+            >
+              {name}
             </button>
-</section>
+          ))}
+        </section>
 
-<section>
-<h3 className="font-headline-md text-[20px] text-on-surface mb-md">Payment History</h3>
-<div className="flex flex-col gap-sm">
+        {/* Active Committee Card */}
+        <section className="bg-white/90 backdrop-blur-md rounded-2xl border border-[#006972]/20 shadow-md p-5 sm:p-6 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-[#006972] rounded-t-2xl" />
+          <div className="flex justify-between items-start mb-5">
+            <div>
+              <h3 className="font-headline text-[18px] font-bold text-deep-navy mb-2">Diwali Savings Fund</h3>
+              <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-full font-label text-[12px] font-semibold">
+                <Icon name="check_circle" size={14} /> Paid for Oct
+              </span>
+            </div>
+            <div className="text-right">
+              <p className="font-label text-[11px] text-on-surface-variant">Contribution</p>
+              <p className="font-headline text-[18px] font-bold text-[#006972]">Rs. 5,000</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4 bg-[#f5f4e8] rounded-xl p-4 mb-5">
+            <div>
+              <p className="font-label text-[11px] text-on-surface-variant mb-1">Next Due</p>
+              <p className="font-body text-[14px] text-deep-navy font-semibold">Nov 10, 2026</p>
+            </div>
+            <div>
+              <p className="font-label text-[11px] text-on-surface-variant mb-1">Your Payout Turn</p>
+              <p className="font-body text-[14px] text-[#006972] font-semibold">Cycle 10 <span className="text-on-surface-variant font-normal">(August)</span></p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/pay-now')}
+            className="w-full bg-[#006972] hover:bg-[#00575f] text-white font-label text-[14px] py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg"
+          >
+            Make Next Payment
+            <Icon name="arrow_forward" size={18} />
+          </button>
+        </section>
 
-<div className="bg-surface-container-lowest border border-outline-variant/20 rounded-lg p-md flex items-center justify-between hover:bg-surface-container-low transition-colors cursor-pointer">
-<div className="flex items-center gap-md">
-<div className="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
-<span className="material-symbols-outlined">receipt_long</span>
-</div>
-<div>
-<p className="font-body-md text-body-md text-on-surface font-medium">Cycle 1 (Oct)</p>
-<p className="font-label-sm text-label-sm text-secondary flex items-center gap-1 mt-1">
-<span className="material-symbols-outlined text-[14px]">check_circle</span> Paid on time
-                            </p>
-</div>
-</div>
-<div className="text-right">
-<p className="font-body-md text-body-md text-on-surface font-medium">Rs. 5,000</p>
-<p className="font-label-sm text-label-sm text-on-surface-variant mt-1">Oct 05</p>
-</div>
-</div>
+        {/* Payment History */}
+        <section>
+          <h3 className="font-headline text-[18px] font-bold text-deep-navy mb-3">Payment History</h3>
+          <div className="flex flex-col gap-3">
+            {HISTORY.map((item, i) => (
+              <div
+                key={i}
+                className="bg-white/90 backdrop-blur-md rounded-2xl border border-[#006972]/10 shadow-sm p-4 flex items-center justify-between hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`w-11 h-11 rounded-full flex items-center justify-center ${item.status === 'on-time' ? 'bg-[#006972]/10 text-[#006972]' : 'bg-amber-100 text-amber-600'}`}>
+                    <Icon name="receipt_long" size={22} />
+                  </div>
+                  <div>
+                    <p className="font-headline text-[15px] font-bold text-deep-navy">{item.cycle}</p>
+                    <p className={`font-label text-[12px] flex items-center gap-1 mt-0.5 ${item.status === 'on-time' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                      <Icon name={item.status === 'on-time' ? 'check_circle' : 'warning'} size={13} />
+                      {item.status === 'on-time' ? 'Paid on time' : 'Paid late'}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-headline text-[15px] font-bold text-deep-navy">{item.amount}</p>
+                  <p className="font-label text-[11px] text-on-surface-variant mt-0.5">{item.date}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
-<div className="bg-surface-container-lowest border border-outline-variant/20 rounded-lg p-md flex items-center justify-between hover:bg-surface-container-low transition-colors cursor-pointer">
-<div className="flex items-center gap-md">
-<div className="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
-<span className="material-symbols-outlined">receipt_long</span>
-</div>
-<div>
-<p className="font-body-md text-body-md text-on-surface font-medium">Cycle 12 (Sept)</p>
-<p className="font-label-sm text-label-sm text-secondary flex items-center gap-1 mt-1">
-<span className="material-symbols-outlined text-[14px]">check_circle</span> Paid on time
-                            </p>
-</div>
-</div>
-<div className="text-right">
-<p className="font-body-md text-body-md text-on-surface font-medium">Rs. 5,000</p>
-<p className="font-label-sm text-label-sm text-on-surface-variant mt-1">Sep 08</p>
-</div>
-</div>
-
-<div className="bg-surface-container-lowest border border-outline-variant/20 rounded-lg p-md flex items-center justify-between hover:bg-surface-container-low transition-colors cursor-pointer">
-<div className="flex items-center gap-md">
-<div className="w-12 h-12 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center shrink-0">
-<span className="material-symbols-outlined">receipt_long</span>
-</div>
-<div>
-<p className="font-body-md text-body-md text-on-surface font-medium">Cycle 11 (Aug)</p>
-<p className="font-label-sm text-label-sm text-on-tertiary-fixed-variant flex items-center gap-1 mt-1">
-<span className="material-symbols-outlined text-[14px]">warning</span> Paid late
-                            </p>
-</div>
-</div>
-<div className="text-right">
-<p className="font-body-md text-body-md text-on-surface font-medium">Rs. 5,000</p>
-<p className="font-label-sm text-label-sm text-on-surface-variant mt-1">Aug 15</p>
-</div>
-</div>
-</div>
-</section>
-</main>
-    </div>
+      </div>
+    </AuthAmbientBackground>
   );
 }
