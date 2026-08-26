@@ -105,6 +105,22 @@ export async function logout() {
 }
 
 /**
+ * Send OTP code to a new contact (phone/email) to link to current profile.
+ * @param {{ target: string }} payload
+ */
+export function sendContactOTP(payload) {
+  return api.post(`${BASE}/contact/send-otp`, payload);
+}
+
+/**
+ * Verify OTP code and link new contact (phone/email) to current profile.
+ * @param {{ target: string, code: string }} payload
+ */
+export function verifyContactOTP(payload) {
+  return api.post(`${BASE}/contact/verify-otp`, payload);
+}
+
+/**
  * Get current session info (useful for checking auth status on app load).
  */
 export function getSession() {

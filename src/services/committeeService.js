@@ -24,6 +24,18 @@ export function getCommittee(id) {
   return api.get(`${BASE}/${id}`);
 }
 
+export function getCommitteeById(id) {
+  return getCommittee(id);
+}
+
+export function updatePaymentStatus(paymentId, payload) {
+  return api.patch(`/payments/${paymentId}`, payload);
+}
+
+export function releasePayout(cycleId) {
+  return api.post(`/cycles/${cycleId}/release`);
+}
+
 /**
  * Create a new committee.
  * @param {{

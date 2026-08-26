@@ -1,8 +1,7 @@
-// server.js
-// Basic Express server connected to PostgreSQL via db.js
-
 import express from 'express';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { testConnection } from './config/db.js';
 import { initWhatsAppGateway } from './utilities/whatsappGateway.js';
 import authRoutes from './routes/authRoutes.js';
@@ -10,6 +9,9 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 import committeeRoutes from './routes/committeeRoutes.js';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,6 +28,10 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
+
+// Serve uploaded profile photos as static files
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+
 
 // Auth Routes
 app.use('/api/auth', authRoutes);

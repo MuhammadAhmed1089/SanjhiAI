@@ -42,7 +42,7 @@ const TICKER_ITEMS = [
   { icon: 'verified_user', text: 'Welcome to Sanjhi — Verified Peer-to-Peer Savings Platform', color: 'text-[#006972]' },
   { icon: 'shield', text: 'Your payments and trust score are secured via PostgreSQL ledger', color: 'text-emerald-600' },
   { icon: 'groups', text: 'Create or join a committee pool with friends & family anytime', color: 'text-[#006972]' },
-  { icon: 'auto_awesome', text: 'Ask our AI Helper for advice on managing committee schedules', color: 'text-amber-700' },
+  { icon: 'auto_awesome', text: 'Ask Sanjhi AI for advice on managing committee schedules & payouts', color: 'text-amber-700' },
 ];
 
 /* ── Floating particle positions ── */
@@ -59,6 +59,16 @@ const PARTICLES = [
   { x: 72, y: 90, size: 4, delay: 3.5, dur: 7 },
 ];
 
+const BACKEND_URL = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL.replace('/api', '')
+  : 'http://localhost:3000';
+
+function resolvePhotoUrl(url) {
+  if (!url) return null;
+  if (url.startsWith('http') || url.startsWith('data:')) return url;
+  return `${BACKEND_URL}${url}`;
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -66,6 +76,7 @@ export default function Dashboard() {
   // User state — initially null so no mock name flashes
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
+  const [userPhoto, setUserPhoto] = useState(null);
 
   const [activeFilter, setActiveFilter] = useState('all');
   const [ripples, setRipples] = useState({});
@@ -108,6 +119,10 @@ export default function Dashboard() {
           setUserEmail(data.user.email || '');
         } else if (data?.user?.email) {
           setUserName(data.user.email.split('@')[0]);
+        }
+
+        if (data?.user?.photoUrl) {
+          setUserPhoto(resolvePhotoUrl(data.user.photoUrl));
         }
 
         if (data?.trustScore?.score) {
@@ -217,7 +232,7 @@ export default function Dashboard() {
 
           <div className="flex items-center gap-3">
             <button onClick={() => navigate('/profile')} className="relative group cursor-pointer border-none bg-transparent p-0">
-              <img src="/avatar.svg" alt="Profile"
+              <img src={userPhoto || "/avatar.svg"} alt="Profile"
                 className="w-11 h-11 rounded-full object-cover border-2 border-[#006972] shadow-sm group-hover:scale-110 group-hover:shadow-md transition-all duration-300 animate-glow-ring" />
               <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white bg-emerald-500">
                 <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping-slow" />
@@ -258,7 +273,7 @@ export default function Dashboard() {
               className="relative overflow-hidden flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#006972]/10 hover:bg-[#006972]/18 text-[#006972] font-label text-[13px] font-bold border border-[#006972]/25 transition-all active:scale-95 cursor-pointer">
               {ripples.ai && <span key={ripples.ai.k} className="absolute rounded-full bg-[#006972]/20 w-28 h-28 -translate-x-1/2 -translate-y-1/2 animate-ping pointer-events-none" style={{ left: ripples.ai.x, top: ripples.ai.y }} />}
               <Icon name="auto_awesome" size={17} className="animate-float-y-fast" />
-              <span className="hidden sm:inline">AI Helper</span>
+              <span className="hidden sm:inline">Sanjhi AI</span>
             </button>
 
             <button onClick={() => navigate('/notifications')}
@@ -390,11 +405,10 @@ export default function Dashboard() {
           ].map((action, idx) => (
             <button key={action.id}
               onClick={(e) => { ripple(e, action.id); setTimeout(() => navigate(action.path), 120); }}
-              className={`relative overflow-hidden py-5 px-3 rounded-2xl font-label text-[14px] font-bold active:scale-95 transition-all duration-200 shadow-sm hover:shadow-xl hover:-translate-y-1.5 flex flex-col items-center gap-2.5 cursor-pointer group ${
-                action.primary
+              className={`relative overflow-hidden py-5 px-3 rounded-2xl font-label text-[14px] font-bold active:scale-95 transition-all duration-200 shadow-sm hover:shadow-xl hover:-translate-y-1.5 flex flex-col items-center gap-2.5 cursor-pointer group ${action.primary
                   ? 'bg-[#006972] text-white hover:bg-[#005a62] shadow-[#006972]/20'
                   : 'bg-white text-[#006972] border-2 border-[#006972] hover:bg-[#006972]/5'
-              }`}
+                }`}
               style={{ animationDelay: `${idx * 0.1}s` }}>
               {ripples[action.id] && (
                 <span key={ripples[action.id].k} className={`absolute rounded-full w-36 h-36 -translate-x-1/2 -translate-y-1/2 pointer-events-none animate-ping ${action.primary ? 'bg-white/20' : 'bg-[#006972]/10'}`}

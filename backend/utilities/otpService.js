@@ -1,5 +1,4 @@
 import nodemailer from 'nodemailer';
-import twilio from 'twilio';
 import { sendWhatsAppWebOTP } from './whatsappGateway.js';
 
 // Initialize Nodemailer Transporter
@@ -12,12 +11,6 @@ const transporter = nodemailer.createTransport({
     pass: process.env.SMTP_PASS || '',
   },
 });
-
-// Initialize Twilio Client (if credentials available)
-const twilioClient =
-  process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
-    ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
-    : null;
 
 /**
  * Generate a random 6-digit numeric OTP code.
@@ -104,24 +97,8 @@ async function sendSMSOTP(phone, code) {
     return sendWhatsAppOTP(phone, code);
   }
 
-  try {
-    if (!twilioClient) {
-      console.log(`[OTP PHONE/WHATSAPP MOCK] No provider configured. Phone code ${code} printed to console for ${phone}.`);
-      return { success: true, channel: 'sms', mock: true };
-    }
-
-    const message = await twilioClient.messages.create({
-      body: `Your Sanjhi verification code is: ${code}. Valid for 10 mins.`,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: phone,
-    });
-
-    console.log(`✅ [OTP SMS SENT] SID: ${message.sid}`);
-    return { success: true, channel: 'sms', sid: message.sid };
-  } catch (error) {
-    console.error(`❌ [OTP SMS FAILED]:`, error.message);
-    return { success: true, channel: 'sms', fallback: true, error: error.message };
-  }
+  console.log(`[OTP PHONE/WHATSAPP MOCK] Printed OTP code ${code} for ${phone} in console.`);
+  return { success: true, channel: 'whatsapp', mock: true };
 }
 
 /**

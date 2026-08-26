@@ -18,6 +18,7 @@ export default function LinkAccount() {
   const [provider, setProvider] = useState(formData.provider || 'jazzcash');
   const [accountTitle, setAccountTitle] = useState(formData.accountTitle || '');
   const [accountNumber, setAccountNumber] = useState(formData.accountNumber || '');
+  const [skipAccount, setSkipAccount] = useState(false);
   const [ripples, setRipples] = useState({});
 
   function triggerRipple(e, key) {
@@ -35,14 +36,16 @@ export default function LinkAccount() {
     }, 600);
   }
 
-  function handleContinue(e) {
-    triggerRipple(e, 'continue');
+  function handleContinue(e, isSkipping = false) {
+    if (e) triggerRipple(e, 'continue');
+    
     navigate('/committee/review', {
       state: {
         ...formData,
-        provider,
-        accountTitle: accountTitle || 'Account Owner',
-        accountNumber: accountNumber || '03001234567',
+        provider: isSkipping ? 'optional' : provider,
+        accountTitle: isSkipping ? 'Not Provided (Optional)' : (accountTitle || 'Not Provided'),
+        accountNumber: isSkipping ? 'Not Provided (Optional)' : (accountNumber || 'Not Provided'),
+        isAccountOptional: isSkipping,
       },
     });
   }
@@ -66,7 +69,7 @@ export default function LinkAccount() {
 
             <div className="text-center">
               <h1 className="font-headline text-[20px] sm:text-[24px] font-bold text-deep-navy">
-                Link Collection Account
+                Link Collection Account <span className="text-[12px] font-normal text-on-surface-variant font-body">(Optional)</span>
               </h1>
               <p className="font-body text-[12px] sm:text-[13px] text-on-surface-variant">
                 Step 3 of 4: Payment Details
@@ -86,22 +89,40 @@ export default function LinkAccount() {
           {/* Info Banner */}
           <section className="bg-[#006972]/8 border border-[#006972]/15 rounded-2xl p-4 flex items-start gap-3 mb-6">
             <div className="w-9 h-9 rounded-full bg-[#006972]/15 text-[#006972] flex items-center justify-center shrink-0">
-              <Icon name="shield" size={20} />
+              <Icon name="info" size={20} />
             </div>
             <div className="text-left">
-              <h4 className="font-headline text-[13px] font-bold text-deep-navy">Direct P2P Contributions</h4>
+              <h4 className="font-headline text-[13px] font-bold text-deep-navy">Optional Account Setup</h4>
               <p className="font-body text-[12px] text-on-surface-variant leading-tight mt-0.5">
-                Members will send monthly contributions directly to this linked account. Sanjhi does not hold your funds.
+                Connecting a JazzCash or Bank account is optional right now. You can link your payout details anytime later from Committee Settings.
               </p>
             </div>
           </section>
 
-          <form onSubmit={(e) => { e.preventDefault(); handleContinue(e); }} className="space-y-6 text-left">
+          <form onSubmit={(e) => { e.preventDefault(); handleContinue(e, false); }} className="space-y-6 text-left">
             
+            {/* Skip Toggle */}
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+              <div className="flex items-center gap-2.5">
+                <Icon name="do_not_disturb_on" size={20} className="text-amber-800" />
+                <div>
+                  <p className="font-headline text-[13px] font-bold text-amber-900">Skip Account Setup for Now</p>
+                  <p className="font-body text-[11px] text-amber-800/80">Proceed to final review without adding payment details.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => handleContinue(e, true)}
+                className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-label text-[12px] font-bold transition-all shadow-sm cursor-pointer border-none"
+              >
+                Skip Step
+              </button>
+            </div>
+
             {/* Provider Selection */}
             <div className="space-y-2">
               <label className="block font-label text-[13px] font-bold text-deep-navy">
-                Select Account Provider
+                Select Account Provider <span className="font-normal text-on-surface-variant text-[11px]">(Optional)</span>
               </label>
               <div className="grid grid-cols-3 gap-3">
                 {[
@@ -131,7 +152,7 @@ export default function LinkAccount() {
             {/* Account Title */}
             <div className="space-y-1">
               <label htmlFor="accountTitle" className="block font-label text-[13px] font-bold text-deep-navy">
-                Account Holder Title
+                Account Holder Title <span className="font-normal text-on-surface-variant text-[11px]">(Optional)</span>
               </label>
               <div className="relative group">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#006972]/10 flex items-center justify-center text-[#006972] group-focus-within:bg-[#006972] group-focus-within:text-white transition-all">
@@ -140,10 +161,9 @@ export default function LinkAccount() {
                 <input
                   id="accountTitle"
                   type="text"
-                  required
                   value={accountTitle}
                   onChange={(e) => setAccountTitle(e.target.value)}
-                  placeholder="e.g. Ali Khan"
+                  placeholder="e.g. Ali Khan (Optional)"
                   className="w-full h-12 pl-13 pr-4 bg-white border border-[#006972]/20 rounded-2xl focus:border-[#006972] focus:ring-4 focus:ring-[#006972]/10 transition-all font-body text-[14px] text-deep-navy outline-none shadow-sm"
                 />
               </div>
@@ -152,7 +172,7 @@ export default function LinkAccount() {
             {/* Account / IBAN / Phone Number */}
             <div className="space-y-1">
               <label htmlFor="accountNumber" className="block font-label text-[13px] font-bold text-deep-navy">
-                Account / Wallet Number
+                Account / Wallet Number <span className="font-normal text-on-surface-variant text-[11px]">(Optional)</span>
               </label>
               <div className="relative group">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#006972]/10 flex items-center justify-center text-[#006972] group-focus-within:bg-[#006972] group-focus-within:text-white transition-all">
@@ -161,10 +181,9 @@ export default function LinkAccount() {
                 <input
                   id="accountNumber"
                   type="text"
-                  required
                   value={accountNumber}
                   onChange={(e) => setAccountNumber(e.target.value)}
-                  placeholder="e.g. 03001234567 or IBAN..."
+                  placeholder="e.g. 03001234567 or IBAN (Optional)..."
                   className="w-full h-12 pl-13 pr-4 bg-white border border-[#006972]/20 rounded-2xl focus:border-[#006972] focus:ring-4 focus:ring-[#006972]/10 transition-all font-body text-[14px] text-deep-navy outline-none shadow-sm"
                 />
               </div>
@@ -182,7 +201,7 @@ export default function LinkAccount() {
               
               <button
                 type="submit"
-                onClick={(e) => triggerRipple(e, 'continue')}
+                onClick={(e) => handleContinue(e, false)}
                 className="relative overflow-hidden w-2/3 bg-[#006972] hover:bg-[#00575f] text-white py-3.5 px-6 rounded-2xl font-label text-[15px] font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg shadow-[#006972]/25 hover:shadow-xl cursor-pointer border-none"
               >
                 {ripples.continue && (

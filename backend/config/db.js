@@ -30,18 +30,36 @@ const poolConfig = useConnectionString
 
 const pool = new Pool({
   ...poolConfig,
-  max: 10,
+  max: 15,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: 10000,
+  keepAlive: true,
 });
 
+// Handle idle client connection drops gracefully without crashing server
 pool.on('error', (err) => {
-  console.error('Unexpected PostgreSQL error:', err);
-  process.exit(-1);
+  console.warn('⚠️ PostgreSQL pool client error (idle connection drop):', err.message);
 });
 
-// Simple helper for running queries
-export const query = (text, params) => pool.query(text, params);
+// Resilient query helper with automatic single retry on network/idle socket drops
+export const query = async (text, params) => {
+  try {
+    return await pool.query(text, params);
+  } catch (err) {
+    const isConnErr = err.code === 'ECONNRESET' ||
+      (err.message && (
+        err.message.includes('closed') ||
+        err.message.includes('timeout') ||
+        err.message.includes('terminated')
+      ));
+
+    if (isConnErr) {
+      console.warn('⚠️ PostgreSQL socket dropped. Retrying query automatically...', err.message);
+      return await pool.query(text, params);
+    }
+    throw err;
+  }
+};
 
 // Runs once at startup to confirm the DB is actually reachable.
 // Call this from server.js right after imports.
