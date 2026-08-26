@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import twilio from 'twilio';
+import { sendWhatsAppWebOTP } from './whatsappGateway.js';
 
 // Initialize Nodemailer Transporter
 const transporter = nodemailer.createTransport({
@@ -84,10 +85,21 @@ async function sendEmailOTP(email, code) {
 }
 
 /**
- * Dispatch Phone OTP via Twilio or CallMeBot WhatsApp API
+ * Dispatch Phone OTP via Self-Hosted WhatsApp Gateway, Green API, CallMeBot, or Twilio
  */
 async function sendSMSOTP(phone, code) {
-  // If CallMeBot API key is configured, send via WhatsApp
+  // 1. Primary: Send via Self-Hosted WhatsApp Web Gateway
+  const gatewayResult = await sendWhatsAppWebOTP(phone, code);
+  if (gatewayResult && !gatewayResult.mock) {
+    return gatewayResult;
+  }
+
+  // 2. If Green API credentials are configured, send via Green API WhatsApp
+  if (process.env.GREEN_API_ID_INSTANCE && process.env.GREEN_API_API_TOKEN_INSTANCE) {
+    return sendGreenAPIWhatsAppOTP(phone, code);
+  }
+
+  // 3. If CallMeBot API key is configured, send via CallMeBot WhatsApp
   if (process.env.CALLMEBOT_API_KEY) {
     return sendWhatsAppOTP(phone, code);
   }
@@ -109,6 +121,40 @@ async function sendSMSOTP(phone, code) {
   } catch (error) {
     console.error(`❌ [OTP SMS FAILED]:`, error.message);
     return { success: true, channel: 'sms', fallback: true, error: error.message };
+  }
+}
+
+/**
+ * Dispatch WhatsApp OTP via Green API
+ */
+async function sendGreenAPIWhatsAppOTP(phone, code) {
+  try {
+    const formattedPhone = phone.replace(/[^\d]/g, '');
+    const idInstance = process.env.GREEN_API_ID_INSTANCE;
+    const apiTokenInstance = process.env.GREEN_API_API_TOKEN_INSTANCE;
+    const host = (process.env.GREEN_API_HOST || 'https://api.green-api.com').replace(/\/$/, '');
+
+    const url = `${host}/waInstance${idInstance}/sendMessage/${apiTokenInstance}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chatId: `${formattedPhone}@c.us`,
+        message: `Your Sanjhi verification code is: ${code}. Valid for 10 minutes. Do not share this code with anyone.`,
+      }),
+    });
+
+    const data = await response.json();
+    if (response.ok && data.idMessage) {
+      console.log(`✅ [GREEN API WHATSAPP SENT] Message ID: ${data.idMessage} to ${phone}`);
+      return { success: true, channel: 'whatsapp', idMessage: data.idMessage };
+    } else {
+      console.error(`❌ [GREEN API WHATSAPP FAILED] Status: ${response.status}`, data);
+      return { success: true, channel: 'whatsapp', fallback: true, error: JSON.stringify(data) };
+    }
+  } catch (error) {
+    console.error(`❌ [GREEN API WHATSAPP ERROR]:`, error.message);
+    return { success: true, channel: 'whatsapp', fallback: true, error: error.message };
   }
 }
 

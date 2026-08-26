@@ -11,7 +11,14 @@ import {
 } from '../controller/authController.js';
 import { requireAuth } from '../utilities/jwt.js';
 
+import { getWhatsAppStatus } from '../utilities/whatsappGateway.js';
+
 const router = express.Router();
+
+// WhatsApp Gateway Status
+router.get('/whatsapp-status', (req, res) => {
+  res.json(getWhatsAppStatus());
+});
 
 // Public OTP & Auth routes
 router.post('/otp/send', sendOTPController);

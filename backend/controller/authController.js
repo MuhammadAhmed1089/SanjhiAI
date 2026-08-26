@@ -74,44 +74,51 @@ export async function sendOTPController(req, res) {
  */
 export async function verifyOTPController(req, res) {
   try {
-    const { target, code, purpose = 'signup' } = req.body;
+    const { target, code, purpose = 'signup', firebaseVerified = false } = req.body;
     const parsed = parseTarget(target);
 
-    if (!parsed || !parsed.value || !code) {
-      return res.status(400).json({ error: 'Target and verification code are required' });
+    if (!parsed || !parsed.value) {
+      return res.status(400).json({ error: 'Valid target (phone or email) is required' });
     }
 
-    // Fetch active OTP record
-    const otpResult = await query(
-      `SELECT * FROM otps 
-       WHERE target = $1 AND used_at IS NULL AND expires_at > NOW()
-       ORDER BY created_at DESC LIMIT 1`,
-      [parsed.value]
-    );
+    if (!firebaseVerified) {
+      if (!code) {
+        return res.status(400).json({ error: 'Verification code is required' });
+      }
 
-    if (otpResult.rows.length === 0) {
-      return res.status(400).json({ error: 'Invalid or expired OTP code. Please request a new one.' });
-    }
+      // Fetch active OTP record
+      const otpResult = await query(
+        `SELECT * FROM otps 
+         WHERE target = $1 AND used_at IS NULL AND expires_at > NOW()
+         ORDER BY created_at DESC LIMIT 1`,
+        [parsed.value]
+      );
 
-    const otpRecord = otpResult.rows[0];
+      if (otpResult.rows.length === 0) {
+        return res.status(400).json({ error: 'Invalid or expired OTP code. Please request a new one.' });
+      }
 
-    if (otpRecord.attempt_count >= MAX_ATTEMPTS) {
+      const otpRecord = otpResult.rows[0];
+
+      if (otpRecord.attempt_count >= MAX_ATTEMPTS) {
+        await query(`UPDATE otps SET used_at = NOW() WHERE id = $1`, [otpRecord.id]);
+        return res.status(429).json({ error: 'Maximum verification attempts exceeded. Please request a new code.' });
+      }
+
+      // Compare code
+      const isMatch = await bcrypt.compare(code.toString().trim(), otpRecord.code_hash);
+
+      if (!isMatch) {
+        await query(`UPDATE otps SET attempt_count = attempt_count + 1 WHERE id = $1`, [otpRecord.id]);
+        return res.status(400).json({ error: 'Incorrect verification code. Please check and try again.' });
+      }
+
+      // Mark OTP as used
       await query(`UPDATE otps SET used_at = NOW() WHERE id = $1`, [otpRecord.id]);
-      return res.status(429).json({ error: 'Maximum verification attempts exceeded. Please request a new code.' });
     }
-
-    // Compare code
-    const isMatch = await bcrypt.compare(code.toString().trim(), otpRecord.code_hash);
-
-    if (!isMatch) {
-      await query(`UPDATE otps SET attempt_count = attempt_count + 1 WHERE id = $1`, [otpRecord.id]);
-      return res.status(400).json({ error: 'Incorrect verification code. Please check and try again.' });
-    }
-
-    // Mark OTP as used
-    await query(`UPDATE otps SET used_at = NOW() WHERE id = $1`, [otpRecord.id]);
 
     // Check if user already exists in DB
+
     const isEmail = parsed.type === 'email';
     const userSearchQuery = isEmail
       ? `SELECT * FROM users WHERE email = $1`

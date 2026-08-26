@@ -4,6 +4,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import { testConnection } from './config/db.js';
+import { initWhatsAppGateway } from './utilities/whatsappGateway.js';
 import authRoutes from './routes/authRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import committeeRoutes from './routes/committeeRoutes.js';
@@ -44,4 +45,5 @@ app.get('/', (req, res) => {
 app.listen(PORT, async () => {
   console.log(`Server listening on port ${PORT}`);
   await testConnection(); // logs DB connection status to terminal on startup
+  initWhatsAppGateway();  // Initializes WhatsApp Web Socket Gateway
 });
