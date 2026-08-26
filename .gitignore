@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 .env
+.whatsapp_auth
+whatsapp_auth
+backend/whatsapp_auth

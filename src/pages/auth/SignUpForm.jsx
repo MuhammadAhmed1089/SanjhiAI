@@ -88,7 +88,8 @@ export default function SignUpForm() {
         },
       });
     } catch (err) {
-      setApiError(err.message || 'Failed to send OTP code. Please try again.');
+      console.error('Submit OTP error:', err);
+      setApiError(err.message || 'Failed to send verification code. Please try again.');
     } finally {
       setLoading(false);
     }

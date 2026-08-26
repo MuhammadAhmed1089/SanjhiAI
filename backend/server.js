@@ -1,19 +1,17 @@
-// server.js
-// Basic Express server connected to PostgreSQL via db.js
-
 import express from 'express';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { testConnection } from './config/db.js';
+import { initWhatsAppGateway } from './utilities/whatsappGateway.js';
 import authRoutes from './routes/authRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import committeeRoutes from './routes/committeeRoutes.js';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
-// Resolve path to the root .env file
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -30,6 +28,10 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
+
+// Serve uploaded profile photos as static files
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+
 
 // Auth Routes
 app.use('/api/auth', authRoutes);
@@ -49,4 +51,5 @@ app.get('/', (req, res) => {
 app.listen(PORT, async () => {
   console.log(`Server listening on port ${PORT}`);
   await testConnection(); // logs DB connection status to terminal on startup
+  initWhatsAppGateway();  // Initializes WhatsApp Web Socket Gateway
 });

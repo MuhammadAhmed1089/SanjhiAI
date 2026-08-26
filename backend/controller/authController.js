@@ -1,7 +1,17 @@
 import bcrypt from 'bcryptjs';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { query } from '../config/db.js';
 import { generateOTPCode, sendOTP, sendLoginNotificationEmail } from '../utilities/otpService.js';
 import { signToken } from '../utilities/jwt.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Ensure uploads directory exists
+const UPLOADS_DIR = path.join(__dirname, '../../public/uploads/profile-photos');
+fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 
 const OTP_EXPIRY_MINUTES = 10;
@@ -74,44 +84,51 @@ export async function sendOTPController(req, res) {
  */
 export async function verifyOTPController(req, res) {
   try {
-    const { target, code, purpose = 'signup' } = req.body;
+    const { target, code, purpose = 'signup', firebaseVerified = false } = req.body;
     const parsed = parseTarget(target);
 
-    if (!parsed || !parsed.value || !code) {
-      return res.status(400).json({ error: 'Target and verification code are required' });
+    if (!parsed || !parsed.value) {
+      return res.status(400).json({ error: 'Valid target (phone or email) is required' });
     }
 
-    // Fetch active OTP record
-    const otpResult = await query(
-      `SELECT * FROM otps 
-       WHERE target = $1 AND used_at IS NULL AND expires_at > NOW()
-       ORDER BY created_at DESC LIMIT 1`,
-      [parsed.value]
-    );
+    if (!firebaseVerified) {
+      if (!code) {
+        return res.status(400).json({ error: 'Verification code is required' });
+      }
 
-    if (otpResult.rows.length === 0) {
-      return res.status(400).json({ error: 'Invalid or expired OTP code. Please request a new one.' });
-    }
+      // Fetch active OTP record
+      const otpResult = await query(
+        `SELECT * FROM otps 
+         WHERE target = $1 AND used_at IS NULL AND expires_at > NOW()
+         ORDER BY created_at DESC LIMIT 1`,
+        [parsed.value]
+      );
 
-    const otpRecord = otpResult.rows[0];
+      if (otpResult.rows.length === 0) {
+        return res.status(400).json({ error: 'Invalid or expired OTP code. Please request a new one.' });
+      }
 
-    if (otpRecord.attempt_count >= MAX_ATTEMPTS) {
+      const otpRecord = otpResult.rows[0];
+
+      if (otpRecord.attempt_count >= MAX_ATTEMPTS) {
+        await query(`UPDATE otps SET used_at = NOW() WHERE id = $1`, [otpRecord.id]);
+        return res.status(429).json({ error: 'Maximum verification attempts exceeded. Please request a new code.' });
+      }
+
+      // Compare code
+      const isMatch = await bcrypt.compare(code.toString().trim(), otpRecord.code_hash);
+
+      if (!isMatch) {
+        await query(`UPDATE otps SET attempt_count = attempt_count + 1 WHERE id = $1`, [otpRecord.id]);
+        return res.status(400).json({ error: 'Incorrect verification code. Please check and try again.' });
+      }
+
+      // Mark OTP as used
       await query(`UPDATE otps SET used_at = NOW() WHERE id = $1`, [otpRecord.id]);
-      return res.status(429).json({ error: 'Maximum verification attempts exceeded. Please request a new code.' });
     }
-
-    // Compare code
-    const isMatch = await bcrypt.compare(code.toString().trim(), otpRecord.code_hash);
-
-    if (!isMatch) {
-      await query(`UPDATE otps SET attempt_count = attempt_count + 1 WHERE id = $1`, [otpRecord.id]);
-      return res.status(400).json({ error: 'Incorrect verification code. Please check and try again.' });
-    }
-
-    // Mark OTP as used
-    await query(`UPDATE otps SET used_at = NOW() WHERE id = $1`, [otpRecord.id]);
 
     // Check if user already exists in DB
+
     const isEmail = parsed.type === 'email';
     const userSearchQuery = isEmail
       ? `SELECT * FROM users WHERE email = $1`
@@ -238,6 +255,216 @@ export async function setupProfileController(req, res) {
   }
 }
 
+
+/**
+ * POST /api/auth/profile/photo
+ * Handles multer-uploaded profile photo, saves to disk, updates DB URL.
+ */
+export async function uploadProfilePhotoController(req, res) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No photo file received.' });
+    }
+
+    const ext = path.extname(req.file.originalname).toLowerCase() || '.jpg';
+    const filename = `${req.user.userId}-${Date.now()}${ext}`;
+    const destPath = path.join(UPLOADS_DIR, filename);
+
+    // Write buffer to disk
+    fs.writeFileSync(destPath, req.file.buffer);
+
+    const photoUrl = `/uploads/profile-photos/${filename}`;
+
+    // Persist in DB
+    await query(
+      `UPDATE users SET profile_photo_url = $1, updated_at = NOW() WHERE id = $2`,
+      [photoUrl, req.user.userId]
+    );
+
+    return res.status(200).json({
+      message: 'Profile photo updated successfully',
+      profile_photo_url: photoUrl,
+    });
+  } catch (error) {
+    console.error('Error in uploadProfilePhotoController:', error);
+    return res.status(500).json({ error: 'Failed to upload profile photo.' });
+  }
+}
+
+/**
+ * GET /api/auth/notification-preferences
+ */
+export async function getNotificationPrefsController(req, res) {
+  try {
+    const result = await query(
+      `SELECT push_enabled, sms_enabled, whatsapp_enabled
+       FROM notification_preferences WHERE user_id = $1`,
+      [req.user.userId]
+    );
+
+    if (result.rows.length === 0) {
+      // Insert defaults if missing (e.g. legacy user)
+      await query(
+        `INSERT INTO notification_preferences (user_id) VALUES ($1) ON CONFLICT DO NOTHING`,
+        [req.user.userId]
+      );
+      return res.status(200).json({ push_enabled: true, sms_enabled: true, whatsapp_enabled: true });
+    }
+
+    return res.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error in getNotificationPrefsController:', error);
+    return res.status(500).json({ error: 'Failed to fetch notification preferences.' });
+  }
+}
+
+/**
+ * PUT /api/auth/notification-preferences
+ */
+export async function updateNotificationPrefsController(req, res) {
+  try {
+    const { push_enabled, sms_enabled, whatsapp_enabled } = req.body;
+
+    const result = await query(
+      `INSERT INTO notification_preferences (user_id, push_enabled, sms_enabled, whatsapp_enabled)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id) DO UPDATE
+         SET push_enabled     = EXCLUDED.push_enabled,
+             sms_enabled      = EXCLUDED.sms_enabled,
+             whatsapp_enabled = EXCLUDED.whatsapp_enabled
+       RETURNING push_enabled, sms_enabled, whatsapp_enabled`,
+      [req.user.userId,
+       push_enabled  !== undefined ? push_enabled  : true,
+       sms_enabled   !== undefined ? sms_enabled   : true,
+       whatsapp_enabled !== undefined ? whatsapp_enabled : true]
+    );
+
+    return res.status(200).json({
+      message: 'Notification preferences updated',
+      ...result.rows[0],
+    });
+  } catch (error) {
+    console.error('Error in updateNotificationPrefsController:', error);
+    return res.status(500).json({ error: 'Failed to update notification preferences.' });
+  }
+}
+
+/**
+ * POST /api/auth/contact/send-otp
+ * Sends OTP to a new phone or email to link it to current authenticated user's account.
+ */
+export async function sendContactOTPController(req, res) {
+  try {
+    const { target } = req.body;
+    const parsed = parseTarget(target);
+
+    if (!parsed || !parsed.value) {
+      return res.status(400).json({ error: 'Valid phone number or email address is required.' });
+    }
+
+    // Check if target is already used by another user
+    const checkQuery = parsed.type === 'email'
+      ? `SELECT id FROM users WHERE email = $1 AND id != $2`
+      : `SELECT id FROM users WHERE phone_number = $1 AND id != $2`;
+    const checkRes = await query(checkQuery, [parsed.value, req.user.userId]);
+
+    if (checkRes.rows.length > 0) {
+      return res.status(400).json({ error: `This ${parsed.type} is already registered to another account.` });
+    }
+
+    const rawCode = generateOTPCode();
+    const codeHash = await bcrypt.hash(rawCode, 10);
+    const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+
+    // Invalidate existing active OTPs for this target
+    await query(
+      `UPDATE otps SET used_at = NOW() WHERE target = $1 AND used_at IS NULL`,
+      [parsed.value]
+    );
+
+    // Store new OTP in DB
+    await query(
+      `INSERT INTO otps (target, code_hash, purpose, expires_at)
+       VALUES ($1, $2, $3, $4)`,
+      [parsed.value, codeHash, 'signup', expiresAt]
+    );
+
+    // Dispatch OTP
+    const dispatchResult = await sendOTP(parsed.value, rawCode);
+
+    return res.status(200).json({
+      message: `OTP verification code sent to ${parsed.value}`,
+      target: parsed.value,
+      type: parsed.type,
+      channel: dispatchResult.channel,
+      ...(dispatchResult.mock && { devCode: rawCode }),
+    });
+  } catch (error) {
+    console.error('Error in sendContactOTPController:', error);
+    return res.status(500).json({ error: 'Failed to send OTP code. Please try again.' });
+  }
+}
+
+/**
+ * POST /api/auth/contact/verify-otp
+ * Verifies OTP code and links the new phone or email to current user's profile.
+ */
+export async function verifyContactOTPController(req, res) {
+  try {
+    const { target, code } = req.body;
+    const parsed = parseTarget(target);
+
+    if (!parsed || !parsed.value || !code) {
+      return res.status(400).json({ error: 'Target (phone or email) and verification code are required.' });
+    }
+
+    // Fetch active OTP record
+    const otpResult = await query(
+      `SELECT * FROM otps 
+       WHERE target = $1 AND used_at IS NULL AND expires_at > NOW()
+       ORDER BY created_at DESC LIMIT 1`,
+      [parsed.value]
+    );
+
+    if (otpResult.rows.length === 0) {
+      return res.status(400).json({ error: 'Invalid or expired OTP code. Please request a new one.' });
+    }
+
+    const otpRecord = otpResult.rows[0];
+
+    if (otpRecord.attempt_count >= MAX_ATTEMPTS) {
+      await query(`UPDATE otps SET used_at = NOW() WHERE id = $1`, [otpRecord.id]);
+      return res.status(429).json({ error: 'Maximum verification attempts exceeded. Please request a new code.' });
+    }
+
+    // Compare code
+    const isMatch = await bcrypt.compare(code.toString().trim(), otpRecord.code_hash);
+
+    if (!isMatch) {
+      await query(`UPDATE otps SET attempt_count = attempt_count + 1 WHERE id = $1`, [otpRecord.id]);
+      return res.status(400).json({ error: 'Incorrect verification code. Please try again.' });
+    }
+
+    // Mark OTP as used
+    await query(`UPDATE otps SET used_at = NOW() WHERE id = $1`, [otpRecord.id]);
+
+    // Update user's email or phone_number in users table
+    const isEmail = parsed.type === 'email';
+    const updateQuery = isEmail
+      ? `UPDATE users SET email = $1, updated_at = NOW() WHERE id = $2 RETURNING id, full_name, email, phone_number, age, sex, profile_photo_url`
+      : `UPDATE users SET phone_number = $1, updated_at = NOW() WHERE id = $2 RETURNING id, full_name, email, phone_number, age, sex, profile_photo_url`;
+
+    const updateRes = await query(updateQuery, [parsed.value, req.user.userId]);
+
+    return res.status(200).json({
+      message: `${isEmail ? 'Email' : 'Phone number'} verified and linked successfully!`,
+      user: updateRes.rows[0],
+    });
+  } catch (error) {
+    console.error('Error in verifyContactOTPController:', error);
+    return res.status(500).json({ error: 'Failed to verify and link contact.' });
+  }
+}
 
 /**
  * POST /api/auth/login-password

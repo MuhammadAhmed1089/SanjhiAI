@@ -32,7 +32,17 @@ export default function SetSchedule() {
   }
 
   const numMembers = formData.capacity || 10;
-  const durationLabel = `${numMembers} Cycles (${interval === '15 days' ? Math.ceil(numMembers / 2) + ' Months' : numMembers + ' Months'})`;
+
+  // Calculate readable duration based on selected interval
+  function getDurationLabel() {
+    if (interval === '7 days') return `${numMembers} Cycles (~${Math.ceil((numMembers * 7) / 30)} Months)`;
+    if (interval === '10 days') return `${numMembers} Cycles (~${Math.ceil((numMembers * 10) / 30)} Months)`;
+    if (interval === '15 days') return `${numMembers} Cycles (~${Math.ceil((numMembers * 15) / 30)} Months)`;
+    if (interval === '2 months') return `${numMembers} Cycles (${numMembers * 2} Months)`;
+    return `${numMembers} Cycles (${numMembers} Months)`; // 1 month
+  }
+
+  const durationLabel = getDurationLabel();
 
   function handleContinue(e) {
     triggerRipple(e, 'continue');
@@ -94,11 +104,14 @@ export default function SetSchedule() {
                 How often should members contribute to the pool?
               </p>
               
-              <div className="grid grid-cols-3 gap-2 bg-[#006972]/5 p-1.5 rounded-2xl border border-[#006972]/15">
+              {/* Expanded 5 Interval Grid Options */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-[#006972]/5 p-2 rounded-2xl border border-[#006972]/15">
                 {[
-                  { id: '15 days', label: '15 Days' },
-                  { id: '1 month', label: 'Every 1 Month' },
-                  { id: '2 months', label: 'Every 2 Months' },
+                  { id: '7 days', label: '7 Days', sub: 'Weekly' },
+                  { id: '10 days', label: '10 Days', sub: 'Decadally' },
+                  { id: '15 days', label: '15 Days', sub: 'Bi-Weekly' },
+                  { id: '1 month', label: '1 Month', sub: 'Monthly' },
+                  { id: '2 months', label: '2 Months', sub: 'Bi-Monthly' },
                 ].map((opt) => {
                   const active = interval === opt.id;
                   return (
@@ -106,13 +119,14 @@ export default function SetSchedule() {
                       key={opt.id}
                       type="button"
                       onClick={() => setIntervalVal(opt.id)}
-                      className={`py-3 px-2 rounded-xl font-label text-[13px] font-bold transition-all cursor-pointer border-none ${
+                      className={`py-2.5 px-2 rounded-xl transition-all cursor-pointer border-none flex flex-col items-center justify-center text-center ${
                         active
                           ? 'bg-[#006972] text-white shadow-md'
                           : 'bg-transparent text-deep-navy/70 hover:bg-[#006972]/10'
                       }`}
                     >
-                      {opt.label}
+                      <span className="font-headline text-[12px] sm:text-[13px] font-bold leading-tight">{opt.label}</span>
+                      <span className={`font-label text-[9px] uppercase font-semibold ${active ? 'text-white/80' : 'text-on-surface-variant/70'}`}>{opt.sub}</span>
                     </button>
                   );
                 })}
@@ -126,7 +140,7 @@ export default function SetSchedule() {
                   <Icon name="schedule" size={16} className="text-[#006972]" />
                   Total Committee Duration
                 </div>
-                <h3 className="font-headline text-[22px] sm:text-[26px] font-bold text-deep-navy mt-0.5">
+                <h3 className="font-headline text-[20px] sm:text-[24px] font-bold text-deep-navy mt-0.5">
                   {durationLabel}
                 </h3>
               </div>
@@ -147,7 +161,7 @@ export default function SetSchedule() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                 
-                {/* Fixed Order (Recommended) */}
+                {/* Fixed Order */}
                 <div
                   onClick={() => setPayoutOrder('fixed')}
                   className={`p-4 rounded-2xl border-2 transition-all cursor-pointer relative flex flex-col justify-between ${
@@ -170,7 +184,7 @@ export default function SetSchedule() {
                   </div>
                 </div>
 
-                {/* Lottery (Phase 2) */}
+                {/* Lottery */}
                 <div className="p-4 rounded-2xl border border-[#006972]/10 bg-slate-50 opacity-60 relative cursor-not-allowed">
                   <span className="absolute top-2 right-2 bg-amber-500/20 text-amber-800 font-label text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">
                     Coming Soon
@@ -182,7 +196,7 @@ export default function SetSchedule() {
                   </p>
                 </div>
 
-                {/* Bidding (Phase 2) */}
+                {/* Bidding */}
                 <div className="p-4 rounded-2xl border border-[#006972]/10 bg-slate-50 opacity-60 relative cursor-not-allowed">
                   <span className="absolute top-2 right-2 bg-amber-500/20 text-amber-800 font-label text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">
                     Coming Soon

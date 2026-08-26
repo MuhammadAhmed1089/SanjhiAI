@@ -63,7 +63,8 @@ export default function OTPVerification() {
       setTimeLeft(59);
       setResendStatus(res?.devCode ? `Code resent (Dev: ${res.devCode})` : 'New verification code sent!');
     } catch (err) {
-      setErrorMessage(err.message || 'Failed to resend code');
+      console.error('Resend OTP error:', err);
+      setErrorMessage(err.message || 'Failed to resend verification code');
     }
   };
 
@@ -79,10 +80,9 @@ export default function OTPVerification() {
     setErrorMessage('');
 
     try {
-      // 1. Verify OTP with backend via authService (creates user in database)
+      // Verify OTP code with backend (created via Green API WhatsApp or Email)
       const result = await verifyOTP({ target, code: codeStr, purpose, password });
 
-      // 2. Update user profile details in DB
       if (fullName || password) {
         await setupProfile({
           full_name: fullName,
@@ -92,14 +92,14 @@ export default function OTPVerification() {
         });
       }
 
-      // 3. Navigate to dashboard or profile setup
       if (result.isNew && !fullName) {
         navigate('/profile-setup');
       } else {
         navigate('/dashboard');
       }
     } catch (err) {
-      setErrorMessage(err.message || 'Invalid or expired OTP code. Please try again.');
+      console.error('Verify error:', err);
+      setErrorMessage(err.message || 'Invalid or expired verification code. Please try again.');
     } finally {
       setLoading(false);
     }
