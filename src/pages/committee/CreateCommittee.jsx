@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AuthAmbientBackground from '../../components/AuthAmbientBackground';
+import { parseCommitteeAIAudio, parseCommitteeAIText } from '../../services/committeeService';
 import Icon from '../../components/Icon';
 
 export default function CreateCommittee() {
@@ -53,11 +54,7 @@ export default function CreateCommittee() {
     formData.append('audio', audioBlob, 'prompt.webm');
     
     try {
-      const response = await fetch('/api/committees/parse-ai-audio', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await response.json();
+      const data = await parseCommitteeAIAudio(formData);
       
       // Update the textarea with the transcription
       if (data.transcript) {
@@ -98,14 +95,7 @@ export default function CreateCommittee() {
     setIsParsing(true);
     
     try {
-      const response = await fetch('/api/committees/parse-ai-text', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text: aiPrompt }),
-      });
-      const data = await response.json();
+      const data = await parseCommitteeAIText({ text: aiPrompt });
       
       if (data.parsed) {
         setName(data.parsed.name || '');

@@ -7,8 +7,13 @@ import { testConnection } from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import committeeRoutes from './routes/committeeRoutes.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-dotenv.config();
+// Resolve path to the root .env file
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -44,4 +49,4 @@ app.get('/', (req, res) => {
 app.listen(PORT, async () => {
   console.log(`Server listening on port ${PORT}`);
   await testConnection(); // logs DB connection status to terminal on startup
-});
+});

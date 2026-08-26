@@ -87,7 +87,7 @@ export async function parseCommitteeAIText(req, res) {
         { role: 'system', content: SYSTEM_EXTRACTION_PROMPT },
         { role: 'user', content: `Extract from this text: "${text}"` }
       ],
-      model: 'llama-3.3-70b-versatile',
+      model: 'llama-3.1-8b-instant',
       response_format: { type: 'json_object' },
     });
 
@@ -401,7 +401,7 @@ export async function parseCommitteeAIAudio(req, res) {
         role: "user",
         content: `Extract from this text: "${transcription.text}"`
       }],
-      model: "llama-3.3-70b-versatile",
+      model: "llama-3.1-8b-instant",
       response_format: { type: "json_object" },
     });
     

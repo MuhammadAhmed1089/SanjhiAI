@@ -39,12 +39,21 @@ export function createCommittee(payload) {
 }
 
 /**
- * Parse committee details from natural language using AI.
+ * Parse committee details from natural language text using AI.
  * @param {{ text: string }} payload — natural language description
  * @returns {Promise<{ name, contribution_amount, capacity, interval_type }>}
  */
-export function parseCommitteeAI(payload) {
-  return api.post(`${BASE}/parse-ai`, payload);
+export function parseCommitteeAIText(payload) {
+  return api.post(`${BASE}/parse-ai-text`, payload);
+}
+
+/**
+ * Parse committee details from audio recording using AI.
+ * @param {FormData} formData — audio file form data
+ * @returns {Promise<{ transcript, parsed }>}
+ */
+export function parseCommitteeAIAudio(formData) {
+  return api.upload(`${BASE}/parse-ai-audio`, formData);
 }
 
 /**
