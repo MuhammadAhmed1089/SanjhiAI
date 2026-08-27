@@ -283,6 +283,11 @@ export async function getCommittee(req, res) {
   try {
     const { id } = req.params;
 
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    if (!isUuid) {
+      return res.status(404).json({ error: 'Committee not found.' });
+    }
+
     const committeeRes = await query(
       `SELECT c.*,
         ca.account_type, ca.account_number, ca.account_title,

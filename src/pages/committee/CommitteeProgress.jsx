@@ -49,7 +49,7 @@ export default function CommitteeProgress() {
 
           <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => navigate('/committee/settings')}
+              onClick={() => navigate(`/committee/${id || '1'}/settings`)}
               className="p-2.5 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-deep-navy transition-all active:scale-95 cursor-pointer"
               title="Settings"
             >

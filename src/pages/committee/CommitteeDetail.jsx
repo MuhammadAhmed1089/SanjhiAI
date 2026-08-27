@@ -25,6 +25,8 @@ export default function CommitteeDetail() {
 
   // Modals state
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteTab, setInviteTab] = useState('link'); // 'link' | 'userid'
+  const [manualUserId, setManualUserId] = useState('');
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [selectedMemberToVerify, setSelectedMemberToVerify] = useState(null);
   const [showReminderModal, setShowReminderModal] = useState(false);
@@ -105,6 +107,24 @@ export default function CommitteeDetail() {
     }
   }
 
+  function handleManualAddUser(e) {
+    e.preventDefault();
+    if (!manualUserId.trim()) return;
+    const cleanId = manualUserId.trim();
+    const newMember = {
+      id: `user_${Date.now()}`,
+      name: cleanId.startsWith('@') ? cleanId : `@${cleanId}`,
+      phone: '+92 300 0000000',
+      turn: members.length + 1,
+      status: 'approved',
+      trust_score: 850
+    };
+    setMembers(prev => [...prev, newMember]);
+    showToast(`Participant ${cleanId} added to committee successfully! ✓`);
+    setManualUserId('');
+    setShowInviteModal(false);
+  }
+
   const paidCount = members.filter((m) => m.status === 'paid').length;
   const totalPoolAmount = committee.contributionAmount * committee.capacity;
   const collectedAmount = paidCount * committee.contributionAmount;
@@ -161,7 +181,7 @@ export default function CommitteeDetail() {
             </button>
 
             <button
-              onClick={() => navigate('/committee/settings')}
+              onClick={() => navigate(`/committee/${id || '1'}/settings`)}
               className="p-2.5 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-deep-navy transition-all active:scale-95 cursor-pointer"
               title="Committee Settings"
             >
@@ -539,41 +559,153 @@ export default function CommitteeDetail() {
       </main>
 
       {/* ════════════════════════════════════════════
-          MODAL 1: INVITE MEMBERS & SHARE CODE
+          MODAL 1: INVITE MEMBERS & SHARE CODE / ADD USER ID
       ════════════════════════════════════════════ */}
       {showInviteModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl border border-[#006972]/15 animate-scale-up">
-            <div className="w-12 h-12 rounded-2xl bg-[#006972]/10 text-[#006972] flex items-center justify-center mx-auto">
-              <Icon name="person_add" size={24} />
-            </div>
-
-            <div>
-              <h3 className="font-headline text-[18px] font-bold text-deep-navy">Invite Members to Committee</h3>
-              <p className="font-body text-[12px] text-on-surface-variant mt-1">
-                Share this unique invite code or link with trusted members.
-              </p>
-            </div>
-
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
-              <span className="font-mono text-[14px] font-bold text-[#006972]">{committee.inviteCode}</span>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(committee.inviteCode);
-                  showToast('Invite code copied to clipboard!');
-                }}
-                className="px-3 py-1 rounded-xl bg-[#006972] hover:bg-[#00575f] text-white font-label text-[12px] font-bold cursor-pointer border-none"
-              >
-                Copy
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 text-center space-y-4 shadow-2xl border border-[#006972]/15 animate-scale-up text-left">
+            <div className="flex items-center justify-between border-b border-[#006972]/10 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-2xl bg-[#006972]/10 text-[#006972] flex items-center justify-center">
+                  <Icon name="person_add" size={22} />
+                </div>
+                <div>
+                  <h3 className="font-headline text-[17px] font-bold text-deep-navy">Manage Committee Invites</h3>
+                  <p className="font-body text-[11px] text-on-surface-variant">Share link/code or add directly by User ID</p>
+                </div>
+              </div>
+              <button onClick={() => setShowInviteModal(false)} className="p-1.5 rounded-full hover:bg-slate-100 text-on-surface-variant cursor-pointer border-none bg-transparent">
+                <Icon name="close" size={20} />
               </button>
             </div>
 
-            <div className="flex gap-3 pt-2">
+            {/* Modal Navigation Tabs */}
+            <div className="flex bg-[#006972]/5 p-1 rounded-2xl border border-[#006972]/15 gap-1">
+              <button
+                type="button"
+                onClick={() => setInviteTab('link')}
+                className={`flex-1 py-2 rounded-xl text-[12px] font-label font-bold transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+                  inviteTab === 'link'
+                    ? 'bg-[#006972] text-white shadow-sm'
+                    : 'text-deep-navy hover:bg-[#006972]/10'
+                }`}
+              >
+                <Icon name="link" size={15} /> Code & Link
+              </button>
+              <button
+                type="button"
+                onClick={() => setInviteTab('userid')}
+                className={`flex-1 py-2 rounded-xl text-[12px] font-label font-bold transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+                  inviteTab === 'userid'
+                    ? 'bg-[#006972] text-white shadow-sm'
+                    : 'text-deep-navy hover:bg-[#006972]/10'
+                }`}
+              >
+                <Icon name="badge" size={15} /> Add by User ID
+              </button>
+            </div>
+
+            {/* TAB CONTENT 1: INVITE CODE & LINK */}
+            {inviteTab === 'link' ? (
+              <div className="space-y-4 pt-1">
+                {/* Invite Code Box */}
+                <div className="space-y-1">
+                  <label className="block font-label text-[11px] font-bold uppercase text-on-surface-variant">Unique Invite Code</label>
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
+                    <span className="font-mono text-[15px] font-bold text-[#006972]">{committee.inviteCode}</span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(committee.inviteCode);
+                        showToast('Invite code copied to clipboard!');
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#006972] hover:bg-[#00575f] text-white font-label text-[12px] font-bold cursor-pointer border-none flex items-center gap-1"
+                    >
+                      <Icon name="content_copy" size={14} /> Copy Code
+                    </button>
+                  </div>
+                </div>
+
+                {/* Direct Share Link Box */}
+                <div className="space-y-1">
+                  <label className="block font-label text-[11px] font-bold uppercase text-on-surface-variant">Shareable Invite Link</label>
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                    <p className="font-mono text-[12px] text-slate-700 truncate bg-white p-2 rounded-xl border border-slate-200">
+                      {committee.inviteLink || `http://localhost:5173/join/${committee.inviteCode}`}
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          const link = committee.inviteLink || `http://localhost:5173/join/${committee.inviteCode}`;
+                          navigator.clipboard.writeText(link);
+                          showToast('Invite link copied! Share with participants.');
+                        }}
+                        className="flex-1 py-2 rounded-xl bg-[#006972] hover:bg-[#00575f] text-white font-label text-[12px] font-bold cursor-pointer border-none flex items-center justify-center gap-1 shadow-sm"
+                      >
+                        <Icon name="share" size={15} /> Copy Invite Link
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate(`/join/${committee.inviteCode}`);
+                        }}
+                        className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-deep-navy font-label text-[12px] font-bold cursor-pointer border-none flex items-center gap-1"
+                      >
+                        <Icon name="open_in_new" size={15} /> Preview
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="font-body text-[12px] text-on-surface-variant text-center">
+                  Members opening this link will be prompted to submit a join request to the committee.
+                </p>
+              </div>
+            ) : (
+              /* TAB CONTENT 2: MANUAL ADD BY USER ID */
+              <form onSubmit={handleManualAddUser} className="space-y-4 pt-1">
+                <div className="space-y-1.5">
+                  <label className="block font-label text-[12px] font-bold text-deep-navy">User ID / Username / Phone</label>
+                  <div className="relative">
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#006972]">
+                      <Icon name="person_search" size={18} />
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. @zaid_99 or 03001234567"
+                      value={manualUserId}
+                      onChange={(e) => setManualUserId(e.target.value)}
+                      className="w-full h-12 pl-11 pr-4 bg-slate-50 border-2 border-[#006972]/15 rounded-2xl focus:border-[#006972] focus:ring-4 focus:ring-[#006972]/8 font-body text-[14px] text-deep-navy outline-none"
+                    />
+                  </div>
+                  <p className="font-body text-[11px] text-on-surface-variant">
+                    Enter the exact User ID or phone number of the member to add them directly to the committee rotation.
+                  </p>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowInviteModal(false)}
+                    className="flex-1 py-3 rounded-2xl font-label text-[13px] font-bold bg-slate-100 hover:bg-slate-200 text-deep-navy cursor-pointer border-none"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-3 rounded-2xl font-label text-[13px] font-bold bg-[#006972] hover:bg-[#00575f] text-white cursor-pointer border-none shadow-md flex items-center justify-center gap-1.5"
+                  >
+                    <Icon name="person_add" size={16} /> Add to Committee
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <div className="pt-2 border-t border-[#006972]/10 flex justify-end">
               <button
                 onClick={() => setShowInviteModal(false)}
-                className="w-full py-3 rounded-2xl font-label text-[13px] font-bold bg-slate-100 hover:bg-slate-200 text-deep-navy cursor-pointer border-none"
+                className="px-5 py-2 rounded-xl font-label text-[12px] font-bold bg-slate-100 hover:bg-slate-200 text-deep-navy cursor-pointer border-none"
               >
-                Close
+                Done
               </button>
             </div>
           </div>
