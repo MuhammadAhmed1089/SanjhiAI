@@ -9,7 +9,7 @@ export default function OTPVerification() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { target = '+923000000000', purpose = 'signup', fullName, age, sex, password, devCode } = location.state || {};
+  const { target = '', purpose = 'signup', fullName, age, sex, password, devCode } = location.state || {};
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timeLeft, setTimeLeft] = useState(59);
@@ -92,7 +92,9 @@ export default function OTPVerification() {
         });
       }
 
-      if (result.isNew && !fullName) {
+      if (purpose === 'password_reset') {
+        navigate('/reset-password');
+      } else if (result.isNew && !fullName) {
         navigate('/profile-setup');
       } else {
         navigate('/dashboard');

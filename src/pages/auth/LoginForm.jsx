@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import logo from '../../assets/screen.png';
 import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
@@ -7,6 +7,8 @@ import { loginWithPassword, sendOTP } from '../../services/authService';
 
 export default function LoginForm() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const passwordJustReset = location.state?.passwordReset === true;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -117,6 +119,14 @@ export default function LoginForm() {
               Log in to access your committees & savings ledger
             </p>
           </div>
+
+          {/* Password Reset Success Box */}
+          {passwordJustReset && !apiError && (
+            <div className="w-full mb-4 p-3 sm:p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl sm:rounded-2xl text-emerald-700 text-[12px] sm:text-[13px] font-body flex items-start gap-2 animate-fade-in shadow-sm">
+              <Icon name="check_circle" size={18} className="shrink-0 mt-0.5 text-emerald-600" />
+              <span>Your password has been reset successfully. Please log in with your new password.</span>
+            </div>
+          )}
 
           {/* API Error Box */}
           {apiError && (

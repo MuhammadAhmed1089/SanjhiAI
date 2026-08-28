@@ -9,6 +9,8 @@ import SignUpForm from './pages/auth/SignUpForm';
 import LoginForm from './pages/auth/LoginForm';
 import OTPVerification from './pages/auth/OTPVerification';
 const ProfileSetup = lazy(() => import('./pages/auth/ProfileSetup'));
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
 
 // Committee pages
 const CreateCommittee = lazy(() => import('./pages/committee/CreateCommittee'));
@@ -200,7 +202,8 @@ export default function App() {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/signup/:method" element={<SignUpForm />} />
         <Route path="/login" element={<LoginForm />} />
-        <Route path="/forgot-password" element={<OTPVerification />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/otp" element={<OTPVerification />} />
         <Route path="/profile-setup" element={<ProfileSetup />} />
 

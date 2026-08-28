@@ -44,6 +44,17 @@ export async function sendOTPController(req, res) {
       return res.status(400).json({ error: 'Valid phone number or email address is required' });
     }
 
+    // Password reset requires an existing account
+    if (purpose === 'password_reset') {
+      const userSearchQuery = parsed.type === 'email'
+        ? `SELECT id FROM users WHERE email = $1`
+        : `SELECT id FROM users WHERE phone_number = $1`;
+      const userRes = await query(userSearchQuery, [parsed.value]);
+      if (userRes.rows.length === 0) {
+        return res.status(404).json({ error: 'No account found with this email/phone number.' });
+      }
+    }
+
     const rawCode = generateOTPCode();
     const codeHash = await bcrypt.hash(rawCode, 10);
     const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
@@ -110,6 +121,11 @@ export async function verifyOTPController(req, res) {
 
       const otpRecord = otpResult.rows[0];
 
+      // A password-reset code must have been issued as one
+      if (purpose === 'password_reset' && otpRecord.purpose !== 'password_reset') {
+        return res.status(400).json({ error: 'This code was not issued for password reset. Please request a new code.' });
+      }
+
       if (otpRecord.attempt_count >= MAX_ATTEMPTS) {
         await query(`UPDATE otps SET used_at = NOW() WHERE id = $1`, [otpRecord.id]);
         return res.status(429).json({ error: 'Maximum verification attempts exceeded. Please request a new code.' });
@@ -137,6 +153,11 @@ export async function verifyOTPController(req, res) {
     let userResult = await query(userSearchQuery, [parsed.value]);
     let user = userResult.rows[0];
     let isNew = false;
+
+    // Never create an account through the forgot-password flow
+    if (!user && purpose === 'password_reset') {
+      return res.status(404).json({ error: 'No account found with this email/phone number.' });
+    }
 
     // Create user if signing up and not found
     if (!user) {

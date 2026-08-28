@@ -6,6 +6,8 @@ const SCREENS = [
   { label: 'Sign Up', path: '/signup' },
   { label: 'Phone Input', path: '/signup/phone' },
   { label: 'OTP Verification', path: '/otp' },
+  { label: 'Forgot Password', path: '/forgot-password' },
+  { label: 'Reset Password', path: '/reset-password' },
   { label: 'Profile Setup', path: '/profile-setup' },
   { label: 'Dashboard', path: '/dashboard' },
   { label: 'Create Committee', path: '/committee/create' },

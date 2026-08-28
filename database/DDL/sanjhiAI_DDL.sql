@@ -23,7 +23,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto"; -- for gen_random_uuid()
 
 CREATE TYPE sex_type AS ENUM ('male', 'female', 'other', 'prefer_not_to_say');
 
-CREATE TYPE otp_purpose AS ENUM ('signup', 'login');
+CREATE TYPE otp_purpose AS ENUM ('signup', 'login', 'password_reset');
 
 CREATE TYPE committee_interval AS ENUM ('15_days', '1_month', '2_months');
 CREATE TYPE payout_order_type AS ENUM ('fixed'); -- extend later: lottery, bidding (Phase 2)
