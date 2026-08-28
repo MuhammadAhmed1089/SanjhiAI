@@ -138,16 +138,16 @@ export default function CommitteeProgress() {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-[#006972]/15 px-1 py-2 flex justify-around items-center safe-area-inset-bottom shadow-[0_-4px_20px_rgba(0,105,114,0.10)]">
         {[
           { label: 'Home', icon: 'dashboard', path: '/dashboard' },
-          { label: 'Pools', icon: 'groups', path: '/committee/1' },
+          { label: 'Pools', icon: 'groups', path: '/pools' },
           { label: 'Payments', icon: 'account_balance_wallet', path: '/payments' },
           { label: 'Support', icon: 'support_agent', path: '/support' },
           { label: 'Profile', icon: 'person', path: '/profile' },
         ].map((tab) => (
           <button key={tab.path} onClick={() => navigate(tab.path)}
             className="relative flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl transition-all duration-200 active:scale-90 cursor-pointer border-none bg-transparent min-w-0">
-            {tab.path === '/committee/1' && <span className="absolute inset-0 bg-[#006972]/10 rounded-2xl" />}
-            <Icon name={tab.icon} size={22} className={`relative z-10 transition-all duration-200 ${tab.path === '/committee/1' ? 'text-[#006972] scale-110' : 'text-deep-navy/45'}`} />
-            <span className={`font-label text-[9px] mt-0.5 font-semibold relative z-10 truncate max-w-[48px] ${tab.path === '/committee/1' ? 'text-[#006972]' : 'text-deep-navy/45'}`}>{tab.label}</span>
+            {tab.path === '/pools' && <span className="absolute inset-0 bg-[#006972]/10 rounded-2xl" />}
+            <Icon name={tab.icon} size={22} className={`relative z-10 transition-all duration-200 ${tab.path === '/pools' ? 'text-[#006972] scale-110' : 'text-deep-navy/45'}`} />
+            <span className={`font-label text-[9px] mt-0.5 font-semibold relative z-10 truncate max-w-[48px] ${tab.path === '/pools' ? 'text-[#006972]' : 'text-deep-navy/45'}`}>{tab.label}</span>
           </button>
         ))}
       </nav>

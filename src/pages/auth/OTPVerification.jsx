@@ -96,6 +96,8 @@ export default function OTPVerification() {
         navigate('/reset-password');
       } else if (result.isNew && !fullName) {
         navigate('/profile-setup');
+      } else if (result?.user?.is_admin || target.toLowerCase() === 'admin@sanjhi.pk') {
+        navigate('/admin');
       } else {
         navigate('/dashboard');
       }

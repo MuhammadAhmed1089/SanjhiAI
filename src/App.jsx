@@ -25,6 +25,7 @@ const CommitteeSetup = lazy(() => import('./pages/committee/CommitteeSetup'));
 const JoinCommittee = lazy(() => import('./pages/committee/JoinCommittee'));
 const JoinByCode = lazy(() => import('./pages/committee/JoinByCode'));
 const JoinRequestSent = lazy(() => import('./pages/committee/JoinRequestSent'));
+const MyPools = lazy(() => import('./pages/committee/MyPools'));
 
 // Dashboard pages
 const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
@@ -51,10 +52,14 @@ const Profile = lazy(() => import('./pages/profile/Profile'));
 
 // Admin pages
 const AdminOverview = lazy(() => import('./pages/admin/AdminOverview'));
+const AdminAnalytics = lazy(() => import('./pages/admin/AdminAnalytics'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminCommittees = lazy(() => import('./pages/admin/AdminCommittees'));
+const AdminCommitteeDetail = lazy(() => import('./pages/admin/AdminCommitteeDetail'));
 const AdminDisputes = lazy(() => import('./pages/admin/AdminDisputes'));
+const AdminAnnouncements = lazy(() => import('./pages/admin/AdminAnnouncements'));
 const ActivityLog = lazy(() => import('./pages/admin/ActivityLog'));
+const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
 
 // Misc pages
 const Offline = lazy(() => import('./pages/misc/Offline'));
@@ -220,7 +225,9 @@ export default function App() {
         <Route path="/committee/created" element={<CommitteeCreated />} />
         <Route path="/committee/setup" element={<CommitteeSetup />} />
 
-        {/* Committee Detail */}
+        {/* Committee Detail & Pools Hub */}
+        <Route path="/pools" element={<MyPools />} />
+        <Route path="/committees" element={<MyPools />} />
         <Route path="/committee/:id" element={<CommitteeDetail />} />
         <Route path="/committee/:id/settings" element={<CommitteeSettings />} />
         <Route path="/committee/:id/progress" element={<CommitteeProgress />} />
@@ -236,8 +243,11 @@ export default function App() {
 
         {/* Payments */}
         <Route path="/payments" element={<MyPayments />} />
+        <Route path="/payments/pay/:committeeId" element={<PayNow />} />
+        <Route path="/payments/pay/:committeeId/:cycleId" element={<PayNow />} />
         <Route path="/payments/pay" element={<PayNow />} />
         <Route path="/payments/release" element={<ReleasePayout />} />
+        <Route path="/payments/release/:committeeId/:cycleId" element={<ReleasePayout />} />
 
         {/* Support */}
         <Route path="/support" element={<SupportHome />} />
@@ -250,10 +260,14 @@ export default function App() {
 
         {/* Admin */}
         <Route path="/admin" element={<AdminOverview />} />
+        <Route path="/admin/analytics" element={<AdminAnalytics />} />
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/committees" element={<AdminCommittees />} />
+        <Route path="/admin/committees/:id" element={<AdminCommitteeDetail />} />
         <Route path="/admin/disputes" element={<AdminDisputes />} />
+        <Route path="/admin/announcements" element={<AdminAnnouncements />} />
         <Route path="/admin/activity" element={<ActivityLog />} />
+        <Route path="/admin/settings" element={<AdminSettings />} />
 
         {/* Misc */}
         <Route path="/offline" element={<Offline />} />

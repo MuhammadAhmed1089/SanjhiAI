@@ -65,8 +65,13 @@ export default function LoginForm() {
     setLoading(true);
 
     try {
-      await loginWithPassword({ target: email.trim(), password });
-      navigate('/dashboard');
+      const res = await loginWithPassword({ target: email.trim(), password });
+      const isAdmin = res?.user?.is_admin || email.trim().toLowerCase() === 'admin@sanjhi.pk';
+      if (isAdmin) {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       const nextFailCount = failedAttempts + 1;
       setFailedAttempts(nextFailCount);

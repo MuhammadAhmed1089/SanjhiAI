@@ -180,7 +180,7 @@ export default function Dashboard() {
 
   const navTabs = [
     { label: 'Home', icon: 'dashboard', path: '/dashboard' },
-    { label: 'Pools', icon: 'groups', path: '/committee/1' },
+    { label: 'Pools', icon: 'groups', path: '/pools' },
     { label: 'Payments', icon: 'account_balance_wallet', path: '/payments' },
     { label: 'Support', icon: 'support_agent', path: '/support' },
     { label: 'Profile', icon: 'person', path: '/profile' },
@@ -418,7 +418,7 @@ export default function Dashboard() {
           {[
             { label: 'Create Committee', icon: 'add_circle', primary: true, path: '/committee/create', id: 'act-create' },
             { label: 'Join Committee', icon: 'group_add', primary: false, path: '/join', id: 'act-join' },
-            { label: 'Pay Dues', icon: 'payments', primary: false, path: '/payments/pay', id: 'act-pay' },
+            { label: 'Pay Dues', icon: 'payments', primary: false, path: '/payments', id: 'act-pay' },
             { label: 'Support Ticket', icon: 'report_problem', primary: false, path: '/support/file-complaint', id: 'act-support' },
           ].map((action, idx) => (
             <button key={action.id}

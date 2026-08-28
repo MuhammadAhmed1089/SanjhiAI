@@ -264,7 +264,7 @@ export default function Profile() {
 
   const navTabs = [
     { label: 'Home', icon: 'dashboard', path: '/dashboard' },
-    { label: 'Pools', icon: 'groups', path: '/committee/1' },
+    { label: 'Pools', icon: 'groups', path: '/pools' },
     { label: 'Payments', icon: 'account_balance_wallet', path: '/payments' },
     { label: 'Support', icon: 'support_agent', path: '/support' },
     { label: 'Profile', icon: 'person', path: '/profile' },

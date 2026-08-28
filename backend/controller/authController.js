@@ -205,6 +205,7 @@ export async function verifyOTPController(req, res) {
         full_name: user.full_name,
         email: user.email,
         phone_number: user.phone_number,
+        is_admin: Boolean(user.is_admin),
         age: user.age,
         sex: user.sex,
         profile_photo_url: user.profile_photo_url,
@@ -503,8 +504,12 @@ export async function loginWithPasswordController(req, res) {
 
     const isEmail = parsed.type === 'email';
     const userSearchQuery = isEmail
-      ? `SELECT * FROM users WHERE email = $1`
-      : `SELECT * FROM users WHERE phone_number = $1`;
+      ? `SELECT u.*, (a.user_id IS NOT NULL) AS is_admin
+         FROM users u LEFT JOIN admins a ON a.user_id = u.id
+         WHERE u.email = $1`
+      : `SELECT u.*, (a.user_id IS NOT NULL) AS is_admin
+         FROM users u LEFT JOIN admins a ON a.user_id = u.id
+         WHERE u.phone_number = $1`;
 
     const userRes = await query(userSearchQuery, [parsed.value]);
 
@@ -560,6 +565,7 @@ export async function loginWithPasswordController(req, res) {
         full_name: user.full_name,
         email: user.email,
         phone_number: user.phone_number,
+        is_admin: Boolean(user.is_admin),
         age: user.age,
         sex: user.sex,
         profile_photo_url: user.profile_photo_url,
@@ -579,7 +585,11 @@ export async function getSessionController(req, res) {
 
   try {
     const userRes = await query(
-      `SELECT id, full_name, email, phone_number, profile_photo_url FROM users WHERE id = $1`,
+      `SELECT u.id, u.full_name, u.email, u.phone_number, u.profile_photo_url,
+              (a.user_id IS NOT NULL) AS is_admin
+       FROM users u
+       LEFT JOIN admins a ON a.user_id = u.id
+       WHERE u.id = $1`,
       [req.user.userId]
     );
 
@@ -587,9 +597,13 @@ export async function getSessionController(req, res) {
       return res.status(401).json({ error: 'Invalid session' });
     }
 
+    const u = userRes.rows[0];
     return res.status(200).json({
       authenticated: true,
-      user: userRes.rows[0],
+      user: {
+        ...u,
+        is_admin: Boolean(u.is_admin),
+      },
     });
   } catch (error) {
     console.error('Error in getSessionController:', error);

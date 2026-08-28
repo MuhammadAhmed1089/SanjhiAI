@@ -1,250 +1,449 @@
-import TopAppBar from '../../components/TopAppBar';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
-import Button from '../../components/Button';
+import AdminMobileNav from '../../components/AdminMobileNav';
+import { getUsers, suspendUser, unsuspendUser } from '../../services/adminService';
+import { logout } from '../../services/authService';
+
+const GLASS_CARD = 'bg-white/70 backdrop-blur-2xl border border-white/90 shadow-[0_12px_40px_rgba(0,105,114,0.08)]';
+
+/* ── Skeleton Helper ── */
+function Bone({ className = '' }) {
+  return <div className={`skeleton-bone ${className}`} />;
+}
 
 export default function AdminUsers() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [users, setUsers] = useState([]);
+  const [activeFilter, setActiveFilter] = useState('ALL'); // ALL, ACTIVE, SUSPENDED
+  const [searchQuery, setSearchQuery] = useState('');
+
+  /* Selected User Modal State */
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [actionNotes, setActionNotes] = useState('');
+  const [processingAction, setProcessingAction] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  function showToast(msg) {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 3000);
+  }
+
+  async function handleLogout() {
+    try {
+      await logout();
+    } catch (err) {
+      // ignore
+    } finally {
+      navigate('/login');
+    }
+  }
+
+  async function loadUsersData() {
+    try {
+      setLoading(true);
+      setLoadError('');
+      const data = await getUsers({ search: searchQuery });
+      const userList = data?.users || data || [];
+      setUsers(userList);
+    } catch (err) {
+      setLoadError(err.message || 'Failed to load user records.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadUsersData();
+  }, []);
+
+  /* Filter Users */
+  const filteredUsers = users.filter((u) => {
+    // Status tab filter
+    if (activeFilter === 'ACTIVE') return !u.is_suspended;
+    if (activeFilter === 'SUSPENDED') return u.is_suspended;
+
+    // Search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return (
+        (u.full_name || '').toLowerCase().includes(q) ||
+        (u.email || '').toLowerCase().includes(q) ||
+        (u.phone_number || '').includes(q) ||
+        (u.id || '').toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
+
+  async function handleToggleSuspend() {
+    if (!selectedUser || processingAction) return;
+    setProcessingAction(true);
+    try {
+      if (selectedUser.is_suspended) {
+        await unsuspendUser(selectedUser.id);
+        showToast(`Reinstated user ${selectedUser.full_name}`);
+      } else {
+        await suspendUser(selectedUser.id, { notes: actionNotes });
+        showToast(`Suspended user ${selectedUser.full_name}`);
+      }
+
+      setUsers((prev) =>
+        prev.map((u) => (u.id === selectedUser.id ? { ...u, is_suspended: !u.is_suspended } : u))
+      );
+      setSelectedUser(null);
+      setActionNotes('');
+    } catch (err) {
+      showToast(err.message || 'Failed to update user status.');
+    } finally {
+      setProcessingAction(false);
+    }
+  }
+
+  const adminNavItems = [
+    { label: 'Overview', icon: 'dashboard', path: '/admin' },
+    { label: 'Analytics', icon: 'bar_chart', path: '/admin/analytics' },
+    { label: 'Users', icon: 'group', path: '/admin/users' },
+    { label: 'Committees', icon: 'groups', path: '/admin/committees' },
+    { label: 'Disputes', icon: 'gavel', path: '/admin/disputes' },
+    { label: 'Broadcasts', icon: 'campaign', path: '/admin/announcements' },
+    { label: 'Audit Log', icon: 'history', path: '/admin/activity' },
+    { label: 'Settings', icon: 'settings', path: '/admin/settings' },
+  ];
+
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body antialiased">
-<header className="bg-surface w-full sticky top-0 z-50 border-b border-secondary/15 flex justify-between items-center px-margin-mobile h-16 md:hidden">
-<div className="flex items-center gap-3">
-<span className="material-symbols-outlined text-primary cursor-pointer active:opacity-80 hover:bg-secondary-container/50 transition-colors p-2 rounded-full">menu</span>
-<span className="font-display-lg-mobile text-display-lg-mobile font-bold text-secondary">Sanjhi Admin</span>
-</div>
-<div className="w-8 h-8 rounded-full overflow-hidden bg-surface-container-high border border-outline-variant flex items-center justify-center">
-<span className="material-symbols-outlined text-on-surface-variant text-sm">person</span>
-</div>
-</header>
+    <AuthAmbientBackground showTicker={false}>
+      <div className="min-h-screen flex flex-col md:flex-row w-full max-w-7xl mx-auto">
 
-<nav className="hidden md:flex flex-col bg-surface-container-low h-full w-72 rounded-r-xl shadow-sm fixed inset-y-0 left-0 z-[60] p-4 bg-surface-container border-r border-outline-variant/20">
-<div className="mb-8 px-4 flex items-center gap-3">
-<div className="w-10 h-10 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center border border-primary/20">
-<span className="material-symbols-outlined text-primary">shield_person</span>
-</div>
-<div>
-<h2 className="font-body-md text-body-md font-bold text-on-surface">Sanjhi Admin Panel</h2>
-<p className="font-label-sm text-label-sm text-on-surface-variant opacity-70">Internal Staff Tier</p>
-</div>
-</div>
-<ul className="flex flex-col gap-2">
-<li>
-<a className="flex items-center gap-4 text-on-surface-variant hover:bg-surface-variant rounded-full px-4 py-3 transition-all duration-200 ease-in-out font-label-sm text-label-sm" href="#">
-<span className="material-symbols-outlined">dashboard</span>
-                    Overview
-                </a>
-</li>
-<li>
-<a className="flex items-center gap-4 bg-secondary-container text-on-secondary-container rounded-full px-4 py-3 font-bold transition-all duration-200 ease-in-out font-label-sm text-label-sm" href="#">
-<span className="material-symbols-outlined">group</span>
-                    Users
-                </a>
-</li>
-<li>
-<a className="flex items-center gap-4 text-on-surface-variant hover:bg-surface-variant rounded-full px-4 py-3 transition-all duration-200 ease-in-out font-label-sm text-label-sm" href="#">
-<span className="material-symbols-outlined">diversity_3</span>
-                    Committees
-                </a>
-</li>
-<li>
-<a className="flex items-center gap-4 text-on-surface-variant hover:bg-surface-variant rounded-full px-4 py-3 transition-all duration-200 ease-in-out font-label-sm text-label-sm" href="#">
-<span className="material-symbols-outlined">report_problem</span>
-                    Disputes
-                </a>
-</li>
-</ul>
-</nav>
+        {/* ── DESKTOP SIDEBAR ── */}
+        <aside className="hidden md:flex w-64 shrink-0 flex-col gap-6 p-5 my-6 ml-4 bg-white/60 backdrop-blur-xl border border-white/80 rounded-3xl shadow-[0_8px_32px_rgba(0,105,114,0.12)]">
+          <div className="flex items-center gap-3 px-2 pt-2">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#006972] to-[#004f56] text-white flex items-center justify-center font-bold font-headline text-[16px] shadow-md">
+              SA
+            </div>
+            <div>
+              <h2 className="font-headline text-[15px] font-bold text-deep-navy leading-tight">Sanjhi Admin</h2>
+              <p className="font-label text-[10px] text-[#006972] font-semibold">User Directory</p>
+            </div>
+          </div>
 
-<main className="flex-1 w-full max-w-[1280px] mx-auto p-margin-mobile md:p-margin-desktop space-y-6 md:space-y-8">
+          <hr className="border-slate-200/60" />
 
-<div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-<div>
-<h1 className="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg text-primary">Users</h1>
-<p className="font-body-md text-body-md text-on-surface-variant mt-1">Manage and monitor platform members.</p>
-</div>
-<div className="relative w-full md:w-96 group">
-<span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
-<input className="w-full bg-surface-container-lowest border border-outline-variant rounded-full py-3 pl-12 pr-4 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-shadow shadow-sm hover:shadow-md" placeholder="Search members, contact, or ID..." type="text"/>
-<button className="absolute right-2 top-1/2 -translate-y-1/2 bg-secondary text-on-secondary rounded-full p-2 hover:bg-secondary/90 transition-colors flex items-center justify-center">
-<span className="material-symbols-outlined text-sm">tune</span>
-</button>
-</div>
-</div>
+          <nav className="flex flex-col gap-1">
+            {adminNavItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-label text-[13px] font-bold transition-all cursor-pointer border-none text-left ${
+                    isActive
+                      ? 'bg-[#006972] text-white shadow-md shadow-[#006972]/20'
+                      : 'text-deep-navy/70 hover:bg-white/80 hover:text-deep-navy'
+                  }`}
+                >
+                  <Icon name={item.icon} size={20} className={isActive ? 'text-white' : 'text-[#006972]'} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
 
-<div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-<button className="px-4 py-2 bg-primary text-on-primary rounded-full font-label-sm text-label-sm whitespace-nowrap flex items-center gap-2">
-                All Users <span className="bg-on-primary text-primary px-2 rounded-full text-xs">1,240</span>
-</button>
-<button className="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-full font-label-sm text-label-sm whitespace-nowrap hover:bg-surface-variant transition-colors">
-                Active
+          <div className="mt-auto pt-4 border-t border-slate-200/60">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white font-label text-[12px] font-bold transition-all cursor-pointer border border-rose-200/80 shadow-sm"
+            >
+              <Icon name="logout" size={16} />
+              <span>Logout Staff</span>
             </button>
-<button className="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-full font-label-sm text-label-sm whitespace-nowrap hover:bg-surface-variant transition-colors">
-                Pending Verification
+          </div>
+        </aside>
+
+        {/* ── MAIN CONTENT AREA ── */}
+        <main className="flex-1 p-4 sm:p-6 my-2 sm:my-4 space-y-6 pb-28 md:pb-8 max-w-full overflow-x-hidden">
+
+          {/* Header */}
+          <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-2xl bg-[#006972]/10 text-[#006972] flex items-center justify-center shadow-sm">
+                  <Icon name="group" size={20} />
+                </span>
+                <h1 className="font-headline text-[22px] sm:text-[26px] font-bold text-deep-navy">
+                  User Management
+                </h1>
+              </div>
+              <p className="font-label text-[11px] sm:text-[12px] text-on-surface-variant font-medium mt-1">
+                Directory of registered members, trust health, and access controls
+              </p>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative flex-1 sm:max-w-xs">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#006972]">
+                <Icon name="search" size={18} />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search name, email, phone..."
+                className="w-full pl-10 pr-9 py-2.5 rounded-2xl bg-white/80 backdrop-blur-md border border-white/90 text-deep-navy font-body text-[13px] placeholder:text-slate-400 outline-none focus:border-[#006972] focus:bg-white transition-all shadow-sm"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer"
+                >
+                  <Icon name="close" size={16} />
+                </button>
+              )}
+            </div>
+          </header>
+
+          {/* Filter Chips */}
+          <section className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {[
+              { id: 'ALL', label: 'All Users', count: users.length, icon: 'group' },
+              { id: 'ACTIVE', label: 'Active Users', count: users.filter((u) => !u.is_suspended).length, icon: 'check_circle' },
+              { id: 'SUSPENDED', label: 'Suspended', count: users.filter((u) => u.is_suspended).length, icon: 'block' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveFilter(tab.id)}
+                className={`px-4 py-2 rounded-full font-label text-[12px] font-bold transition-all cursor-pointer border shrink-0 flex items-center gap-1.5 ${
+                  activeFilter === tab.id
+                    ? 'bg-[#006972] text-white border-[#006972] shadow-md shadow-[#006972]/20'
+                    : 'bg-white/60 hover:bg-white text-deep-navy/70 border-white/80'
+                }`}
+              >
+                <Icon name={tab.icon} size={14} />
+                <span>{tab.label}</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${activeFilter === tab.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'}`}>
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </section>
+
+          {loading ? (
+            <div className="space-y-3 w-full">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Bone key={i} className="w-full h-20 rounded-2xl" />
+              ))}
+            </div>
+          ) : loadError ? (
+            <div className={`${GLASS_CARD} rounded-3xl p-8 text-center space-y-3`}>
+              <div className="w-14 h-14 rounded-3xl bg-rose-50/90 text-rose-600 flex items-center justify-center mx-auto border border-rose-200/80 shadow-sm">
+                <Icon name="error" size={28} />
+              </div>
+              <h2 className="font-headline text-[18px] font-bold text-deep-navy">Couldn't load users</h2>
+              <p className="font-body text-[13px] text-on-surface-variant max-w-xs mx-auto">{loadError}</p>
+              <button
+                onClick={loadUsersData}
+                className="px-6 py-2.5 rounded-2xl bg-[#006972] text-white font-label text-[13px] font-bold cursor-pointer border-none shadow-md"
+              >
+                Retry
+              </button>
+            </div>
+          ) : (
+            /* Users List Cards */
+            <section className="space-y-3">
+              {filteredUsers.length === 0 ? (
+                <div className={`${GLASS_CARD} rounded-3xl py-12 text-center space-y-2`}>
+                  <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto">
+                    <Icon name="group_off" size={24} />
+                  </div>
+                  <p className="font-headline text-[16px] font-bold text-deep-navy">No users found</p>
+                  <p className="font-body text-[12px] text-on-surface-variant">Try selecting a different filter or clearing search.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3">
+                  {filteredUsers.map((u) => {
+                    const isSuspended = u.is_suspended;
+                    const trustScore = u.trust_score ?? 85;
+
+                    return (
+                      <div
+                        key={u.id}
+                        onClick={() => setSelectedUser(u)}
+                        className={`${GLASS_CARD} rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:shadow-[0_12px_30px_rgba(0,105,114,0.14)] hover:-translate-y-0.5 cursor-pointer border border-white/90 ${
+                          isSuspended ? 'border-rose-300 bg-rose-50/20' : ''
+                        }`}
+                      >
+                        {/* Member Identity & Details */}
+                        <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-white font-headline text-[18px] shrink-0 shadow-md ${
+                            isSuspended ? 'bg-gradient-to-br from-rose-500 to-rose-700' : 'bg-gradient-to-br from-[#006972] to-[#004f56]'
+                          }`}>
+                            {(u.full_name || 'U').charAt(0).toUpperCase()}
+                          </div>
+
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="font-headline text-[16px] font-bold text-deep-navy truncate">{u.full_name || 'Anonymous User'}</h3>
+                              <span className={`px-2.5 py-0.5 rounded-full font-label text-[10px] font-bold uppercase tracking-wider border ${
+                                isSuspended
+                                  ? 'bg-rose-100 text-rose-800 border-rose-200'
+                                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              }`}>
+                                {isSuspended ? 'Suspended' : 'Active'}
+                              </span>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-body text-[12px] text-on-surface-variant">
+                              {u.email && (
+                                <span className="flex items-center gap-1">
+                                  <Icon name="mail" size={13} className="text-[#006972]" /> {u.email}
+                                </span>
+                              )}
+                              {u.phone_number && (
+                                <span className="flex items-center gap-1">
+                                  <Icon name="phone" size={13} className="text-[#006972]" /> {u.phone_number}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right Metrics & Quick Action */}
+                        <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 shrink-0">
+                          <div className="flex items-center gap-2">
+                            <span className="px-3 py-1 rounded-xl bg-teal-50 text-[#006972] font-label text-[11px] font-bold border border-teal-100 flex items-center gap-1">
+                              <Icon name="shield" size={13} /> Score {trustScore}
+                            </span>
+                            <span className="px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-label text-[11px] font-bold flex items-center gap-1">
+                              <Icon name="groups" size={13} /> {u.committees_count || 0} Pools
+                            </span>
+                          </div>
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedUser(u);
+                            }}
+                            className="p-2 rounded-xl bg-slate-100 hover:bg-[#006972] hover:text-white text-slate-600 transition-all border-none cursor-pointer"
+                          >
+                            <Icon name="chevron_right" size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          )}
+        </main>
+      </div>
+
+      {/* ── USER INSPECT & ACCESS CONTROL MODAL ── */}
+      {selectedUser && (
+        <div className="fixed inset-0 z-50 bg-deep-navy/40 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+          <div className={`${GLASS_CARD} rounded-3xl p-6 max-w-md w-full space-y-5 relative`}>
+            <button
+              onClick={() => setSelectedUser(null)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center border-none cursor-pointer"
+            >
+              <Icon name="close" size={18} />
             </button>
-<button className="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-full font-label-sm text-label-sm whitespace-nowrap hover:bg-surface-variant transition-colors">
-                Suspended
-            </button>
-</div>
 
-<div className="bg-surface-container-lowest rounded-xl border border-secondary/15 shadow-sm overflow-hidden jali-border-top">
+            {/* Modal Header */}
+            <div className="flex items-center gap-3">
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-white font-headline text-[22px] shadow-md ${
+                selectedUser.is_suspended ? 'bg-rose-600' : 'bg-[#006972]'
+              }`}>
+                {(selectedUser.full_name || 'U').charAt(0).toUpperCase()}
+              </div>
 
-<div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-outline-variant/30 bg-surface-container-low font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-<div className="col-span-4">Member</div>
-<div className="col-span-3">Contact</div>
-<div className="col-span-2 text-center">Trust Score</div>
-<div className="col-span-1 text-center">Ct.</div>
-<div className="col-span-2 text-right">Status</div>
-</div>
-<ul className="flex flex-col divide-y divide-outline-variant/20">
+              <div>
+                <h3 className="font-headline text-[18px] font-bold text-deep-navy">{selectedUser.full_name}</h3>
+                <p className="font-body text-[12px] text-on-surface-variant">{selectedUser.email || selectedUser.phone_number}</p>
+                <span className={`inline-block mt-1 px-2.5 py-0.5 rounded-full font-label text-[10px] font-bold uppercase border ${
+                  selectedUser.is_suspended ? 'bg-rose-100 text-rose-800 border-rose-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                }`}>
+                  {selectedUser.is_suspended ? 'Suspended Account' : 'Active Account'}
+                </span>
+              </div>
+            </div>
 
-<li className="p-4 hover:bg-surface-container-low/50 transition-colors cursor-pointer group">
-<div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+            {/* User Details Grid */}
+            <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-white/80 border border-white/90">
+              <div>
+                <p className="font-label text-[9px] uppercase font-bold text-on-surface-variant">Phone Number</p>
+                <p className="font-body text-[13px] font-semibold text-deep-navy">{selectedUser.phone_number || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="font-label text-[9px] uppercase font-bold text-on-surface-variant">Trust Score</p>
+                <p className="font-body text-[13px] font-semibold text-[#006972]">{selectedUser.trust_score ?? 85} / 100</p>
+              </div>
+              <div>
+                <p className="font-label text-[9px] uppercase font-bold text-on-surface-variant">Committees Joined</p>
+                <p className="font-body text-[13px] font-semibold text-deep-navy">{selectedUser.committees_count || 0} Pools</p>
+              </div>
+              <div>
+                <p className="font-label text-[9px] uppercase font-bold text-on-surface-variant">Member Since</p>
+                <p className="font-body text-[13px] font-semibold text-deep-navy">{selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString() : 'Recently'}</p>
+              </div>
+            </div>
 
-<div className="col-span-1 md:col-span-4 flex items-center gap-3">
-<div className="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-lg shrink-0">
-                                AS
-                            </div>
-<div>
-<h3 className="font-headline-md text-headline-md text-on-surface !text-lg !font-bold">Aarav Sharma</h3>
-<p className="font-label-sm text-label-sm text-on-surface-variant font-normal">ID: #SJ-8492</p>
-</div>
-</div>
+            {/* Action Section */}
+            <div className="space-y-3 pt-2 border-t border-slate-100">
+              <label className="block font-label text-[11px] font-bold text-deep-navy">
+                Staff Audit Action Notes
+              </label>
+              <textarea
+                value={actionNotes}
+                onChange={(e) => setActionNotes(e.target.value)}
+                placeholder="Reason for account status change..."
+                rows={2}
+                className="w-full p-3 rounded-2xl bg-white/80 border border-slate-200 font-body text-[13px] text-deep-navy outline-none focus:border-[#006972]"
+              />
 
-<div className="col-span-1 md:col-span-3 flex items-center gap-2 text-on-surface-variant">
-<span className="material-symbols-outlined text-sm opacity-70">phone_iphone</span>
-<span className="font-body-md text-body-md">+92 300 ****123</span>
-</div>
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  onClick={() => setSelectedUser(null)}
+                  className="flex-1 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-label text-[13px] font-bold border-none cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleToggleSuspend}
+                  disabled={processingAction}
+                  className={`flex-1 py-3 rounded-2xl font-label text-[13px] font-bold text-white transition-all cursor-pointer border-none shadow-md ${
+                    selectedUser.is_suspended
+                      ? 'bg-emerald-600 hover:bg-emerald-700'
+                      : 'bg-rose-600 hover:bg-rose-700'
+                  }`}
+                >
+                  {processingAction
+                    ? 'Processing...'
+                    : selectedUser.is_suspended
+                    ? 'Reinstate Account'
+                    : 'Suspend Account'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-<div className="col-span-1 md:col-span-3 flex items-center justify-between md:grid md:grid-cols-3 gap-2">
-<div className="flex items-center gap-1 bg-surface-container px-3 py-1.5 rounded-lg md:col-span-2 md:justify-center">
-<span className="material-symbols-outlined text-tertiary-container text-sm">verified_user</span>
-<span className="font-label-sm text-label-sm text-on-surface">940</span>
-</div>
-<div className="flex items-center gap-1 text-on-surface-variant md:col-span-1 md:justify-center" title="Active Memberships">
-<span className="material-symbols-outlined text-sm opacity-70">account_balance</span>
-<span className="font-body-md text-body-md">5</span>
-</div>
-</div>
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-24 right-4 left-4 sm:left-auto sm:right-5 sm:w-80 z-50 px-4 py-3 rounded-2xl shadow-2xl font-label text-[13px] font-bold flex items-center gap-2.5 border border-white/20 bg-[#006972] text-white">
+          <Icon name="check_circle" size={18} className="shrink-0 text-emerald-300" />
+          <span className="flex-1">{toastMessage}</span>
+        </div>
+      )}
 
-<div className="col-span-1 md:col-span-2 flex items-center justify-between md:justify-end gap-3 mt-2 md:mt-0">
-<span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-tertiary-container/20 text-on-tertiary-container font-label-sm text-label-sm text-xs border border-tertiary-container/30">
-<span className="w-1.5 h-1.5 rounded-full bg-tertiary-container"></span>
-                                Active
-                            </span>
-<button className="p-2 text-on-surface-variant hover:text-secondary rounded-full hover:bg-surface-variant transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 hidden md:flex">
-<span className="material-symbols-outlined">more_vert</span>
-</button>
-</div>
-</div>
-</li>
-
-<li className="p-4 hover:bg-surface-container-low/50 transition-colors cursor-pointer group">
-<div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-<div className="col-span-1 md:col-span-4 flex items-center gap-3">
-<div className="w-12 h-12 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center font-bold text-lg shrink-0">
-                                ZK
-                            </div>
-<div>
-<h3 className="font-headline-md text-headline-md text-on-surface !text-lg !font-bold">Zara Khan</h3>
-<p className="font-label-sm text-label-sm text-on-surface-variant font-normal">ID: #SJ-3104</p>
-</div>
-</div>
-<div className="col-span-1 md:col-span-3 flex items-center gap-2 text-on-surface-variant">
-<span className="material-symbols-outlined text-sm opacity-70">phone_iphone</span>
-<span className="font-body-md text-body-md">+92 321 ****889</span>
-</div>
-<div className="col-span-1 md:col-span-3 flex items-center justify-between md:grid md:grid-cols-3 gap-2">
-<div className="flex items-center gap-1 bg-surface-container px-3 py-1.5 rounded-lg md:col-span-2 md:justify-center">
-<span className="material-symbols-outlined text-tertiary-container text-sm">verified_user</span>
-<span className="font-label-sm text-label-sm text-on-surface">885</span>
-</div>
-<div className="flex items-center gap-1 text-on-surface-variant md:col-span-1 md:justify-center">
-<span className="material-symbols-outlined text-sm opacity-70">account_balance</span>
-<span className="font-body-md text-body-md">2</span>
-</div>
-</div>
-<div className="col-span-1 md:col-span-2 flex items-center justify-between md:justify-end gap-3 mt-2 md:mt-0">
-<span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-tertiary-container/20 text-on-tertiary-container font-label-sm text-label-sm text-xs border border-tertiary-container/30">
-<span className="w-1.5 h-1.5 rounded-full bg-tertiary-container"></span>
-                                Active
-                            </span>
-<button className="p-2 text-on-surface-variant hover:text-secondary rounded-full hover:bg-surface-variant transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 hidden md:flex">
-<span className="material-symbols-outlined">more_vert</span>
-</button>
-</div>
-</div>
-</li>
-
-<li className="p-4 hover:bg-surface-container-low/50 transition-colors cursor-pointer group bg-error-container/10">
-<div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-<div className="col-span-1 md:col-span-4 flex items-center gap-3">
-<div className="w-12 h-12 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center font-bold text-lg shrink-0">
-                                MF
-                            </div>
-<div>
-<h3 className="font-headline-md text-headline-md text-on-surface !text-lg !font-bold">Musa Farooq</h3>
-<p className="font-label-sm text-label-sm text-on-surface-variant font-normal">ID: #SJ-9012</p>
-</div>
-</div>
-<div className="col-span-1 md:col-span-3 flex items-center gap-2 text-on-surface-variant">
-<span className="material-symbols-outlined text-sm opacity-70">phone_iphone</span>
-<span className="font-body-md text-body-md">+92 333 ****445</span>
-</div>
-<div className="col-span-1 md:col-span-3 flex items-center justify-between md:grid md:grid-cols-3 gap-2">
-<div className="flex items-center gap-1 bg-error-container/30 border border-error/20 px-3 py-1.5 rounded-lg md:col-span-2 md:justify-center text-error">
-<span className="material-symbols-outlined text-sm">warning</span>
-<span className="font-label-sm text-label-sm">420</span>
-</div>
-<div className="flex items-center gap-1 text-on-surface-variant md:col-span-1 md:justify-center">
-<span className="material-symbols-outlined text-sm opacity-70">account_balance</span>
-<span className="font-body-md text-body-md">1</span>
-</div>
-</div>
-<div className="col-span-1 md:col-span-2 flex items-center justify-between md:justify-end gap-3 mt-2 md:mt-0">
-<span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm text-xs border border-error/20">
-<span className="w-1.5 h-1.5 rounded-full bg-error"></span>
-                                Flagged
-                            </span>
-<button className="p-2 text-on-surface-variant hover:text-secondary rounded-full hover:bg-surface-variant transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 hidden md:flex">
-<span className="material-symbols-outlined">more_vert</span>
-</button>
-</div>
-</div>
-</li>
-</ul>
-
-<div className="p-4 border-t border-outline-variant/30 flex items-center justify-between bg-surface-container-lowest">
-<span className="font-label-sm text-label-sm text-on-surface-variant">Showing 1-3 of 1,240</span>
-<div className="flex gap-2">
-<button className="w-8 h-8 rounded-full border border-outline-variant flex items-center justify-center text-on-surface-variant hover:bg-surface-variant disabled:opacity-50" disabled="">
-<span className="material-symbols-outlined text-sm">chevron_left</span>
-</button>
-<button className="w-8 h-8 rounded-full border border-outline-variant flex items-center justify-center text-on-surface-variant hover:bg-surface-variant">
-<span className="material-symbols-outlined text-sm">chevron_right</span>
-</button>
-</div>
-</div>
-</div>
-</main>
-
-<nav className="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 bg-surface border-t border-secondary/10 bg-surface/95 backdrop-blur-md shadow-lg rounded-t-xl">
-<a className="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:bg-secondary-container/20 active:scale-95 transition-transform p-2 rounded-xl min-w-[64px]" href="#">
-<span className="material-symbols-outlined">dashboard</span>
-<span className="font-label-sm text-label-sm text-[10px] mt-1">Overview</span>
-</a>
-<a className="flex flex-col items-center justify-center text-secondary font-bold hover:bg-secondary-container/20 active:scale-95 transition-transform p-2 rounded-xl min-w-[64px]" href="#">
-<div className="bg-secondary-container text-on-secondary-container px-4 py-1 rounded-full mb-1">
-<span className="material-symbols-outlined">group</span>
-</div>
-<span className="font-label-sm text-label-sm text-[10px]">Users</span>
-</a>
-<a className="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:bg-secondary-container/20 active:scale-95 transition-transform p-2 rounded-xl min-w-[64px]" href="#">
-<span className="material-symbols-outlined">diversity_3</span>
-<span className="font-label-sm text-label-sm text-[10px] mt-1">Committees</span>
-</a>
-<a className="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:bg-secondary-container/20 active:scale-95 transition-transform p-2 rounded-xl min-w-[64px]" href="#">
-<span className="material-symbols-outlined">report_problem</span>
-<span className="font-label-sm text-label-sm text-[10px] mt-1">Disputes</span>
-</a>
-</nav>
-    </div>
+      {/* Floating Glass Bottom Navbar for Mobile */}
+      <AdminMobileNav />
+    </AuthAmbientBackground>
   );
 }

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Icon from '../../components/Icon';
 import logo from '../../assets/screen.png';
-import { getCommitteeById, updatePaymentStatus, releasePayout } from '../../services/committeeService';
+import { getCommitteeById } from '../../services/committeeService';
+import { getCyclePayments, confirmPayment } from '../../services/paymentService';
 import { memberService } from '../../services';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL
@@ -20,7 +21,7 @@ export default function CommitteeDetail() {
   const { id } = useParams();
 
   const [activeTab, setActiveTab] = useState('ledger'); // 'ledger' | 'members' | 'requests' | 'progress'
-  const [selectedCycle, setSelectedCycle] = useState(2);
+  const [selectedCycleId, setSelectedCycleId] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -31,28 +32,30 @@ export default function CommitteeDetail() {
   const [addingMember, setAddingMember] = useState(false);
   const [addMemberError, setAddMemberError] = useState('');
   const [showVerifyModal, setShowVerifyModal] = useState(false);
-  const [selectedMemberToVerify, setSelectedMemberToVerify] = useState(null);
-  const [showReminderModal, setShowReminderModal] = useState(false);
-  const [selectedMemberToRemind, setSelectedMemberToRemind] = useState(null);
+  const [paymentToVerify, setPaymentToVerify] = useState(null); // { member, payment }
+  const [verifying, setVerifying] = useState(false);
 
   // Committee State
   const [committee, setCommittee] = useState({
     id: id || '1',
-    name: 'Diwali Savings Fund 2026',
+    name: 'Committee',
     contributionAmount: 5000,
     capacity: 10,
     intervalType: '1_month',
-    userRole: 'Organizer',
-    inviteCode: 'SANJHI-8492K',
-    inviteLink: 'http://localhost:5173/join/SANJHI-8492K',
-    accountTitle: 'Ali Khan',
-    accountNumber: '03001234567',
+    myRole: null, // 'organizer' | 'co_organizer' | 'member' | 'viewer'
+    userRole: 'Participant',
+    inviteCode: '',
+    inviteLink: '',
+    accountTitle: '',
+    accountNumber: '',
     provider: 'JazzCash',
   });
 
   // Members list
   const [members, setMembers] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [cycles, setCycles] = useState([]);
+  const [cyclePayments, setCyclePayments] = useState([]);
 
   useEffect(() => {
     async function loadDetails() {
@@ -60,20 +63,38 @@ export default function CommitteeDetail() {
         setLoading(true);
         const data = await getCommitteeById(id || '1');
         if (data?.committee) {
+          const rawRole = data.committee.my_role || 'member';
           setCommittee((prev) => ({
             ...prev,
             ...data.committee,
+            myRole: rawRole,
+            userRole: rawRole === 'organizer'
+              ? 'Organizer'
+              : rawRole === 'co_organizer' ? 'Co-Organizer' : 'Participant',
             contributionAmount: parseFloat(data.committee.contribution_amount || data.committee.contributionAmount || 5000),
             capacity: parseInt(data.committee.capacity, 10) || 10,
-            inviteCode: data.committee.invite_code || data.committee.inviteCode || 'SANJHI-8492K',
+            inviteCode: data.committee.invite_code || data.committee.inviteCode || '',
             inviteLink: data.committee.invite_link || data.committee.inviteLink || '',
           }));
         }
         if (data?.members && Array.isArray(data.members)) {
-          const approved = data.members.filter(m => m.status === 'approved');
+          const approved = data.members
+            .filter(m => m.status === 'approved')
+            .map(m => ({
+              ...m,
+              name: m.full_name,
+              photo: m.profile_photo_url,
+              turn: m.payout_turn_order,
+              role: m.is_organizer ? 'Organizer' : m.is_co_organizer ? 'Co-Organizer' : 'Member',
+            }));
           const pending = data.members.filter(m => m.status === 'pending');
           setMembers(approved);
           setPendingRequests(pending);
+        }
+        if (data?.cycles && Array.isArray(data.cycles)) {
+          setCycles(data.cycles);
+          const active = data.cycles.find((cy) => cy.status === 'collecting') || data.cycles[0];
+          if (active) setSelectedCycleId(active.id);
         }
       } catch (err) {
         console.error('Failed to load committee:', err);
@@ -83,6 +104,23 @@ export default function CommitteeDetail() {
     }
     loadDetails();
   }, [id]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPayments() {
+      if (!selectedCycleId) return;
+      try {
+        const data = await getCyclePayments(id || '1', selectedCycleId);
+        if (!cancelled) setCyclePayments(data?.payments || []);
+      } catch (err) {
+        if (!cancelled) setCyclePayments([]);
+      }
+    }
+
+    loadPayments();
+    return () => { cancelled = true; };
+  }, [id, selectedCycleId]);
 
   async function handleRequestAction(memberId, actionStatus) {
     try {
@@ -142,10 +180,47 @@ export default function CommitteeDetail() {
     }
   }
 
-  const paidCount = members.filter((m) => m.status === 'paid').length;
+  function openVerifyModal(member, payment) {
+    setPaymentToVerify({ member, payment });
+    setShowVerifyModal(true);
+  }
+
+  async function handleConfirmVerification() {
+    const target = paymentToVerify;
+    if (!target || verifying || !selectedCycleId) return;
+    setVerifying(true);
+    try {
+      await confirmPayment(id || '1', selectedCycleId, target.payment.id);
+      setCyclePayments((prev) =>
+        prev.map((p) => (p.id === target.payment.id ? { ...p, status: 'paid' } : p))
+      );
+      setShowVerifyModal(false);
+      setPaymentToVerify(null);
+      showToast(`Payment from ${target.member.name || target.payment.full_name} verified!`);
+    } catch (err) {
+      showToast(err.message || 'Failed to verify payment.');
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  const paidCount = cyclePayments.filter((p) => p.status === 'paid').length;
+  const selectedCycle = cycles.find((cy) => cy.id === selectedCycleId) || null;
   const totalPoolAmount = committee.contributionAmount * committee.capacity;
   const collectedAmount = paidCount * committee.contributionAmount;
   const progressPct = Math.round((paidCount / committee.capacity) * 100);
+
+  const isManagementRole = committee.myRole === 'organizer' || committee.myRole === 'co_organizer';
+  const activeCycle = cycles.find((cy) => cy.status === 'collecting') || null;
+  const tabs = [
+    { id: 'ledger', label: 'Ledger', icon: 'receipt_long' },
+    { id: 'members', label: `Members (${members.length})`, icon: 'groups' },
+    ...(isManagementRole
+      ? [{ id: 'requests', label: `Requests (${pendingRequests.length})`, icon: 'person_add' }]
+      : []),
+    { id: 'progress', label: 'Rotation', icon: 'timeline' },
+  ];
+  const visibleTab = activeTab === 'requests' && !isManagementRole ? 'ledger' : activeTab;
 
   return (
     <div className="min-h-screen bg-white text-deep-navy font-body antialiased relative overflow-x-hidden pb-28 md:pb-12">
@@ -179,7 +254,7 @@ export default function CommitteeDetail() {
                   {committee.userRole}
                 </span>
                 <span className="text-[11px] font-label text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-bold hidden sm:inline">
-                  Cycle {selectedCycle} of {committee.capacity}
+                  Cycle {selectedCycle?.cycle_number ?? '—'} of {committee.capacity}
                 </span>
               </div>
               <h1 className="font-headline text-[18px] sm:text-[22px] font-bold text-[#006972] leading-tight truncate">
@@ -232,7 +307,7 @@ export default function CommitteeDetail() {
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <span className="px-3 py-1 rounded-full bg-white/15 text-white font-label text-[11px] font-bold border border-white/20 uppercase tracking-wider">
-                  Cycle #{selectedCycle} Active Pool
+                  Cycle #{selectedCycle?.cycle_number ?? '—'} Active Pool
                 </span>
                 <span className="text-[11px] font-label text-emerald-300 font-bold bg-black/20 px-2.5 py-0.5 rounded-full">
                   Monthly Rotation
@@ -275,30 +350,28 @@ export default function CommitteeDetail() {
                 <span>{progressPct}%</span>
               </div>
 
-              <button
-                disabled={paidCount < committee.capacity}
-                onClick={() => showToast('Payout successfully released to recipient!')}
-                className="w-full py-2.5 rounded-xl font-label text-[12px] font-bold bg-white text-[#006972] hover:bg-emerald-50 transition-all shadow-md active:scale-95 cursor-pointer border-none flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Icon name={paidCount < committee.capacity ? 'lock' : 'lock_open'} size={15} />
-                {paidCount < committee.capacity ? 'Payout Locked (Pending Dues)' : 'Release Payout'}
-              </button>
+              {isManagementRole && (
+                <button
+                  disabled={paidCount < members.length}
+                  onClick={() => navigate(`/payments/release/${id}/${selectedCycleId}`)}
+                  className="w-full py-2.5 rounded-xl font-label text-[12px] font-bold bg-white text-[#006972] hover:bg-emerald-50 transition-all shadow-md active:scale-95 cursor-pointer border-none flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Icon name={paidCount < members.length ? 'lock' : 'lock_open'} size={15} />
+                  {paidCount < members.length ? 'Payout Locked (Pending Dues)' : 'Release Payout'}
+                </button>
+              )}
             </div>
 
           </div>
         </section>
 
         {/* ════════════════════════════════════════════
-            NAVIGATION TABS (Ledger | Members | Requests | Progress)
+            NAVIGATION TABS (Ledger | Members | Requests* | Rotation)
+            * Requests visible to Organizer / Co-Organizer only
         ════════════════════════════════════════════ */}
         <div className="flex items-center justify-between bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
-          {[
-            { id: 'ledger', label: 'Ledger', icon: 'receipt_long' },
-            { id: 'members', label: `Members (${members.length})`, icon: 'groups' },
-            { id: 'requests', label: `Requests (${pendingRequests.length})`, icon: 'person_add' },
-            { id: 'progress', label: 'Rotation', icon: 'timeline' },
-          ].map((tab) => {
-            const active = activeTab === tab.id;
+          {tabs.map((tab) => {
+            const active = visibleTab === tab.id;
             return (
               <button
                 key={tab.id}
@@ -323,99 +396,130 @@ export default function CommitteeDetail() {
         {/* ════════════════════════════════════════════
             TAB 1: LEDGER & PAYMENTS
         ════════════════════════════════════════════ */}
-        {activeTab === 'ledger' && (
+        {visibleTab === 'ledger' && (
           <div className="space-y-4 animate-fade-in">
-            
+
+            {/* Pay My Dues Banner */}
+            {activeCycle && (
+              <div className="bg-gradient-to-r from-[#006972] to-[#007a82] rounded-3xl p-4 sm:p-5 shadow-lg shadow-[#006972]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center text-white shrink-0">
+                    <Icon name="payments" size={24} />
+                  </div>
+                  <div>
+                    <p className="font-headline text-[15px] font-bold text-white">
+                      Your Cycle {activeCycle.cycle_number} Contribution
+                    </p>
+                    <p className="font-body text-[12px] text-white/80">
+                      Rs. {committee.contributionAmount.toLocaleString()} • Due {activeCycle.due_date ? new Date(activeCycle.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate(`/payments/pay/${id || '1'}/${activeCycle.id}`)}
+                  className="px-5 py-2.5 rounded-xl bg-white text-[#006972] font-label text-[13px] font-bold shadow-md hover:bg-emerald-50 transition-all active:scale-95 cursor-pointer border-none shrink-0"
+                >
+                  Pay Now
+                </button>
+              </div>
+            )}
+
             {/* Cycle Selector Pills */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((cNum) => (
+              {cycles.length === 0 && (
+                <span className="font-body text-[13px] text-on-surface-variant py-2">No cycles scheduled yet.</span>
+              )}
+              {cycles.map((cy) => (
                 <button
-                  key={cNum}
-                  onClick={() => setSelectedCycle(cNum)}
+                  key={cy.id}
+                  onClick={() => setSelectedCycleId(cy.id)}
                   className={`px-4 py-2 rounded-xl text-[12px] font-label font-bold whitespace-nowrap transition-all cursor-pointer border-none shrink-0 ${
-                    selectedCycle === cNum
+                    selectedCycleId === cy.id
                       ? 'bg-[#006972] text-white shadow-sm'
                       : 'bg-slate-100 hover:bg-slate-200 text-deep-navy/70'
                   }`}
                 >
-                  Cycle {cNum} {cNum === 2 ? '(Active)' : ''}
+                  Cycle {cy.cycle_number} {cy.status === 'collecting' ? '(Active)' : ''}
                 </button>
               ))}
             </div>
 
             {/* Member Payment Status Rows */}
             <div className="bg-white rounded-3xl border-2 border-[#006972]/12 shadow-sm overflow-hidden divide-y divide-slate-100">
-              {members.map((member) => (
-                <div key={member.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50 transition-colors">
-                  
-                  {/* Left info */}
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={member.photo ? resolvePhotoUrl(member.photo) : '/avatar.svg'}
-                      alt={member.name}
-                      className="w-10 h-10 rounded-full object-cover border border-[#006972]/20"
-                    />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-headline text-[14px] font-bold text-deep-navy">{member.name}</p>
-                        {member.role !== 'Member' && (
-                          <span className="px-2 py-0.5 rounded-full bg-[#006972]/10 text-[#006972] font-label text-[10px] font-bold">
-                            {member.role}
-                          </span>
-                        )}
-                        <span className="text-[11px] font-label text-on-surface-variant/70 font-semibold">Turn #{member.turn}</span>
+              {members.map((member) => {
+                const payment = cyclePayments.find((p) => p.user_id === member.user_id) || null;
+                const isOverdue =
+                  (!payment || payment.status !== 'paid') &&
+                  selectedCycle &&
+                  new Date(selectedCycle.due_date) < new Date();
+
+                return (
+                  <div key={member.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50 transition-colors">
+
+                    {/* Left info */}
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={member.photo ? resolvePhotoUrl(member.photo) : '/avatar.svg'}
+                        alt={member.name}
+                        className="w-10 h-10 rounded-full object-cover border border-[#006972]/20"
+                      />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-headline text-[14px] font-bold text-deep-navy">{member.name}</p>
+                          {member.role !== 'Member' && (
+                            <span className="px-2 py-0.5 rounded-full bg-[#006972]/10 text-[#006972] font-label text-[10px] font-bold">
+                              {member.role}
+                            </span>
+                          )}
+                          <span className="text-[11px] font-label text-on-surface-variant/70 font-semibold">Turn #{member.turn}</span>
+                        </div>
+                        <p className="font-body text-[12px] text-on-surface-variant">
+                          Due: <strong className="text-deep-navy">Rs. {committee.contributionAmount.toLocaleString()}</strong>
+                          {payment?.sender_account_details ? ` • Sent from: ${payment.sender_account_details}` : ''}
+                        </p>
                       </div>
-                      <p className="font-body text-[12px] text-on-surface-variant">
-                        Due Amount: <strong className="text-deep-navy">Rs. {committee.contributionAmount.toLocaleString()}</strong> • Status: {member.paidAt}
-                      </p>
                     </div>
-                  </div>
 
-                  {/* Right Status Badges & Actions */}
-                  <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
-                    {member.status === 'paid' && (
-                      <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-label text-[11px] font-bold flex items-center gap-1">
-                        <Icon name="check_circle" size={14} /> Paid ✓
-                      </span>
-                    )}
-
-                    {member.status === 'awaiting' && (
-                      <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-label text-[11px] font-bold flex items-center gap-1">
-                          <Icon name="schedule" size={14} /> Verification Pending
+                    {/* Right Status Badges & Actions */}
+                    <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+                      {payment?.status === 'paid' && (
+                        <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-label text-[11px] font-bold flex items-center gap-1">
+                          <Icon name="check_circle" size={14} /> Paid ✓
                         </span>
-                        <button
-                          onClick={() => handleVerifyMember(member)}
-                          className="px-3 py-1 rounded-xl bg-[#006972] hover:bg-[#00575f] text-white font-label text-[12px] font-bold transition-all shadow-sm cursor-pointer border-none"
-                        >
-                          Verify
-                        </button>
-                      </div>
-                    )}
+                      )}
 
-                    {member.status === 'overdue' && (
-                      <div className="flex items-center gap-2">
+                      {payment?.status === 'awaiting_confirmation' && (
+                        <div className="flex items-center gap-2">
+                          <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-label text-[11px] font-bold flex items-center gap-1">
+                            <Icon name="schedule" size={14} /> Verification Pending
+                          </span>
+                          {isManagementRole && (
+                            <button
+                              onClick={() => openVerifyModal(member, payment)}
+                              className="px-3 py-1 rounded-xl bg-[#006972] hover:bg-[#00575f] text-white font-label text-[12px] font-bold transition-all shadow-sm cursor-pointer border-none"
+                            >
+                              Verify
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {!payment && isOverdue && (
                         <span className="px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-label text-[11px] font-bold flex items-center gap-1">
                           <Icon name="warning" size={14} /> Overdue
                         </span>
-                        <button
-                          onClick={() => handleSendReminder(member)}
-                          className="px-3 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-deep-navy font-label text-[12px] font-bold transition-all cursor-pointer border border-slate-200 flex items-center gap-1"
-                        >
-                          <Icon name="notifications" size={14} /> Remind
-                        </button>
-                      </div>
-                    )}
+                      )}
 
-                    {member.status === 'pending' && (
-                      <span className="px-3 py-1 rounded-full bg-slate-100 text-on-surface-variant font-label text-[11px] font-medium border border-slate-200">
-                        Upcoming
-                      </span>
-                    )}
+                      {!payment && !isOverdue && (
+                        <span className="px-3 py-1 rounded-full bg-slate-100 text-on-surface-variant font-label text-[11px] font-medium border border-slate-200">
+                          Upcoming
+                        </span>
+                      )}
+                    </div>
+
                   </div>
-
-                </div>
-              ))}
+                );
+              })}
             </div>
 
           </div>
@@ -424,7 +528,7 @@ export default function CommitteeDetail() {
         {/* ════════════════════════════════════════════
             TAB 2: MEMBERS LIST
         ════════════════════════════════════════════ */}
-        {activeTab === 'members' && (
+        {visibleTab === 'members' && (
           <div className="bg-white rounded-3xl border-2 border-[#006972]/12 shadow-sm overflow-hidden p-5 sm:p-6 space-y-4 animate-fade-in">
             <div className="flex items-center justify-between border-b border-[#006972]/10 pb-3">
               <h3 className="font-headline text-[17px] font-bold text-[#006972] flex items-center gap-2">
@@ -470,7 +574,7 @@ export default function CommitteeDetail() {
         {/* ════════════════════════════════════════════
             TAB 3: JOIN REQUESTS (Organizer Approval)
         ════════════════════════════════════════════ */}
-        {activeTab === 'requests' && (
+        {visibleTab === 'requests' && isManagementRole && (
           <div className="bg-white rounded-3xl border-2 border-[#006972]/12 shadow-sm overflow-hidden p-5 sm:p-6 space-y-4 animate-fade-in">
             <div className="flex items-center justify-between border-b border-[#006972]/10 pb-3">
               <h3 className="font-headline text-[17px] font-bold text-[#006972] flex items-center gap-2">
@@ -526,7 +630,7 @@ export default function CommitteeDetail() {
         {/* ════════════════════════════════════════════
             TAB 3: SCHEDULE & ROTATION TIMELINE
         ════════════════════════════════════════════ */}
-        {activeTab === 'progress' && (
+        {visibleTab === 'progress' && (
           <div className="bg-white rounded-3xl border-2 border-[#006972]/12 shadow-sm overflow-hidden p-5 sm:p-6 space-y-4 animate-fade-in">
             <h3 className="font-headline text-[17px] font-bold text-[#006972] flex items-center gap-2 border-b border-[#006972]/10 pb-3">
               <Icon name="timeline" size={20} />
@@ -751,7 +855,7 @@ export default function CommitteeDetail() {
       {/* ════════════════════════════════════════════
           MODAL 2: VERIFY PAYMENT MODAL
       ════════════════════════════════════════════ */}
-      {showVerifyModal && selectedMemberToVerify && (
+      {showVerifyModal && paymentToVerify && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl border border-[#006972]/15 animate-scale-up">
             <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-800 flex items-center justify-center mx-auto border border-amber-200">
@@ -761,57 +865,33 @@ export default function CommitteeDetail() {
             <div>
               <h3 className="font-headline text-[18px] font-bold text-deep-navy">Verify Payment Receipt</h3>
               <p className="font-body text-[13px] text-on-surface-variant mt-1">
-                Confirm receipt of <strong>Rs. {committee.contributionAmount.toLocaleString()}</strong> from <strong>{selectedMemberToVerify.name}</strong>.
+                Confirm receipt of <strong>Rs. {committee.contributionAmount.toLocaleString()}</strong> from{' '}
+                <strong>{paymentToVerify.member.name || paymentToVerify.payment.full_name}</strong>.
               </p>
+              {paymentToVerify.payment.sender_account_details && (
+                <p className="font-body text-[12px] text-on-surface-variant mt-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                  <Icon name="receipt" size={14} className="inline -mt-0.5 mr-1 text-[#006972]" />
+                  {paymentToVerify.payment.sender_account_details}
+                </p>
+              )}
             </div>
 
             <div className="flex gap-3 pt-2">
               <button
-                onClick={() => setShowVerifyModal(false)}
+                onClick={() => {
+                  setShowVerifyModal(false);
+                  setPaymentToVerify(null);
+                }}
                 className="flex-1 py-3 rounded-2xl font-label text-[13px] font-bold bg-slate-100 hover:bg-slate-200 text-deep-navy cursor-pointer border-none"
               >
                 Cancel
               </button>
               <button
-                onClick={confirmVerification}
-                className="flex-1 py-3 rounded-2xl font-label text-[13px] font-bold bg-[#006972] hover:bg-[#00575f] text-white cursor-pointer border-none shadow-md"
+                onClick={handleConfirmVerification}
+                disabled={verifying}
+                className="flex-1 py-3 rounded-2xl font-label text-[13px] font-bold bg-[#006972] hover:bg-[#00575f] text-white cursor-pointer border-none shadow-md disabled:opacity-60"
               >
-                Confirm Paid
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ════════════════════════════════════════════
-          MODAL 3: REMINDER MODAL
-      ════════════════════════════════════════════ */}
-      {showReminderModal && selectedMemberToRemind && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl border border-[#006972]/15 animate-scale-up">
-            <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-200">
-              <Icon name="notifications" size={24} />
-            </div>
-
-            <div>
-              <h3 className="font-headline text-[18px] font-bold text-deep-navy">Send Payment Reminder</h3>
-              <p className="font-body text-[13px] text-on-surface-variant mt-1">
-                Send an automated WhatsApp & SMS reminder to <strong>{selectedMemberToRemind.name}</strong> for cycle #{selectedCycle} dues.
-              </p>
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <button
-                onClick={() => setShowReminderModal(false)}
-                className="flex-1 py-3 rounded-2xl font-label text-[13px] font-bold bg-slate-100 hover:bg-slate-200 text-deep-navy cursor-pointer border-none"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmSendReminder}
-                className="flex-1 py-3 rounded-2xl font-label text-[13px] font-bold bg-[#006972] hover:bg-[#00575f] text-white cursor-pointer border-none shadow-md"
-              >
-                Send Reminder
+                {verifying ? 'Verifying…' : 'Confirm Paid'}
               </button>
             </div>
           </div>
@@ -822,16 +902,16 @@ export default function CommitteeDetail() {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-[#006972]/15 px-1 py-2 flex justify-around items-center safe-area-inset-bottom shadow-[0_-4px_20px_rgba(0,105,114,0.10)]">
         {[
           { label: 'Home', icon: 'dashboard', path: '/dashboard' },
-          { label: 'Pools', icon: 'groups', path: '/committee/1' },
+          { label: 'Pools', icon: 'groups', path: '/pools' },
           { label: 'Payments', icon: 'account_balance_wallet', path: '/payments' },
           { label: 'Support', icon: 'support_agent', path: '/support' },
           { label: 'Profile', icon: 'person', path: '/profile' },
         ].map((tab) => (
           <button key={tab.path} onClick={() => navigate(tab.path)}
             className="relative flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl transition-all duration-200 active:scale-90 cursor-pointer border-none bg-transparent min-w-0">
-            {tab.path === '/committee/1' && <span className="absolute inset-0 bg-[#006972]/10 rounded-2xl" />}
-            <Icon name={tab.icon} size={22} className={`relative z-10 transition-all duration-200 ${tab.path === '/committee/1' ? 'text-[#006972] scale-110' : 'text-deep-navy/45'}`} />
-            <span className={`font-label text-[9px] mt-0.5 font-semibold relative z-10 truncate max-w-[48px] ${tab.path === '/committee/1' ? 'text-[#006972]' : 'text-deep-navy/45'}`}>{tab.label}</span>
+            {tab.path === '/pools' && <span className="absolute inset-0 bg-[#006972]/10 rounded-2xl" />}
+            <Icon name={tab.icon} size={22} className={`relative z-10 transition-all duration-200 ${tab.path === '/pools' ? 'text-[#006972] scale-110' : 'text-deep-navy/45'}`} />
+            <span className={`font-label text-[9px] mt-0.5 font-semibold relative z-10 truncate max-w-[48px] ${tab.path === '/pools' ? 'text-[#006972]' : 'text-deep-navy/45'}`}>{tab.label}</span>
           </button>
         ))}
       </nav>

@@ -1,184 +1,254 @@
-import TopAppBar from '../../components/TopAppBar';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
-import Button from '../../components/Button';
+import AdminMobileNav from '../../components/AdminMobileNav';
+import { getActivityLogs } from '../../services/adminService';
+import { logout } from '../../services/authService';
+
+const GLASS_CARD = 'bg-white/60 backdrop-blur-xl border border-white/80 shadow-[0_8px_32px_rgba(0,105,114,0.12)]';
+
+/* ── Skeleton Bone Helper ── */
+function Bone({ className = '' }) {
+  return <div className={`skeleton-bone ${className}`} />;
+}
 
 export default function ActivityLog() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [logs, setLogs] = useState([]);
+  const [activeFilter, setActiveTab] = useState('ALL'); // ALL, RESOLUTIONS, FREEZES, USERS
+  const [searchQuery, setSearchQuery] = useState('');
+
+  async function handleLogout() {
+    try {
+      await logout();
+    } catch (err) {
+      // ignore
+    } finally {
+      navigate('/login');
+    }
+  }
+
+  async function loadLogsData() {
+    try {
+      setLoading(true);
+      setLoadError('');
+      const data = await getActivityLogs({ search: searchQuery });
+      const list = data?.logs || data || [];
+
+      setLogs(list);
+    } catch (err) {
+      setLoadError(err.message || 'Failed to load audit logs.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadLogsData();
+  }, []);
+
+  /* Filtered Audit Logs */
+  const filteredLogs = logs.filter((l) => {
+    if (activeFilter === 'RESOLUTIONS') return l.action_type === 'RESOLUTIONS';
+    if (activeFilter === 'FREEZES') return l.action_type === 'FREEZES';
+    if (activeFilter === 'USERS') return l.action_type === 'USERS';
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return (
+        (l.title || '').toLowerCase().includes(q) ||
+        (l.admin_name || '').toLowerCase().includes(q) ||
+        (l.details || '').toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
+
+  const adminNavItems = [
+    { label: 'Overview', icon: 'dashboard', path: '/admin' },
+    { label: 'Analytics', icon: 'bar_chart', path: '/admin/analytics' },
+    { label: 'Users', icon: 'group', path: '/admin/users' },
+    { label: 'Committees', icon: 'groups', path: '/admin/committees' },
+    { label: 'Disputes', icon: 'gavel', path: '/admin/disputes' },
+    { label: 'Broadcasts', icon: 'campaign', path: '/admin/announcements' },
+    { label: 'Audit Log', icon: 'history', path: '/admin/activity' },
+    { label: 'Settings', icon: 'settings', path: '/admin/settings' },
+  ];
+
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body antialiased">
-<header className="bg-surface dark:bg-surface-container-low text-primary dark:text-primary-fixed-dim w-full sticky top-0 z-50 border-b border-outline-variant/15 flex justify-between items-center px-lg h-20 w-full transition-colors duration-200">
-<div className="flex items-center gap-sm">
-<button className="md:hidden p-2 rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant">
-<span className="material-symbols-outlined">menu</span>
-</button>
-<h1 className="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">Trust Admin</h1>
-<span className="ml-4 font-body-lg text-body-lg text-on-surface-variant border-l border-outline-variant/30 pl-4 hidden sm:block">Activity Log</span>
-</div>
-<div className="flex items-center gap-sm cursor-pointer active:opacity-80 hover:bg-surface-container-high transition-colors p-2 rounded-full">
-<div className="w-10 h-10 rounded-full overflow-hidden bg-surface-variant flex items-center justify-center">
-<img className="w-full h-full object-cover" src="/avatar.svg"/>
-</div>
-<span className="font-label-sm text-label-sm hidden md:block">Admin Profile</span>
-</div>
-</header>
+    <AuthAmbientBackground showTicker={false}>
+      <div className="min-h-screen flex flex-col md:flex-row w-full max-w-7xl mx-auto">
 
-<nav className="bg-surface dark:bg-surface-container-lowest h-full w-80 fixed left-0 top-0 z-40 bg-surface-container-low dark:bg-surface-container-low flex flex-col py-lg space-y-sm hidden md:flex border-r border-outline-variant/15">
-<div className="px-lg pb-md mb-md border-b border-outline-variant/15 flex items-center gap-md">
-<div className="w-12 h-12 rounded-full overflow-hidden bg-surface-variant">
-<img className="w-full h-full object-cover" src="/avatar.svg"/>
-</div>
-<div>
-<div className="font-headline-md text-[18px] font-bold text-primary">Sanjhi Admin</div>
-<div className="font-label-sm text-label-sm text-on-surface-variant">Root Access</div>
-</div>
-</div>
-<div className="flex-1 flex flex-col gap-1 px-sm">
-<a className="flex items-center gap-md text-on-surface-variant dark:text-on-surface-variant mx-2 my-1 px-md py-sm rounded-lg hover:bg-surface-variant/50 transition-all duration-200" href="#">
-<span className="material-symbols-outlined">gavel</span>
-<span className="font-label-sm text-label-sm">Complaints</span>
-</a>
-<a className="flex items-center gap-md text-on-surface-variant dark:text-on-surface-variant mx-2 my-1 px-md py-sm rounded-lg hover:bg-surface-variant/50 transition-all duration-200" href="#">
-<span className="material-symbols-outlined">account_balance</span>
-<span className="font-label-sm text-label-sm">Committee Ledgers</span>
-</a>
-<a className="flex items-center gap-md bg-secondary-container dark:bg-secondary-container text-on-secondary-container rounded-lg mx-2 my-1 px-md py-sm transition-all duration-200 font-bold" href="#">
-<span className="material-symbols-outlined">history_edu</span>
-<span className="font-label-sm text-label-sm">Activity Log</span>
-</a>
-<a className="flex items-center gap-md text-on-surface-variant dark:text-on-surface-variant mx-2 my-1 px-md py-sm rounded-lg hover:bg-surface-variant/50 transition-all duration-200 mt-auto" href="#">
-<span className="material-symbols-outlined">settings</span>
-<span className="font-label-sm text-label-sm">Settings</span>
-</a>
-</div>
-<div className="px-lg pt-md mt-auto border-t border-outline-variant/15 font-label-sm text-label-sm text-on-surface-variant/60">
-            Trust Node #042
-        </div>
-</nav>
+        {/* ── DESKTOP SIDEBAR ── */}
+        <aside className="hidden md:flex w-64 shrink-0 flex-col gap-6 p-5 my-6 ml-4 bg-white/60 backdrop-blur-xl border border-white/80 rounded-3xl shadow-[0_8px_32px_rgba(0,105,114,0.12)]">
+          <div className="flex items-center gap-3 px-2 pt-2">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#006972] to-[#004f56] text-white flex items-center justify-center font-bold font-headline text-[16px] shadow-md">
+              SA
+            </div>
+            <div>
+              <h2 className="font-headline text-[15px] font-bold text-deep-navy leading-tight">Sanjhi Admin</h2>
+              <p className="font-label text-[10px] text-[#006972] font-semibold">Audit Stream</p>
+            </div>
+          </div>
 
-<main className="flex-1 flex flex-col p-margin-mobile md:p-margin-desktop max-w-7xl w-full mx-auto gap-xl">
-<div className="flex flex-col gap-sm">
-<h2 className="font-display-lg-mobile md:font-display-lg text-primary">Platform Activity Log</h2>
-<p className="text-on-surface-variant font-body-md max-w-2xl">Monitor all administrative actions taken across the Sanjhi trust network. All actions are securely logged and time-stamped.</p>
-</div>
+          <hr className="border-slate-200/60" />
 
-<div className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-4 flex flex-col md:flex-row gap-4 items-center">
-<div className="relative w-full md:w-64">
-<span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
-<input className="w-full pl-10 pr-4 py-2 bg-surface border border-outline-variant/30 rounded-lg focus:ring-2 focus:ring-secondary focus:border-secondary outline-none font-body-md text-on-surface transition-all" placeholder="Search admin name..." type="text"/>
-</div>
-<div className="relative w-full md:w-auto flex-1 flex gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
-<button className="flex items-center gap-2 px-4 py-2 rounded-full border border-outline-variant/30 bg-surface hover:bg-surface-container-low text-on-surface-variant font-label-sm transition-colors whitespace-nowrap">
-<span className="material-symbols-outlined text-[18px]">calendar_today</span>
-                    Date Range
+          <nav className="flex flex-col gap-1">
+            {adminNavItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl font-label text-[13px] font-bold transition-all cursor-pointer border-none text-left ${
+                    isActive
+                      ? 'bg-[#006972] text-white shadow-md shadow-[#006972]/20'
+                      : 'text-deep-navy/70 hover:bg-white/80 hover:text-deep-navy'
+                  }`}
+                >
+                  <Icon name={item.icon} size={18} className={isActive ? 'text-white' : 'text-[#006972]'} />
+                  <span>{item.label}</span>
                 </button>
-<div className="h-8 w-px bg-outline-variant/30 mx-2 self-center hidden md:block"></div>
-<button className="flex items-center gap-2 px-4 py-2 rounded-full bg-secondary-container text-on-secondary-container font-label-sm transition-colors whitespace-nowrap">
-                    All Actions
-                </button>
-<button className="flex items-center gap-2 px-4 py-2 rounded-full border border-outline-variant/30 bg-surface hover:bg-surface-container-low text-on-surface-variant font-label-sm transition-colors whitespace-nowrap">
-                    Resolved
-                </button>
-<button className="flex items-center gap-2 px-4 py-2 rounded-full border border-outline-variant/30 bg-surface hover:bg-surface-container-low text-on-surface-variant font-label-sm transition-colors whitespace-nowrap">
-                    Suspended
-                </button>
-<button className="flex items-center gap-2 px-4 py-2 rounded-full border border-outline-variant/30 bg-surface hover:bg-surface-container-low text-on-surface-variant font-label-sm transition-colors whitespace-nowrap">
-                    Frozen
-                </button>
-</div>
-</div>
+              );
+            })}
+          </nav>
 
-<div className="flex flex-col gap-md relative">
+          {/* Persistent Logout Button */}
+          <div className="mt-auto pt-3 border-t border-slate-200/60">
+            <button
+              onClick={handleLogout}
+              className="w-full py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 font-label text-[12px] font-bold transition-all cursor-pointer border border-rose-200 flex items-center justify-center gap-2 shadow-sm"
+            >
+              <Icon name="logout" size={16} />
+              Logout Staff Account
+            </button>
+          </div>
+        </aside>
 
-<div className="absolute left-6 top-4 bottom-4 w-px bg-outline-variant/30 hidden md:block"></div>
+        {/* ── MAIN CONTENT ── */}
+        <main className="flex-1 px-3 sm:px-6 py-4 sm:py-8 flex flex-col gap-5 min-w-0 pb-28 md:pb-12">
 
-<div className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-lg flex flex-col md:flex-row gap-lg items-start md:items-center group hover:bg-surface-container-low/50 transition-colors relative">
+          {/* Header */}
+          <header className="w-full flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="font-headline text-[22px] sm:text-[26px] font-bold text-deep-navy tracking-tight">
+                Platform Audit & Activity Log
+              </h1>
+              <p className="font-label text-[11px] text-on-surface-variant font-medium">
+                Time-stamped audit record of administrative actions, compliance freezes, and dispute resolutions
+              </p>
+            </div>
 
-<div className="w-12 h-12 rounded-full bg-tertiary-container/20 text-tertiary flex items-center justify-center shrink-0 md:z-10 md:ring-8 md:ring-background">
-<span className="material-symbols-outlined" data-weight="fill">gavel</span>
-</div>
-<div className="flex-1 flex flex-col gap-1 w-full">
-<div className="flex justify-between items-start gap-4">
-<h3 className="font-headline-md text-[20px] text-primary">Resolved Complaint #8924A</h3>
-<span className="font-label-sm text-on-surface-variant shrink-0 whitespace-nowrap">2 hours ago</span>
-</div>
-<div className="flex flex-col md:flex-row gap-y-2 gap-x-6 mt-2">
-<div className="flex items-center gap-2 text-on-surface-variant font-body-md">
-<span className="material-symbols-outlined text-[18px]">target</span>
-<span className="font-semibold text-on-surface">Target:</span> Karachi Growth Circle
-                        </div>
-<div className="flex items-center gap-2 text-on-surface-variant font-body-md">
-<span className="material-symbols-outlined text-[18px]">person</span>
-<span className="font-semibold text-on-surface">By:</span> Admin: Sarah Ahmed
-                        </div>
-</div>
-</div>
-</div>
+            {/* Search Input */}
+            <div className="relative flex-1 sm:max-w-xs">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#006972]">
+                <Icon name="search" size={18} />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search audit action, admin name..."
+                className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white/70 border border-white/80 text-deep-navy font-body text-[13px] placeholder:text-slate-400 outline-none focus:border-[#006972] focus:bg-white transition-all shadow-sm"
+              />
+            </div>
+          </header>
 
-<div className="bg-surface-container-lowest rounded-xl border border-error/20 p-lg flex flex-col md:flex-row gap-lg items-start md:items-center group hover:bg-surface-container-low/50 transition-colors relative">
+          {/* Filter Chips */}
+          <section className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {[
+              { id: 'ALL', label: 'All Actions', icon: 'history' },
+              { id: 'RESOLUTIONS', label: 'Dispute Resolutions', icon: 'gavel' },
+              { id: 'FREEZES', label: 'Freezes & Blocks', icon: 'lock' },
+              { id: 'USERS', label: 'User Audits', icon: 'manage_accounts' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-4 py-2 rounded-full font-label text-[12px] font-bold transition-all cursor-pointer border shrink-0 flex items-center gap-1.5 ${
+                  activeFilter === tab.id
+                    ? 'bg-[#006972] text-white border-[#006972] shadow-md shadow-[#006972]/20'
+                    : 'bg-white/60 hover:bg-white text-deep-navy/70 border-white/80'
+                }`}
+              >
+                <Icon name={tab.icon} size={14} />
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </section>
 
-<div className="w-12 h-12 rounded-full bg-error-container text-error flex items-center justify-center shrink-0 md:z-10 md:ring-8 md:ring-background">
-<span className="material-symbols-outlined" data-weight="fill">block</span>
-</div>
-<div className="flex-1 flex flex-col gap-1 w-full">
-<div className="flex justify-between items-start gap-4">
-<h3 className="font-headline-md text-[20px] text-primary">Suspended User</h3>
-<span className="font-label-sm text-on-surface-variant shrink-0 whitespace-nowrap">Oct 10, 2023</span>
-</div>
-<div className="flex flex-col md:flex-row gap-y-2 gap-x-6 mt-2">
-<div className="flex items-center gap-2 text-on-surface-variant font-body-md">
-<span className="material-symbols-outlined text-[18px]">target</span>
-<span className="font-semibold text-on-surface">Target:</span> Musa Farooq
-                        </div>
-<div className="flex items-center gap-2 text-on-surface-variant font-body-md">
-<span className="material-symbols-outlined text-[18px]">person</span>
-<span className="font-semibold text-on-surface">By:</span> Admin: Zain Malik
-                        </div>
-</div>
-</div>
-</div>
+          {loading ? (
+            <div className="space-y-3 w-full">
+              {[1, 2, 3, 4].map((i) => (
+                <Bone key={i} className="w-full h-24 rounded-3xl" />
+              ))}
+            </div>
+          ) : loadError ? (
+            <div className={`${GLASS_CARD} rounded-3xl p-8 text-center space-y-3`}>
+              <div className="w-14 h-14 rounded-3xl bg-rose-50/90 text-rose-600 flex items-center justify-center mx-auto border border-rose-200/80 shadow-sm">
+                <Icon name="error" size={28} />
+              </div>
+              <h2 className="font-headline text-[18px] font-bold text-deep-navy">Couldn't load audit log</h2>
+              <p className="font-body text-[13px] text-on-surface-variant max-w-xs mx-auto">{loadError}</p>
+              <button
+                onClick={loadLogsData}
+                className="px-6 py-2.5 rounded-2xl bg-[#006972] text-white font-label text-[13px] font-bold cursor-pointer border-none shadow-md"
+              >
+                Retry
+              </button>
+            </div>
+          ) : (
+            /* Audit Stream Timeline */
+            <section className="space-y-3">
+              {filteredLogs.length === 0 ? (
+                <div className={`${GLASS_CARD} rounded-3xl p-8 text-center space-y-2`}>
+                  <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto">
+                    <Icon name="history_toggle_off" size={24} />
+                  </div>
+                  <h3 className="font-headline text-[16px] font-bold text-deep-navy">No audit logs found</h3>
+                  <p className="font-body text-[12px] text-on-surface-variant">Try selecting a different filter tab or clearing search.</p>
+                </div>
+              ) : (
+                filteredLogs.map((log) => (
+                  <div
+                    key={log.id}
+                    className={`${GLASS_CARD} rounded-3xl p-4 sm:p-5 flex items-start gap-4 border border-white/90 shadow-sm transition-all hover:shadow-md`}
+                  >
+                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border ${log.color}`}>
+                      <Icon name={log.icon} size={22} />
+                    </div>
 
-<div className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-lg flex flex-col md:flex-row gap-lg items-start md:items-center group hover:bg-surface-container-low/50 transition-colors relative">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="font-headline text-[15px] font-bold text-deep-navy truncate">{log.title}</h3>
+                        <span className="font-label text-[10px] text-slate-400 shrink-0 font-semibold">{log.timestamp}</span>
+                      </div>
 
-<div className="w-12 h-12 rounded-full bg-secondary-container/30 text-secondary flex items-center justify-center shrink-0 md:z-10 md:ring-8 md:ring-background">
-<span className="material-symbols-outlined" data-weight="fill">ac_unit</span>
-</div>
-<div className="flex-1 flex flex-col gap-1 w-full">
-<div className="flex justify-between items-start gap-4">
-<h3 className="font-headline-md text-[20px] text-primary">Froze Ledger #442</h3>
-<span className="font-label-sm text-on-surface-variant shrink-0 whitespace-nowrap">Oct 09, 2023</span>
-</div>
-<div className="flex flex-col md:flex-row gap-y-2 gap-x-6 mt-2">
-<div className="flex items-center gap-2 text-on-surface-variant font-body-md">
-<span className="material-symbols-outlined text-[18px]">target</span>
-<span className="font-semibold text-on-surface">Target:</span> Lahore Community Fund
-                        </div>
-<div className="flex items-center gap-2 text-on-surface-variant font-body-md">
-<span className="material-symbols-outlined text-[18px]">person</span>
-<span className="font-semibold text-on-surface">By:</span> Admin: Sarah Ahmed
-                        </div>
-</div>
-</div>
-</div>
-</div>
-</main>
+                      <p className="font-body text-[12px] text-on-surface-variant mt-1 leading-relaxed">
+                        {log.details}
+                      </p>
 
-<nav className="bg-surface dark:bg-surface-container-lowest text-secondary dark:text-secondary-fixed-dim fixed bottom-0 w-full z-50 md:hidden border-t border-outline-variant/15 shadow-lg flex justify-around items-center h-16 px-4">
-<a className="flex flex-col items-center justify-center text-on-surface-variant active:scale-95 transition-transform hover:bg-surface-variant/30 rounded-lg p-2" href="#">
-<span className="material-symbols-outlined">inbox</span>
-<span className="font-label-sm text-label-sm-mobile mt-1">Inbox</span>
-</a>
-<a className="flex flex-col items-center justify-center text-on-surface-variant active:scale-95 transition-transform hover:bg-surface-variant/30 rounded-lg p-2" href="#">
-<span className="material-symbols-outlined">account_balance</span>
-<span className="font-label-sm text-label-sm-mobile mt-1">Ledgers</span>
-</a>
-<a className="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 active:scale-95 transition-transform" href="#">
-<span className="material-symbols-outlined" data-weight="fill">list_alt</span>
-<span className="font-label-sm text-label-sm-mobile mt-1 font-bold">Logs</span>
-</a>
-<a className="flex flex-col items-center justify-center text-on-surface-variant active:scale-95 transition-transform hover:bg-surface-variant/30 rounded-lg p-2" href="#">
-<span className="material-symbols-outlined">admin_panel_settings</span>
-<span className="font-label-sm text-label-sm-mobile mt-1">Panel</span>
-</a>
-</nav>
-    </div>
+                      <div className="flex items-center gap-1.5 pt-2 text-[#006972] font-label text-[10px] font-bold">
+                        <Icon name="badge" size={13} />
+                        <span>Action performed by: {log.admin_name}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </section>
+          )}
+
+        </main>
+      </div>
+
+      {/* MOBILE BOTTOM NAVIGATION */}
+      <AdminMobileNav />
+    </AuthAmbientBackground>
   );
 }

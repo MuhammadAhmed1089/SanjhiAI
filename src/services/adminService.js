@@ -156,3 +156,45 @@ export function getRiskFlags(committeeId) {
 export function clearRiskFlag(flagId, payload = {}) {
   return api.post(`/admin/risk-flags/${flagId}/clear`, payload);
 }
+
+// ─── Analytics ───────────────────────────────────────────────
+
+/**
+ * Get platform analytics data.
+ */
+export function getAnalytics(params = {}) {
+  const qs = new URLSearchParams(params).toString();
+  return api.get(`${BASE}/analytics?${qs}`);
+}
+
+// ─── Platform Settings ───────────────────────────────────────
+
+/**
+ * Get global platform settings.
+ */
+export function getPlatformSettings() {
+  return api.get(`${BASE}/settings`);
+}
+
+/**
+ * Update global platform settings.
+ */
+export function updatePlatformSettings(payload) {
+  return api.put(`${BASE}/settings`, payload);
+}
+
+// ─── Announcements / Notifications ────────────────────────────
+
+/**
+ * Get broadcast announcements list.
+ */
+export function getAnnouncements() {
+  return api.get(`${BASE}/announcements`);
+}
+
+/**
+ * Create a system-wide or targeted broadcast announcement.
+ */
+export function createAnnouncement(payload) {
+  return api.post(`${BASE}/announcements`, payload);
+}
