@@ -9,6 +9,7 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 import committeeRoutes from './routes/committeeRoutes.js';
 import initAssistantRoutes from './routes/assistantRoutes.js';
 import initNotificationRoutes from './routes/notificationRoutes.js';
+import activityRoutes from './routes/activityRoutes.js';
 
 dotenv.config();
 
@@ -49,6 +50,9 @@ initAssistantRoutes(app);
 
 // Notification Routes
 initNotificationRoutes(app);
+
+// Activity Routes
+app.use('/api/activities', activityRoutes);
 
 
 // Health check

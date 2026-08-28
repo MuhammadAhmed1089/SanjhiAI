@@ -81,3 +81,30 @@ export async function markNotificationAsRead(req, res) {
     return res.status(500).json({ error: 'Failed to update notification.' });
   }
 }
+
+/**
+ * GET /api/notifications/unread-count
+ * Returns the count of unread notifications
+ */
+export async function getUnreadNotificationCount(req, res) {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+
+    const result = await query(
+      `SELECT COUNT(*)
+       FROM notifications
+       WHERE user_id = $1 AND read_at IS NULL`,
+      [userId]
+    );
+
+    return res.status(200).json({
+      count: parseInt(result.rows[0].count, 10),
+    });
+  } catch (error) {
+    console.error('Error fetching unread count:', error);
+    return res.status(500).json({ error: 'Failed to fetch unread count.' });
+  }
+}

@@ -373,6 +373,33 @@ export async function parseCommitteeAIAudio(req, res) {
   }
 }
 
+export async function getCommitteeByCode(req, res) {
+  try {
+    const { code } = req.params;
+    if (!code) return res.status(400).json({ error: 'Invite code is required.' });
+
+    const committeeRes = await query(
+      `SELECT c.*,
+        ca.account_type, ca.account_number, ca.account_title,
+        u.full_name AS organizer_name
+       FROM committees c
+       LEFT JOIN collection_accounts ca ON ca.committee_id = c.id AND ca.is_active = true
+       LEFT JOIN users u ON u.id = c.created_by
+       WHERE c.invite_code = $1 AND c.status = 'active'`,
+      [code.trim().toUpperCase()]
+    );
+
+    if (committeeRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Invalid or inactive committee invite code.' });
+    }
+
+    return res.status(200).json({ committee: committeeRes.rows[0] });
+  } catch (error) {
+    console.error('Error fetching committee by code:', error);
+    return res.status(500).json({ error: 'Failed to fetch committee.' });
+  }
+}
+
 export async function joinByCode(req, res) {
   try {
     const userId = req.user?.userId;
@@ -425,6 +452,37 @@ export async function joinByCode(req, res) {
   } catch (error) {
     console.error('Error joining committee by code:', error);
     return res.status(500).json({ error: 'Failed to join committee.' });
+  }
+}
+
+export async function getJoinRequests(req, res) {
+  try {
+    const userId = req.user?.userId;
+    const { id: committeeId } = req.params;
+
+    // Verify user is organizer
+    const orgRes = await query(
+      `SELECT * FROM organizers WHERE committee_id = $1 AND user_id = $2`,
+      [committeeId, userId]
+    );
+
+    if (orgRes.rows.length === 0) {
+      return res.status(403).json({ error: 'Only the organizer can view join requests.' });
+    }
+
+    const membersRes = await query(
+      `SELECT m.id, u.full_name, u.profile_photo_url, ts.score
+       FROM members m
+       JOIN users u ON u.id = m.user_id
+       LEFT JOIN trust_scores ts ON ts.user_id = u.id
+       WHERE m.committee_id = $1 AND m.status = 'pending'`,
+      [committeeId]
+    );
+
+    return res.status(200).json({ requests: membersRes.rows });
+  } catch (error) {
+    console.error('Error fetching join requests:', error);
+    return res.status(500).json({ error: 'Failed to fetch join requests.' });
   }
 }
 
@@ -482,7 +540,7 @@ export async function updateMemberRequestStatus(req, res) {
     // Notify Member of Approval / Rejection
     await createNotification(
       updatedMember.user_id,
-      'approval_status',
+      status === 'approved' ? 'join_approved' : 'join_rejected',
       'in_app',
       status === 'approved'
         ? `Your request to join "${commName}" has been approved by the organizer! 🎉`
@@ -497,5 +555,152 @@ export async function updateMemberRequestStatus(req, res) {
   } catch (error) {
     console.error('Error updating member request status:', error);
     return res.status(500).json({ error: 'Failed to update member status.' });
+  }
+}
+
+/**
+ * POST /api/committees/:id/members/add
+ * Organizer adds a participant directly by User ID, phone number, or email
+ */
+export async function addMemberDirectly(req, res) {
+  try {
+    const userId = req.user?.userId;
+    const { id: committeeId } = req.params;
+    const { identifier } = req.body;
+
+    if (!identifier || !identifier.trim()) {
+      return res.status(400).json({ error: 'User ID, phone number, or email is required.' });
+    }
+
+    const cleanInput = identifier.trim().replace(/^@/, '');
+
+    // 1. Verify user is organizer of this committee
+    const orgRes = await query(
+      `SELECT c.name, c.capacity FROM organizers o
+       JOIN committees c ON c.id = o.committee_id
+       WHERE o.committee_id = $1 AND o.user_id = $2`,
+      [committeeId, userId]
+    );
+
+    if (orgRes.rows.length === 0) {
+      return res.status(403).json({ error: 'Only the organizer can add members directly.' });
+    }
+
+    const committee = orgRes.rows[0];
+
+    // 2. Find target user by UUID, phone, email, or name
+    let userRes;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanInput);
+    if (isUuid) {
+      userRes = await query(
+        `SELECT id, full_name, email, phone_number, profile_photo_url FROM users WHERE id = $1`,
+        [cleanInput]
+      );
+    } else {
+      userRes = await query(
+        `SELECT id, full_name, email, phone_number, profile_photo_url 
+         FROM users 
+         WHERE phone_number = $1 OR email ILIKE $1 OR full_name ILIKE $1 
+         LIMIT 1`,
+        [cleanInput]
+      );
+    }
+
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ error: `User "${identifier}" not found. Make sure the user has registered on Sanjhi.` });
+    }
+
+    const targetUser = userRes.rows[0];
+
+    // 3. Check if user is already a member
+    const existingMemberRes = await query(
+      `SELECT * FROM members WHERE committee_id = $1 AND user_id = $2`,
+      [committeeId, targetUser.id]
+    );
+
+    if (existingMemberRes.rows.length > 0) {
+      return res.status(400).json({ error: `${targetUser.full_name} is already a member (or has a pending request) of this committee.` });
+    }
+
+    // 4. Check committee capacity
+    const countRes = await query(
+      `SELECT COUNT(*) FROM members WHERE committee_id = $1 AND status = 'approved'`,
+      [committeeId]
+    );
+    const approvedCount = parseInt(countRes.rows[0].count, 10);
+    if (approvedCount >= committee.capacity) {
+      return res.status(400).json({ error: `Committee capacity limit reached (${committee.capacity} members max).` });
+    }
+
+    const payoutTurnOrder = approvedCount + 1;
+
+    // 5. Insert or Update member to approved
+    const memberRes = await query(
+      `INSERT INTO members (user_id, committee_id, status, payout_turn_order, joined_at)
+       VALUES ($1, $2, 'approved', $3, NOW())
+       ON CONFLICT (user_id, committee_id) 
+       DO UPDATE SET status = 'approved', payout_turn_order = COALESCE(members.payout_turn_order, $3), joined_at = NOW()
+       RETURNING *`,
+      [targetUser.id, committeeId, payoutTurnOrder]
+    );
+
+    // 6. Notify user
+    await createNotification(
+      targetUser.id,
+      'join_approved',
+      'in_app',
+      `You have been added to the committee "${committee.name}" by the organizer! 🎉`,
+      committeeId
+    );
+
+    // Fetch trust score
+    const tsRes = await query(`SELECT score FROM trust_scores WHERE user_id = $1`, [targetUser.id]);
+    const trustScore = tsRes.rows.length > 0 ? parseFloat(tsRes.rows[0].score) : 850;
+
+    return res.status(200).json({
+      message: `${targetUser.full_name} added to committee successfully!`,
+      member: {
+        ...memberRes.rows[0],
+        full_name: targetUser.full_name,
+        name: targetUser.full_name,
+        email: targetUser.email,
+        phone_number: targetUser.phone_number,
+        phone: targetUser.phone_number,
+        profile_photo_url: targetUser.profile_photo_url,
+        trust_score: trustScore,
+      },
+    });
+  } catch (error) {
+    console.error('Error adding member directly:', error);
+    return res.status(500).json({ error: error.message || 'Failed to add member.' });
+  }
+}
+
+/**
+ * GET /api/committees/:id/members/search-users?q=...
+ * Search registered users by name/phone/email to invite
+ */
+export async function searchUsers(req, res) {
+  try {
+    const { q } = req.query;
+    if (!q || !q.trim()) {
+      return res.status(200).json({ users: [] });
+    }
+
+    const term = `%${q.trim()}%`;
+    const usersRes = await query(
+      `SELECT u.id, u.full_name, u.email, u.phone_number, u.profile_photo_url,
+              COALESCE(ts.score, 850) AS trust_score
+       FROM users u
+       LEFT JOIN trust_scores ts ON ts.user_id = u.id
+       WHERE u.full_name ILIKE $1 OR u.phone_number ILIKE $1 OR u.email ILIKE $1
+       LIMIT 10`,
+      [term]
+    );
+
+    return res.status(200).json({ users: usersRes.rows });
+  } catch (error) {
+    console.error('Error searching users:', error);
+    return res.status(500).json({ error: 'Failed to search users.' });
   }
 }

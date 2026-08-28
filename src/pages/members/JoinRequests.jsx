@@ -1,22 +1,41 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { memberService } from '../../services';
 import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
 
-const REQUESTS = [
-  { name: 'Ayesha Malik', score: 940, label: 'High Trust', avatar: '/avatar.svg' },
-  { name: 'Omar Farooq', score: 880, label: 'Trusted', avatar: '/avatar.svg' },
-  { name: 'Sara Khan', score: 915, label: 'Trusted', avatar: '/avatar.svg' },
-];
-
 export default function JoinRequests() {
   const navigate = useNavigate();
-  const [requests, setRequests] = useState(REQUESTS);
-  const [decided, setDecided] = useState({});
+  const { id } = useParams();
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  function decide(name, action) {
-    setDecided((prev) => ({ ...prev, [name]: action }));
-    setTimeout(() => setRequests((prev) => prev.filter((r) => r.name !== name)), 600);
+  useEffect(() => {
+    async function fetchRequests() {
+      try {
+        setLoading(true);
+        const data = await memberService.getJoinRequests(id);
+        setRequests(data.requests);
+      } catch (err) {
+        console.error('Failed to fetch requests:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchRequests();
+  }, [id]);
+
+  async function decide(memberId, action) {
+    try {
+      if (action === 'approved') {
+        await memberService.approveJoinRequest(id, memberId);
+      } else {
+        await memberService.rejectJoinRequest(id, memberId);
+      }
+      setRequests((prev) => prev.filter((r) => r.id !== memberId));
+    } catch (err) {
+      console.error('Action failed:', err);
+    }
   }
 
   return (
@@ -46,50 +65,53 @@ export default function JoinRequests() {
 
         {/* Request Cards */}
         <main className="flex flex-col gap-4">
-          {requests.length === 0 && (
+          {loading ? (
+            <div className="text-center py-16 font-body text-on-surface-variant">Loading requests...</div>
+          ) : requests.length === 0 ? (
             <div className="text-center py-16">
               <div className="w-16 h-16 bg-white/60 rounded-full flex items-center justify-center mx-auto mb-4 border border-[#006972]/10">
                 <Icon name="task_alt" size={30} className="text-[#006972]/50" />
               </div>
-              <p className="font-body text-[15px] text-on-surface-variant">All requests reviewed!</p>
+              <p className="font-body text-[15px] text-on-surface-variant">No pending requests!</p>
             </div>
-          )}
-          {requests.map((req) => (
-            <div
-              key={req.name}
-              className={`bg-white/90 backdrop-blur-md rounded-2xl border border-[#006972]/15 shadow-md p-5 transition-all ${decided[req.name] ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
-            >
-              <div className="flex items-center gap-4 mb-5">
-                <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[#006972]/20 flex-shrink-0 shadow-sm">
-                  <img alt={req.name} src={req.avatar} className="w-full h-full object-cover" />
+          ) : (
+            requests.map((req) => (
+              <div
+                key={req.id}
+                className="bg-white/90 backdrop-blur-md rounded-2xl border border-[#006972]/15 shadow-md p-5 transition-all"
+              >
+                <div className="flex items-center gap-4 mb-5">
+                  <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[#006972]/20 flex-shrink-0 shadow-sm">
+                    <img alt={req.full_name} src={req.profile_photo_url || '/avatar.svg'} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-headline text-[17px] font-bold text-deep-navy">{req.full_name}</h3>
+                    <span className="inline-flex items-center gap-1.5 bg-[#006972]/10 text-[#006972] px-2.5 py-0.5 rounded-full font-label text-[11px] font-semibold mt-1">
+                      <Icon name="verified_user" size={12} />
+                      {Math.round(req.score)} • Trust Score
+                    </span>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-headline text-[17px] font-bold text-deep-navy">{req.name}</h3>
-                  <span className="inline-flex items-center gap-1.5 bg-[#006972]/10 text-[#006972] px-2.5 py-0.5 rounded-full font-label text-[11px] font-semibold mt-1">
-                    <Icon name="verified_user" size={12} />
-                    {req.score} • {req.label}
-                  </span>
-                </div>
-              </div>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() => decide(req.name, 'approved')}
-                  className="flex-1 bg-[#006972] hover:bg-[#00575f] text-white font-label text-[13px] py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
-                >
-                  <Icon name="check" size={18} />
-                  Approve
-                </button>
-                <button
-                  onClick={() => decide(req.name, 'rejected')}
-                  className="flex-1 border-2 border-red-200 text-red-500 hover:bg-red-50 font-label text-[13px] py-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95"
-                >
-                  <Icon name="close" size={18} />
-                  Reject
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => decide(req.id, 'approved')}
+                    className="flex-1 bg-[#006972] hover:bg-[#00575f] text-white font-label text-[13px] py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
+                  >
+                    <Icon name="check" size={18} />
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => decide(req.id, 'rejected')}
+                    className="flex-1 border-2 border-red-200 text-red-500 hover:bg-red-50 font-label text-[13px] py-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95"
+                  >
+                    <Icon name="close" size={18} />
+                    Reject
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </main>
 
       </div>

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Icon from '../../components/Icon';
 import logo from '../../assets/screen.png';
-import { dashboardService } from '../../services';
+import { dashboardService, notificationService } from '../../services';
 
 /* ── Count-up hook ── */
 function useCountUp(target, duration = 1400, active = true) {
@@ -86,7 +86,9 @@ export default function Dashboard() {
   const [targetPayout, setTargetPayout] = useState(0);
   const [nextPayoutInfo, setNextPayoutInfo] = useState(null);
   const [dbCommittees, setDbCommittees] = useState([]);
-  const [dbNotifications, setDbNotifications] = useState([]);
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [recentNotifications, setRecentNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [loadingBackend, setLoadingBackend] = useState(true);
 
   const trustScore = useCountUp(targetScore, 1600, !loadingBackend);
@@ -144,8 +146,21 @@ export default function Dashboard() {
           setDbCommittees(data.committees);
         }
 
-        if (data?.recentNotifications && Array.isArray(data.recentNotifications)) {
-          setDbNotifications(data.recentNotifications);
+        try {
+          const activityData = await dashboardService.getRecentActivities();
+          if (activityData?.activities && Array.isArray(activityData.activities)) {
+            setRecentActivities(activityData.activities);
+          }
+          
+          const notificationData = await notificationService.getNotifications();
+          if (notificationData?.notifications && Array.isArray(notificationData.notifications)) {
+            setRecentNotifications(notificationData.notifications.slice(0, 5));
+          }
+
+          const countData = await notificationService.getUnreadCount();
+          setUnreadCount(countData.count || 0);
+        } catch (actErr) {
+          console.error('Failed to load activity/notification data:', actErr);
         }
       } catch (err) {
         console.log('Backend connection notice:', err.message);
@@ -279,8 +294,11 @@ export default function Dashboard() {
             <button onClick={() => navigate('/notifications')}
               className="relative p-2.5 rounded-full bg-white hover:bg-[#006972]/5 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer group" aria-label="Notifications">
               <Icon name="notifications" size={22} className="group-hover:rotate-12 transition-transform duration-300" />
-              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-amber-500 rounded-full ring-2 ring-white" />
-              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-amber-500 rounded-full ring-2 ring-white animate-ping" />
+              {unreadCount > 0 && (
+                 <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold ring-2 ring-white">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                 </span>
+              )}
             </button>
           </div>
         </div>
@@ -537,8 +555,8 @@ export default function Dashboard() {
                   </div>
                 </div>
               ))
-            ) : dbNotifications.length > 0 ? (
-              dbNotifications.map((item, idx) => (
+            ) : recentNotifications.length > 0 ? (
+              recentNotifications.map((item, idx) => (
                 <div key={item.id || idx}
                   className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-[#fbfaee] border border-deep-navy/5 hover:bg-[#006972]/5 hover:border-[#006972]/25 hover:translate-x-1 transition-all duration-200 cursor-pointer group">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-[#006972]/10 text-[#006972] group-hover:scale-110 transition-transform duration-200">
@@ -549,13 +567,13 @@ export default function Dashboard() {
                     <p className="font-body text-[12px] text-on-surface-variant truncate">{item.content}</p>
                   </div>
                   <span className="font-label text-[11px] text-on-surface-variant shrink-0 ml-2">
-                    {new Date(item.createdAt).toLocaleDateString()}
+                    {new Date(item.created_at).toLocaleDateString()}
                   </span>
                 </div>
               ))
             ) : (
               <div className="p-4 rounded-2xl bg-[#fbfaee] text-center text-on-surface-variant text-[13px] font-body">
-                No recent activity notifications yet. Your committee updates will appear here!
+                No new notifications.
               </div>
             )}
           </div>

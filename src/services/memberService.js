@@ -36,6 +36,24 @@ export function inviteMember(committeeId, payload) {
 }
 
 /**
+ * Add a member directly by ID/phone/email (Organizer only).
+ * @param {string} committeeId
+ * @param {{ identifier: string }} payload
+ */
+export function addMemberDirectly(committeeId, payload) {
+  return api.post(`${BASE}/${committeeId}/members/add`, payload);
+}
+
+/**
+ * Search registered users by name/phone/email to add to committee.
+ * @param {string} committeeId
+ * @param {string} query
+ */
+export function searchUsers(committeeId, query) {
+  return api.get(`${BASE}/${committeeId}/members/search-users?q=${encodeURIComponent(query)}`);
+}
+
+/**
  * Bulk invite members.
  * @param {string} committeeId
  * @param {{ contacts: Array<{ phone_number?: string, email?: string }> }} payload

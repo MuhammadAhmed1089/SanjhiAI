@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Icon from '../../components/Icon';
 import logo from '../../assets/screen.png';
 import { getCommitteeById, updatePaymentStatus, releasePayout } from '../../services/committeeService';
+import { memberService } from '../../services';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace('/api', '')
@@ -27,6 +28,8 @@ export default function CommitteeDetail() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteTab, setInviteTab] = useState('link'); // 'link' | 'userid'
   const [manualUserId, setManualUserId] = useState('');
+  const [addingMember, setAddingMember] = useState(false);
+  const [addMemberError, setAddMemberError] = useState('');
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [selectedMemberToVerify, setSelectedMemberToVerify] = useState(null);
   const [showReminderModal, setShowReminderModal] = useState(false);
@@ -69,7 +72,7 @@ export default function CommitteeDetail() {
         if (data?.members && Array.isArray(data.members)) {
           const approved = data.members.filter(m => m.status === 'approved');
           const pending = data.members.filter(m => m.status === 'pending');
-          setMembers(approved.length > 0 ? approved : data.members);
+          setMembers(approved);
           setPendingRequests(pending);
         }
       } catch (err) {
@@ -107,22 +110,36 @@ export default function CommitteeDetail() {
     }
   }
 
-  function handleManualAddUser(e) {
+  async function handleManualAddUser(e) {
     e.preventDefault();
-    if (!manualUserId.trim()) return;
+    if (!manualUserId.trim() || addingMember) return;
     const cleanId = manualUserId.trim();
-    const newMember = {
-      id: `user_${Date.now()}`,
-      name: cleanId.startsWith('@') ? cleanId : `@${cleanId}`,
-      phone: '+92 300 0000000',
-      turn: members.length + 1,
-      status: 'approved',
-      trust_score: 850
-    };
-    setMembers(prev => [...prev, newMember]);
-    showToast(`Participant ${cleanId} added to committee successfully! ✓`);
-    setManualUserId('');
-    setShowInviteModal(false);
+    setAddMemberError('');
+    setAddingMember(true);
+
+    try {
+      const res = await memberService.addMemberDirectly(id || '1', { identifier: cleanId });
+      if (res?.member) {
+        setMembers(prev => {
+          // Prevent duplicates in state
+          const filtered = prev.filter(m => m.user_id !== res.member.user_id && m.id !== res.member.id);
+          return [...filtered, {
+            ...res.member,
+            turn: res.member.payout_turn_order || filtered.length + 1,
+            status: 'approved',
+          }];
+        });
+        showToast(res.message || `Participant ${res.member.full_name || cleanId} added to committee! ✓`);
+        setManualUserId('');
+        setShowInviteModal(false);
+      }
+    } catch (err) {
+      console.error('Error adding member directly:', err);
+      setAddMemberError(err.message || 'Failed to add participant.');
+      showToast(err.message || 'Failed to add participant.');
+    } finally {
+      setAddingMember(false);
+    }
   }
 
   const paidCount = members.filter((m) => m.status === 'paid').length;
@@ -662,8 +679,14 @@ export default function CommitteeDetail() {
             ) : (
               /* TAB CONTENT 2: MANUAL ADD BY USER ID */
               <form onSubmit={handleManualAddUser} className="space-y-4 pt-1">
+                {addMemberError && (
+                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[12px] font-body flex items-center gap-2">
+                    <Icon name="error" size={16} className="shrink-0" />
+                    <span>{addMemberError}</span>
+                  </div>
+                )}
                 <div className="space-y-1.5">
-                  <label className="block font-label text-[12px] font-bold text-deep-navy">User ID / Username / Phone</label>
+                  <label className="block font-label text-[12px] font-bold text-deep-navy">User ID / Email / Phone Number</label>
                   <div className="relative">
                     <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#006972]">
                       <Icon name="person_search" size={18} />
@@ -671,30 +694,43 @@ export default function CommitteeDetail() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. @zaid_99 or 03001234567"
+                      placeholder="e.g. 03001234567 or user@example.com"
                       value={manualUserId}
-                      onChange={(e) => setManualUserId(e.target.value)}
+                      onChange={(e) => {
+                        setManualUserId(e.target.value);
+                        if (addMemberError) setAddMemberError('');
+                      }}
                       className="w-full h-12 pl-11 pr-4 bg-slate-50 border-2 border-[#006972]/15 rounded-2xl focus:border-[#006972] focus:ring-4 focus:ring-[#006972]/8 font-body text-[14px] text-deep-navy outline-none"
                     />
                   </div>
                   <p className="font-body text-[11px] text-on-surface-variant">
-                    Enter the exact User ID or phone number of the member to add them directly to the committee rotation.
+                    Enter the registered phone number, email address, or user ID of the participant.
                   </p>
                 </div>
 
                 <div className="flex gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={() => setShowInviteModal(false)}
+                    onClick={() => {
+                      setShowInviteModal(false);
+                      setAddMemberError('');
+                    }}
                     className="flex-1 py-3 rounded-2xl font-label text-[13px] font-bold bg-slate-100 hover:bg-slate-200 text-deep-navy cursor-pointer border-none"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-3 rounded-2xl font-label text-[13px] font-bold bg-[#006972] hover:bg-[#00575f] text-white cursor-pointer border-none shadow-md flex items-center justify-center gap-1.5"
+                    disabled={addingMember}
+                    className="flex-1 py-3 rounded-2xl font-label text-[13px] font-bold bg-[#006972] hover:bg-[#00575f] disabled:opacity-60 text-white cursor-pointer border-none shadow-md flex items-center justify-center gap-1.5"
                   >
-                    <Icon name="person_add" size={16} /> Add to Committee
+                    {addingMember ? (
+                      <>Adding...</>
+                    ) : (
+                      <>
+                        <Icon name="person_add" size={16} /> Add to Committee
+                      </>
+                    )}
                   </button>
                 </div>
               </form>

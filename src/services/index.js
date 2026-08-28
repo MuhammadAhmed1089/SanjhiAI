@@ -17,5 +17,6 @@ export * as committeeService from './committeeService';
 export * as memberService from './memberService';
 export * as paymentService from './paymentService';
 export * as supportService from './supportService';
+export * as notificationService from './notificationService';
 export * as adminService from './adminService';
 

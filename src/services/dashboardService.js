@@ -18,3 +18,10 @@ const BASE = '/dashboard';
 export function getDashboardOverview() {
   return api.get(BASE);
 }
+
+/**
+ * Fetch authenticated user's recent activities history.
+ */
+export function getRecentActivities() {
+  return api.get('/activities');
+}

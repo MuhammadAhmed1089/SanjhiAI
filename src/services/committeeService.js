@@ -137,6 +137,14 @@ export function joinByCode(payload) {
 }
 
 /**
+ * Get committee details by invite code for previewing.
+ * @param {string} code
+ */
+export function getCommitteeByCode(code) {
+  return api.get(`${BASE}/code/${code}`);
+}
+
+/**
  * Get committee progress — cycles, paid counts, current cycle info.
  * @param {string} committeeId
  */
