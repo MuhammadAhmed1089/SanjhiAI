@@ -1,169 +1,248 @@
-import TopAppBar from '../../components/TopAppBar';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
-import Button from '../../components/Button';
+import BottomNav from '../../components/BottomNav';
+import { getComplaint } from '../../services/supportService';
+
+/* ── Skeleton Bone ── */
+function Bone({ className = '' }) {
+  return <div className={`skeleton-bone ${className}`} />;
+}
+
+/* ── Helpers ── */
+function statusColor(status) {
+  if (['resolved', 'ai_resolved'].includes(status)) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+  if (status === 'needs_human_review') return 'bg-violet-50 text-violet-700 border-violet-200';
+  if (status === 'dismissed') return 'bg-slate-100 text-slate-600 border-slate-200';
+  return 'bg-amber-50 text-amber-800 border-amber-200';
+}
 
 export default function ComplaintDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [complaint, setComplaint] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    load();
+  }, [id]);
+
+  async function load() {
+    try {
+      setLoading(true);
+      const data = await getComplaint(id);
+      setComplaint(data?.complaint || data);
+    } catch (err) {
+      setError(err.message || 'Failed to load complaint details.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const caseFile = complaint?.ai_case_file;
+  const investigator = caseFile?.investigator_report;
+  const judge = caseFile?.judge_verdict;
+
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body antialiased">
-<header className="bg-surface border-b border-outline-variant/15 flex justify-between items-center px-lg h-20 w-full sticky top-0 z-50 flat no shadows">
-<div className="flex items-center gap-md">
-<button className="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:opacity-80 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 focus:ring-offset-surface">
-<span className="material-symbols-outlined">arrow_back</span>
-</button>
-<h1 className="font-headline-md text-headline-md font-bold text-primary tracking-tight">Complaint Detail</h1>
-</div>
-<div className="flex items-center gap-sm">
-<div className="h-10 px-4 rounded-full bg-surface-container-high flex items-center justify-center gap-sm border border-outline-variant/20 hover:bg-surface-variant/50 cursor-pointer transition-colors">
-<span className="font-label-sm text-label-sm text-on-surface-variant">Admin Profile</span>
-<span className="material-symbols-outlined text-on-surface-variant text-[20px]">account_circle</span>
-</div>
-</div>
-</header>
-<main className="w-full max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop py-xl">
-<div className="grid grid-cols-1 lg:grid-cols-12 gap-xl items-start">
-<div className="lg:col-span-8 flex flex-col gap-lg">
-<section className="bg-surface-container-lowest rounded-xl border border-secondary/15 overflow-hidden flex flex-col relative">
-<div className="jali-border-top absolute top-0 left-0"></div>
-<div className="p-lg pt-xl flex flex-col gap-md">
-<div className="flex items-center justify-between">
-<span className="inline-flex items-center px-3 py-1 rounded-full bg-surface-container text-on-surface font-label-sm text-label-sm gap-xs">
-<span className="material-symbols-outlined text-[16px]">receipt_long</span>
-                                Payment Dispute
+    <AuthAmbientBackground showTicker={true}>
+      <div className="w-full max-w-lg mx-auto px-3 sm:px-6 py-4 sm:py-8 flex flex-col items-center min-h-[calc(100vh-36px)]">
+
+        {/* Main Glass Card */}
+        <main className="w-full bg-white/85 backdrop-blur-2xl border border-[#006972]/20 shadow-[0_24px_70px_-15px_rgba(0,105,114,0.22),0_0_0_1px_rgba(0,105,114,0.1)] rounded-2xl sm:rounded-3xl p-5 sm:p-8 animate-fade-up relative z-10">
+
+          {/* Header */}
+          <header className="w-full flex items-center gap-3 mb-6">
+            <button
+              onClick={() => navigate('/support/complaints')}
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-[#006972]/5 hover:bg-[#006972]/15 border border-[#006972]/15 text-[#006972] transition-colors cursor-pointer active:scale-95"
+            >
+              <Icon name="arrow_back" size={20} />
+            </button>
+            <div className="flex-1">
+              <h1 className="font-headline text-[18px] sm:text-[20px] font-bold text-deep-navy">Complaint Details</h1>
+              <p className="font-mono text-[11px] text-on-surface-variant">#{id}</p>
+            </div>
+          </header>
+
+          {/* Loading */}
+          {loading && (
+            <div className="space-y-4">
+              <div className="flex justify-between"><Bone className="w-28 h-5 rounded-full" /><Bone className="w-20 h-5 rounded-full" /></div>
+              <Bone className="w-full h-4 rounded-lg" />
+              <Bone className="w-5/6 h-4 rounded-lg" />
+              <Bone className="w-full h-24 rounded-xl" />
+            </div>
+          )}
+
+          {/* Error */}
+          {error && !loading && (
+            <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-body text-[13px] flex items-center gap-2">
+              <Icon name="error" size={18} /> {error}
+            </div>
+          )}
+
+          {/* Content */}
+          {!loading && complaint && (
+            <div className="space-y-5">
+              {/* Status & Category Row */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className={`px-3 py-1 rounded-full font-label text-[11px] font-bold border ${statusColor(complaint.status)}`}>
+                  {complaint.status?.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                </span>
+                <span className="px-3 py-1 rounded-full font-label text-[11px] font-bold bg-[#006972]/8 text-[#006972] border border-[#006972]/15">
+                  {(complaint.category || 'other').replace(/_/g, ' ')}
+                </span>
+                {complaint.created_at && (
+                  <span className="font-body text-[11px] text-on-surface-variant ml-auto">
+                    {new Date(complaint.created_at).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                )}
+              </div>
+
+              {/* Description */}
+              <section className="p-4 rounded-xl bg-[#006972]/3 border border-[#006972]/8">
+                <p className="font-label text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1.5">Your Complaint</p>
+                <p className="font-body text-[13px] text-deep-navy leading-relaxed">{complaint.description}</p>
+              </section>
+
+              {/* ─── AI Case File Section ─── */}
+              {caseFile ? (
+                <section className="rounded-xl border border-[#006972]/15 overflow-hidden">
+                  {/* Section Header */}
+                  <div className="bg-gradient-to-r from-[#006972]/8 to-[#006972]/3 px-4 py-3 flex items-center justify-between border-b border-[#006972]/10">
+                    <div className="flex items-center gap-2">
+                      <Icon name="auto_awesome" size={16} className="text-[#006972]" />
+                      <span className="font-label text-[11px] font-bold text-[#006972] uppercase tracking-wider">AI Investigation Report</span>
+                    </div>
+                    {judge && (
+                      <span className={`px-2 py-0.5 rounded-full font-label text-[10px] font-bold ${
+                        judge.confidence_score >= 0.85 && judge.judge_satisfied
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-amber-100 text-amber-900'
+                      }`}>
+                        {Math.round((judge.confidence_score ?? 0) * 100)}%
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="p-4 space-y-4 bg-white">
+                    {/* Case Summary */}
+                    {investigator?.case_summary && (
+                      <div>
+                        <p className="font-label text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">Summary</p>
+                        <p className="font-body text-[13px] text-deep-navy leading-relaxed">{investigator.case_summary}</p>
+                      </div>
+                    )}
+
+                    {/* Contradictions Found */}
+                    {(investigator?.contradictions || []).length > 0 && (
+                      <div>
+                        <p className="font-label text-[10px] font-bold uppercase tracking-wider text-rose-700 mb-1.5 flex items-center gap-1">
+                          <Icon name="warning" size={12} /> Contradictions Detected
+                        </p>
+                        <div className="space-y-2">
+                          {investigator.contradictions.map((item, i) => (
+                            <div key={i} className="p-3 rounded-lg bg-rose-50/60 border border-rose-100">
+                              <p className="font-body text-[12px] text-rose-900"><strong>Claim:</strong> {item.claim}</p>
+                              <p className="font-body text-[12px] text-rose-700 mt-0.5"><strong>Fact:</strong> {item.fact}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Evidence Trail */}
+                    {(investigator?.evidence_trail || []).length > 0 && (
+                      <div>
+                        <p className="font-label text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1.5">Evidence Trail</p>
+                        <div className="space-y-1.5">
+                          {investigator.evidence_trail.map((e, i) => (
+                            <div key={i} className="flex items-start gap-2 text-[12px] font-body text-deep-navy">
+                              <Icon name="check_circle" size={14} className="text-emerald-600 shrink-0 mt-0.5" />
+                              <span>{typeof e === 'string' ? e : `${e.source}: ${e.finding}`}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Recommended Action */}
+                    {investigator?.recommended_action && (
+                      <div className="pt-2 border-t border-[#006972]/8">
+                        <p className="font-label text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1.5">Agent Recommendation</p>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-1 rounded-lg bg-[#006972]/10 text-[#006972] font-label text-[11px] font-bold capitalize">
+                            {investigator.recommended_action.replace(/_/g, ' ')}
+                          </span>
+                          {investigator.recommended_priority && (
+                            <span className={`px-2 py-0.5 rounded-full font-label text-[10px] font-bold ${
+                              investigator.recommended_priority === 'URGENT' ? 'bg-rose-100 text-rose-800'
+                                : investigator.recommended_priority === 'HIGH' ? 'bg-amber-100 text-amber-900'
+                                : 'bg-slate-100 text-slate-700'
+                            }`}>
+                              {investigator.recommended_priority}
                             </span>
-<span className="font-label-sm text-label-sm text-on-surface-variant">ID: #CMP-8924</span>
-</div>
-<div className="pt-sm">
-<p className="font-body-lg text-body-lg text-on-surface leading-relaxed">
-                                "User reports being charged twice for their September contribution. Bank statements attached confirm a duplicate transaction."
-                            </p>
-</div>
-<div className="pt-md border-t border-outline-variant/20 mt-sm flex flex-col gap-sm">
-<h3 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Evidence Attachments</h3>
-<div className="flex gap-md overflow-x-auto pb-sm">
-<button className="group relative w-32 h-24 rounded-lg overflow-hidden border border-outline-variant/30 hover:border-secondary transition-colors focus:outline-none focus:ring-2 focus:ring-secondary">
-<img className="w-full h-full object-cover" src="/avatar.svg"/>
-<div className="absolute inset-0 bg-primary/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-<span className="material-symbols-outlined text-surface">zoom_in</span>
-</div>
-</button>
-</div>
-</div>
-</div>
-</section>
-<section className="bg-surface-container-lowest rounded-xl border border-secondary/15 p-lg flex flex-col gap-md">
-<div className="flex items-center gap-sm mb-xs">
-<span className="material-symbols-outlined text-secondary">account_balance</span>
-<h2 className="font-headline-md text-headline-md text-on-surface text-[20px]">Committee Ledger <span className="text-on-surface-variant font-body-md">(Cycle 10)</span></h2>
-</div>
-<div className="border border-outline-variant/20 rounded-lg overflow-hidden">
-<div className="grid grid-cols-3 gap-sm p-md bg-surface-container-low border-b border-outline-variant/20 font-label-sm text-label-sm text-on-surface-variant">
-<div>Member</div>
-<div>Contribution</div>
-<div>Status</div>
-</div>
-<div className="flex flex-col">
-<div className="grid grid-cols-3 gap-sm p-md items-center border-b border-outline-variant/10 last:border-0 hover:bg-surface-bright transition-colors">
-<div className="flex items-center gap-sm font-body-md text-body-md text-on-surface">
-<div className="w-8 h-8 rounded-full bg-secondary-container/50 text-on-secondary-container flex items-center justify-center font-label-sm">A</div>
-                                    Aarav
-                                </div>
-<div className="font-body-md text-body-md text-on-surface">₹5,000</div>
-<div><span className="inline-flex px-2 py-1 rounded bg-error-container/50 text-on-error-container font-label-sm text-[12px]">Disputed</span></div>
-</div>
-<div className="grid grid-cols-3 gap-sm p-md items-center border-b border-outline-variant/10 last:border-0 hover:bg-surface-bright transition-colors">
-<div className="flex items-center gap-sm font-body-md text-body-md text-on-surface">
-<div className="w-8 h-8 rounded-full bg-tertiary-container/30 text-on-tertiary-container flex items-center justify-center font-label-sm">Z</div>
-                                    Zara
-                                </div>
-<div className="font-body-md text-body-md text-on-surface">₹5,000</div>
-<div><span className="inline-flex px-2 py-1 rounded bg-surface-variant text-on-surface-variant font-label-sm text-[12px]">Cleared</span></div>
-</div>
-<div className="grid grid-cols-3 gap-sm p-md items-center border-b border-outline-variant/10 last:border-0 hover:bg-surface-bright transition-colors">
-<div className="flex items-center gap-sm font-body-md text-body-md text-on-surface">
-<div className="w-8 h-8 rounded-full bg-primary-container/20 text-on-primary-container flex items-center justify-center font-label-sm">M</div>
-                                    Musa
-                                </div>
-<div className="font-body-md text-body-md text-on-surface">₹5,000</div>
-<div><span className="inline-flex px-2 py-1 rounded bg-surface-variant text-on-surface-variant font-label-sm text-[12px]">Cleared</span></div>
-</div>
-</div>
-</div>
-</section>
-<section className="bg-surface-container-lowest rounded-xl border border-secondary/15 p-lg flex flex-col gap-md">
-<h2 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Internal Admin Notes</h2>
-<textarea className="w-full min-h-[120px] p-md rounded-lg bg-surface border border-outline-variant/40 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-shadow resize-y" placeholder="Add internal notes regarding resolution steps..."></textarea>
-</section>
-<section className="flex flex-wrap items-center gap-md pt-sm">
-<button className="bg-secondary text-on-secondary font-label-sm text-label-sm h-[48px] px-[24px] rounded-full hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-sm shadow-sm hover:shadow-md">
-<span className="material-symbols-outlined text-[20px]">check_circle</span>
-                        Resolve
-                    </button>
-<button className="border border-outline text-on-surface bg-transparent font-label-sm text-label-sm h-[48px] px-[24px] rounded-full hover:bg-surface-variant/30 active:scale-95 transition-all flex items-center justify-center">
-                        Dismiss
-                    </button>
-<button className="border border-outline text-on-surface bg-transparent font-label-sm text-label-sm h-[48px] px-[24px] rounded-full hover:bg-surface-variant/30 active:scale-95 transition-all flex items-center justify-center gap-sm ml-auto">
-<span className="material-symbols-outlined text-[20px]">escalator_warning</span>
-                        Escalate
-                    </button>
-</section>
-</div>
-<div className="lg:col-span-4 flex flex-col gap-lg">
-<section className="bg-secondary-container/10 border border-secondary/30 rounded-xl p-lg flex flex-col gap-md relative overflow-hidden">
-<div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-<span className="material-symbols-outlined text-[80px] text-secondary">smart_toy</span>
-</div>
-<div className="flex items-center gap-xs text-secondary relative z-10">
-<span className="material-symbols-outlined text-[20px]">auto_awesome</span>
-<h3 className="font-label-sm text-label-sm font-bold uppercase tracking-wider">AI Insight</h3>
-</div>
-<p className="font-body-md text-body-md text-on-surface relative z-10">
-                        AI-generated: User reports a double charge on 2023-09-12. Verification with the payment gateway suggests a processing lag.
-                    </p>
-<div className="flex items-center justify-between bg-surface-container-lowest/50 rounded-lg p-sm border border-secondary/15 relative z-10 mt-xs">
-<div className="flex items-center gap-sm">
-<span className="font-label-sm text-label-sm text-on-surface-variant">Priority:</span>
-<span className="inline-flex items-center px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-[12px] font-bold">Urgent</span>
-</div>
-<button className="font-label-sm text-label-sm text-secondary hover:underline cursor-pointer">Change</button>
-</div>
-<div className="bg-surface-container-lowest/50 rounded-lg p-sm border border-secondary/15 relative z-10 flex flex-col gap-sm">
-<span className="font-label-sm text-label-sm text-on-surface-variant">Re-category suggestion:</span>
-<div className="font-body-md text-body-md text-on-surface font-semibold">"Payment Error"</div>
-<div className="flex items-center gap-sm mt-xs">
-<button className="flex-1 border border-secondary text-secondary font-label-sm text-[12px] h-[32px] rounded-md hover:bg-secondary/10 transition-colors">Accept</button>
-<button className="flex-1 border border-outline-variant text-on-surface-variant font-label-sm text-[12px] h-[32px] rounded-md hover:bg-surface-variant/30 transition-colors">Dismiss</button>
-</div>
-</div>
-</section>
-<section className="bg-surface-container-lowest rounded-xl border border-secondary/15 p-lg flex flex-col gap-md">
-<h2 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-sm">Status History</h2>
-<div className="relative border-l-2 border-outline-variant/30 ml-3 flex flex-col gap-lg pb-sm">
-<div className="relative pl-lg">
-<div className="absolute left-[-9px] top-1 w-4 h-4 rounded-full bg-secondary border-4 border-surface-container-lowest"></div>
-<div className="flex flex-col">
-<span className="font-label-sm text-label-sm text-on-surface">Under Investigation</span>
-<span className="font-body-md text-[13px] text-on-surface-variant mt-0.5">Current</span>
-</div>
-</div>
-<div className="relative pl-lg opacity-70">
-<div className="absolute left-[-9px] top-1 w-4 h-4 rounded-full bg-surface-variant border-4 border-surface-container-lowest"></div>
-<div className="flex flex-col">
-<span className="font-label-sm text-label-sm text-on-surface-variant">Triage Assigned</span>
-<span className="font-body-md text-[13px] text-on-surface-variant mt-0.5">Oct 12, 10:30 AM</span>
-</div>
-</div>
-<div className="relative pl-lg opacity-70">
-<div className="absolute left-[-9px] top-1 w-4 h-4 rounded-full bg-surface-variant border-4 border-surface-container-lowest"></div>
-<div className="flex flex-col">
-<span className="font-label-sm text-label-sm text-on-surface-variant">Submitted</span>
-<span className="font-body-md text-[13px] text-on-surface-variant mt-0.5">Oct 12, 10:00 AM</span>
-</div>
-</div>
-</div>
-</section>
-</div>
-</div>
-</main>
-    </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Judge Decision */}
+                    {judge && (
+                      <div className="pt-3 border-t border-[#006972]/8">
+                        <p className="font-label text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1.5">Judge Decision</p>
+                        <div className="p-3 rounded-lg bg-slate-50 border border-slate-100 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-body text-[12px] text-on-surface-variant">Routing:</span>
+                            <span className="font-label text-[11px] font-bold text-deep-navy capitalize">{judge.routing_decision?.replace(/_/g, ' ')}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="font-body text-[12px] text-on-surface-variant">Judge Satisfied:</span>
+                            <span className={`font-label text-[11px] font-bold ${judge.judge_satisfied ? 'text-emerald-600' : 'text-amber-700'}`}>
+                              {judge.judge_satisfied ? 'Yes' : 'No — Referred to Human'}
+                            </span>
+                          </div>
+                          {(judge.concerns || []).length > 0 && (
+                            <div className="mt-2 pt-2 border-t border-slate-100">
+                              {judge.concerns.map((c, i) => (
+                                <p key={i} className="font-body text-[11px] text-amber-800 mt-0.5">• {c}</p>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              ) : (
+                /* No Case File Yet */
+                <section className="p-5 rounded-xl bg-slate-50 border border-slate-100 text-center">
+                  <div className="w-12 h-12 rounded-full bg-[#006972]/8 flex items-center justify-center mx-auto mb-3">
+                    <Icon name="hourglass_top" size={22} className="text-[#006972] animate-pulse" />
+                  </div>
+                  <p className="font-body text-[13px] text-on-surface-variant">
+                    {['pending', 'open'].includes(complaint.status)
+                      ? 'AI Agent is investigating your complaint. This usually takes 30-60 seconds.'
+                      : 'AI case file not available for this complaint.'}
+                  </p>
+                </section>
+              )}
+
+              {/* Resolution Notes (if resolved) */}
+              {complaint.resolution_notes && (
+                <section className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-100">
+                  <p className="font-label text-[10px] font-bold uppercase tracking-wider text-emerald-700 mb-1">Resolution</p>
+                  <p className="font-body text-[13px] text-emerald-900">{complaint.resolution_notes}</p>
+                </section>
+              )}
+            </div>
+          )}
+        </main>
+      </div>
+
+      <BottomNav />
+    </AuthAmbientBackground>
   );
 }

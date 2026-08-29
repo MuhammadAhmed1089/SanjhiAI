@@ -555,6 +555,33 @@ export default function Dashboard() {
                   </div>
                 </div>
               ))
+            ) : recentActivities.length > 0 ? (
+              recentActivities.slice(0, 6).map((act, idx) => {
+                const iconMap = {
+                  committee_created: 'groups',
+                  payment: 'payments',
+                  payout: 'account_balance_wallet',
+                  member_request: 'group_add',
+                  participant_added: 'person_add',
+                };
+                return (
+                  <div key={act.id || idx}
+                    className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-[#fbfaee] border border-deep-navy/5 hover:bg-[#006972]/5 hover:border-[#006972]/25 hover:translate-x-1 transition-all duration-200 cursor-pointer group">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-[#006972]/10 text-[#006972] group-hover:scale-110 transition-transform duration-200">
+                      <Icon name={iconMap[act.type] || 'history'} size={20} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-headline text-[14px] font-bold text-deep-navy truncate">{act.description}</p>
+                      <p className="font-body text-[12px] text-on-surface-variant truncate">
+                        {act.committee_name} • {(act.type || '').replace('_', ' ')} • {(act.status || '')}
+                      </p>
+                    </div>
+                    <span className="font-label text-[11px] text-on-surface-variant shrink-0 ml-2">
+                      {act.created_at ? new Date(act.created_at).toLocaleDateString() : ''}
+                    </span>
+                  </div>
+                );
+              })
             ) : recentNotifications.length > 0 ? (
               recentNotifications.map((item, idx) => (
                 <div key={item.id || idx}
@@ -573,7 +600,7 @@ export default function Dashboard() {
               ))
             ) : (
               <div className="p-4 rounded-2xl bg-[#fbfaee] text-center text-on-surface-variant text-[13px] font-body">
-                No new notifications.
+                No recent activity yet.
               </div>
             )}
           </div>

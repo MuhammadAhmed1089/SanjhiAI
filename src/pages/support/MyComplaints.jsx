@@ -1,141 +1,196 @@
-import TopAppBar from '../../components/TopAppBar';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
-import Button from '../../components/Button';
+import BottomNav from '../../components/BottomNav';
+import { getMyComplaints } from '../../services/supportService';
+
+/* ── Skeleton Bone ── */
+function Bone({ className = '' }) {
+  return <div className={`skeleton-bone ${className}`} />;
+}
+
+/* ── Status Badge Colors ── */
+function statusStyle(status) {
+  switch (status) {
+    case 'ai_resolved': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    case 'resolved': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    case 'needs_human_review': return 'bg-violet-50 text-violet-700 border-violet-200';
+    case 'in_review': return 'bg-amber-50 text-amber-800 border-amber-200';
+    case 'dismissed': return 'bg-slate-100 text-slate-600 border-slate-200';
+    default: return 'bg-amber-50 text-amber-800 border-amber-200';
+  }
+}
+
+function statusLabel(status) {
+  switch (status) {
+    case 'ai_resolved': return 'AI Resolved';
+    case 'needs_human_review': return 'Under Review';
+    case 'pending': return 'Investigating';
+    case 'in_review': return 'In Review';
+    case 'resolved': return 'Resolved';
+    case 'dismissed': return 'Dismissed';
+    default: return status || 'Open';
+  }
+}
 
 export default function MyComplaints() {
+  const navigate = useNavigate();
+  const [complaints, setComplaints] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [filter, setFilter] = useState('ALL');
+
+  useEffect(() => {
+    loadComplaints();
+  }, []);
+
+  async function loadComplaints() {
+    try {
+      setLoading(true);
+      const data = await getMyComplaints();
+      setComplaints(Array.isArray(data) ? data : data?.complaints || []);
+    } catch (err) {
+      setError(err.message || 'Failed to load complaints.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const filtered = complaints.filter((c) => {
+    if (filter === 'ALL') return true;
+    if (filter === 'ACTIVE') return ['pending', 'in_review', 'needs_human_review', 'ai_resolved'].includes(c.status);
+    if (filter === 'RESOLVED') return c.status === 'resolved' || c.status === 'ai_resolved';
+    return true;
+  });
+
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body antialiased">
-<header className="w-full top-0 sticky bg-background text-primary border-b border-outline/10 flex justify-between items-center px-margin-mobile py-sm z-50">
-<button aria-label="Go back" className="text-primary hover:bg-surface-container-low transition-colors active:scale-95 duration-150 p-2 rounded-full">
-<span className="material-symbols-outlined">arrow_back</span>
-</button>
-<h1 className="font-headline-md text-headline-md text-primary truncate flex-1 text-center font-bold">My Complaints</h1>
-<button aria-label="Notifications" className="text-primary hover:bg-surface-container-low transition-colors active:scale-95 duration-150 p-2 rounded-full">
-<span className="material-symbols-outlined">notifications</span>
-</button>
-</header>
+    <AuthAmbientBackground showTicker={true}>
+      <div className="w-full max-w-lg mx-auto px-3 sm:px-6 py-4 sm:py-8 flex flex-col items-center min-h-[calc(100vh-36px)]">
 
-<main className="flex-1 px-margin-mobile md:px-margin-desktop py-lg pb-32 max-w-7xl mx-auto w-full">
+        {/* Main Glass Card */}
+        <main className="w-full bg-white/85 backdrop-blur-2xl border border-[#006972]/20 shadow-[0_24px_70px_-15px_rgba(0,105,114,0.22),0_0_0_1px_rgba(0,105,114,0.1)] rounded-2xl sm:rounded-3xl p-5 sm:p-8 animate-fade-up relative z-10">
 
-<div className="flex gap-sm overflow-x-auto pb-sm mb-md no-scrollbar">
-<button className="bg-secondary-container text-on-secondary-container font-label-sm text-label-sm px-4 py-2 rounded-full whitespace-nowrap active:scale-95 transition-transform">All</button>
-<button className="bg-surface text-on-surface-variant border border-outline/20 font-label-sm text-label-sm px-4 py-2 rounded-full whitespace-nowrap hover:bg-surface-container-low active:scale-95 transition-all">Pending</button>
-<button className="bg-surface text-on-surface-variant border border-outline/20 font-label-sm text-label-sm px-4 py-2 rounded-full whitespace-nowrap hover:bg-surface-container-low active:scale-95 transition-all">In Review</button>
-<button className="bg-surface text-on-surface-variant border border-outline/20 font-label-sm text-label-sm px-4 py-2 rounded-full whitespace-nowrap hover:bg-surface-container-low active:scale-95 transition-all">Resolved</button>
-</div>
+          {/* Header */}
+          <header className="w-full flex items-center gap-3 mb-5">
+            <button
+              onClick={() => navigate('/support')}
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-[#006972]/5 hover:bg-[#006972]/15 border border-[#006972]/15 text-[#006972] transition-colors cursor-pointer active:scale-95"
+            >
+              <Icon name="arrow_back" size={20} />
+            </button>
+            <div className="flex-1">
+              <h1 className="font-headline text-[20px] sm:text-[22px] font-bold text-deep-navy">My Complaints</h1>
+              <p className="font-body text-[12px] text-on-surface-variant">Track AI investigations & resolutions</p>
+            </div>
+            <button
+              onClick={() => navigate('/support/file-complaint')}
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-[#006972] text-white hover:bg-[#00575f] transition-colors cursor-pointer active:scale-95 shadow-md"
+              title="File new complaint"
+            >
+              <Icon name="add" size={20} />
+            </button>
+          </header>
 
-<div className="flex flex-col gap-md">
+          {/* Filter Tabs */}
+          <div className="flex gap-2 overflow-x-auto pb-1 mb-4 no-scrollbar">
+            {[
+              { id: 'ALL', label: 'All' },
+              { id: 'ACTIVE', label: 'Active' },
+              { id: 'RESOLVED', label: 'Resolved' },
+            ].map((tab) => (
+              <button key={tab.id} onClick={() => setFilter(tab.id)}
+                className={`px-4 py-2 rounded-full font-label text-[12px] font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  filter === tab.id
+                    ? 'bg-[#006972] text-white shadow-sm'
+                    : 'bg-white text-on-surface-variant border border-[#006972]/15 hover:border-[#006972]/35'
+                }`}>
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-<div className="bg-surface-container-lowest border border-outline/10 rounded-xl p-md flex flex-col gap-sm relative overflow-hidden group hover:border-secondary/30 transition-colors">
-<div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-tertiary-container to-transparent opacity-50"></div>
-<div className="flex justify-between items-start gap-sm">
-<div>
-<span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs block">Payment Dispute</span>
-<h2 className="font-headline-md text-body-lg text-primary line-clamp-1">Duplicate charge on contribution</h2>
-</div>
-<div className="bg-tertiary-container/20 text-tertiary font-label-sm text-label-sm px-3 py-1 rounded-full flex items-center gap-1">
-<span className="material-symbols-outlined text-[16px]">schedule</span>
-                        Pending
-                    </div>
-</div>
-<p className="font-body-md text-body-md text-on-surface-variant line-clamp-2">
-                    I noticed a duplicate charge for my September contribution to the community fund. Both charges appear on my bank statement but only one shows in the ledger.
-                </p>
-<div className="flex justify-between items-center mt-sm pt-sm border-t border-outline/10">
-<span className="font-label-sm text-label-sm text-outline">Oct 12, 2023</span>
-<button className="text-secondary font-label-sm text-label-sm hover:underline flex items-center gap-1">View Details <span className="material-symbols-outlined text-[16px]">arrow_forward</span></button>
-</div>
-</div>
+          {/* Loading Skeleton */}
+          {loading && (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="p-4 rounded-xl bg-white border border-[#006972]/8 space-y-3">
+                  <div className="flex justify-between"><Bone className="w-24 h-4 rounded-full" /><Bone className="w-16 h-4 rounded-full" /></div>
+                  <Bone className="w-full h-4 rounded-lg" />
+                  <Bone className="w-3/4 h-3 rounded-lg" />
+                </div>
+              ))}
+            </div>
+          )}
 
-<div className="bg-surface-container-lowest border border-outline/10 rounded-xl p-md flex flex-col gap-sm relative overflow-hidden group hover:border-secondary/30 transition-colors">
-<div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-secondary-fixed-dim to-transparent opacity-50"></div>
-<div className="flex justify-between items-start gap-sm">
-<div>
-<span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs block">Maintenance</span>
-<h2 className="font-headline-md text-body-lg text-primary line-clamp-1">Broken light fixture in common area</h2>
-</div>
-<div className="bg-secondary-fixed/30 text-on-secondary-fixed font-label-sm text-label-sm px-3 py-1 rounded-full flex items-center gap-1">
-<span className="material-symbols-outlined text-[16px]">visibility</span>
-                        In Review
-                    </div>
-</div>
-<p className="font-body-md text-body-md text-on-surface-variant line-clamp-2">
-                    The main light fixture in the north corridor has been flickering and is now completely out, making it unsafe during evening hours.
-                </p>
-<div className="flex justify-between items-center mt-sm pt-sm border-t border-outline/10">
-<span className="font-label-sm text-label-sm text-outline">Oct 05, 2023</span>
-<button className="text-secondary font-label-sm text-label-sm hover:underline flex items-center gap-1">View Details <span className="material-symbols-outlined text-[16px]">arrow_forward</span></button>
-</div>
-</div>
+          {/* Error */}
+          {error && !loading && (
+            <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-body text-[13px] flex items-center gap-2 mb-4">
+              <Icon name="error" size={18} /> {error}
+            </div>
+          )}
 
-<div className="bg-surface-container-lowest border border-outline/10 rounded-xl p-md flex flex-col gap-sm relative overflow-hidden group hover:border-secondary/30 transition-colors">
-<div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-secondary to-transparent opacity-30"></div>
-<div className="flex justify-between items-start gap-sm">
-<div>
-<span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs block">Event Feedback</span>
-<h2 className="font-headline-md text-body-lg text-primary line-clamp-1">Noise complaint regarding Diwali celebration</h2>
-</div>
-<div className="bg-[#e2f1e6] text-[#2e7d32] font-label-sm text-label-sm px-3 py-1 rounded-full flex items-center gap-1">
-<span className="material-symbols-outlined text-[16px]">check_circle</span>
-                        Resolved
-                    </div>
-</div>
-<p className="font-body-md text-body-md text-on-surface-variant line-clamp-2">
-                    The music level during the late hours of the recent community event was excessively loud and disturbed residents in block B.
-                </p>
-<div className="flex justify-between items-center mt-sm pt-sm border-t border-outline/10">
-<span className="font-label-sm text-label-sm text-outline">Sep 28, 2023</span>
-<button className="text-secondary font-label-sm text-label-sm hover:underline flex items-center gap-1">View Details <span className="material-symbols-outlined text-[16px]">arrow_forward</span></button>
-</div>
-</div>
+          {/* Empty State */}
+          {!loading && !error && filtered.length === 0 && (
+            <div className="text-center py-10">
+              <div className="w-16 h-16 rounded-full bg-[#006972]/5 flex items-center justify-center mx-auto mb-3 border border-[#006972]/10">
+                <Icon name="inbox" size={28} className="text-on-surface-variant/40" />
+              </div>
+              <p className="font-body text-[14px] text-on-surface-variant">No complaints found</p>
+              <p className="font-body text-[12px] text-on-surface-variant/60 mt-1">File a complaint and the AI agent will investigate it for you.</p>
+            </div>
+          )}
 
-<div className="bg-surface-container-lowest border border-outline/10 rounded-xl p-md flex flex-col gap-sm relative overflow-hidden group hover:border-secondary/30 transition-colors opacity-75">
-<div className="flex justify-between items-start gap-sm">
-<div>
-<span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-xs block">General Inquiry</span>
-<h2 className="font-headline-md text-body-lg text-primary line-clamp-1">Request to change meeting schedule</h2>
-</div>
-<div className="bg-surface-variant text-on-surface-variant font-label-sm text-label-sm px-3 py-1 rounded-full flex items-center gap-1">
-<span className="material-symbols-outlined text-[16px]">cancel</span>
-                        Dismissed
-                    </div>
-</div>
-<p className="font-body-md text-body-md text-on-surface-variant line-clamp-2">
-                    I would like to propose moving the monthly committee meetings from Sunday mornings to Saturday evenings.
-                </p>
-<div className="flex justify-between items-center mt-sm pt-sm border-t border-outline/10">
-<span className="font-label-sm text-label-sm text-outline">Sep 15, 2023</span>
-<button className="text-secondary font-label-sm text-label-sm hover:underline flex items-center gap-1">View Details <span className="material-symbols-outlined text-[16px]">arrow_forward</span></button>
-</div>
-</div>
-</div>
+          {/* Complaint Cards */}
+          {!loading && filtered.length > 0 && (
+            <div className="space-y-3">
+              {filtered.map((c) => (
+                <button key={c.id} onClick={() => navigate(`/support/complaints/${c.id}`)}
+                  className="w-full bg-white border border-[#006972]/10 rounded-xl p-4 text-left hover:border-[#006972]/30 hover:shadow-[0_4px_16px_rgba(0,105,114,0.08)] transition-all cursor-pointer group relative overflow-hidden"
+                >
+                  {/* Top accent bar for AI cases */}
+                  {c.ai_case_file && (
+                    <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-[#006972] via-emerald-400 to-[#006972] opacity-60" />
+                  )}
 
-<button aria-label="Create new complaint" className="fixed bottom-24 right-margin-mobile md:right-margin-desktop bg-secondary text-on-secondary rounded-full p-4 shadow-lg hover:shadow-xl hover:bg-on-secondary-container active:scale-95 transition-all z-40 flex items-center justify-center gap-2">
-<span className="material-symbols-outlined">add</span>
-<span className="font-label-sm text-label-sm pr-2 hidden md:inline">New Complaint</span>
-</button>
-</main>
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <span className="font-label text-[10px] font-bold uppercase tracking-wider text-on-surface-variant bg-[#006972]/5 px-2 py-0.5 rounded-md">
+                      {(c.category || 'other').replace(/_/g, ' ')}
+                    </span>
+                    <span className={`px-2.5 py-0.5 rounded-full font-label text-[10px] font-bold border ${statusStyle(c.status)}`}>
+                      {statusLabel(c.status)}
+                    </span>
+                  </div>
 
+                  <p className="font-body text-[13px] text-deep-navy line-clamp-2 leading-relaxed">
+                    {c.description || 'No description'}
+                  </p>
 
-<nav className="md:hidden fixed bottom-0 w-full z-50 rounded-t-xl bg-surface border-t border-outline/10 flex justify-around items-center h-16 px-2 shadow-sm">
-<button aria-label="Dashboard" className="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high active:scale-90 transition-transform p-2 rounded-lg w-16">
-<span className="material-symbols-outlined">grid_view</span>
-<span className="font-label-sm text-[10px] mt-1">Dashboard</span>
-</button>
-<button aria-label="Pools" className="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high active:scale-90 transition-transform p-2 rounded-lg w-16">
-<span className="material-symbols-outlined">group_work</span>
-<span className="font-label-sm text-[10px] mt-1">Pools</span>
-</button>
-<button aria-label="Connect" className="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high active:scale-90 transition-transform p-2 rounded-lg w-16">
-<span className="material-symbols-outlined">diversity_3</span>
-<span className="font-label-sm text-[10px] mt-1">Connect</span>
-</button>
+                  <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[#006972]/6">
+                    <span className="font-body text-[11px] text-on-surface-variant/60">
+                      {c.created_at ? new Date(c.created_at).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                    </span>
 
-<button aria-label="Profile" className="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 active:scale-90 transition-transform w-16">
-<span className="material-symbols-outlined" data-weight="fill">person</span>
-<span className="font-label-sm text-[10px] mt-1">Profile</span>
-</button>
-</nav>
-    </div>
+                    {/* AI Confidence Badge */}
+                    {c.ai_case_file?.judge_verdict && (
+                      <span className="flex items-center gap-1 font-label text-[10px] font-bold text-[#006972]">
+                        <Icon name="auto_awesome" size={12} />
+                        {Math.round((c.ai_case_file.judge_verdict.confidence_score ?? 0) * 100)}% confidence
+                      </span>
+                    )}
+
+                    <span className="font-label text-[11px] font-bold text-[#006972] group-hover:underline flex items-center gap-0.5">
+                      View <Icon name="arrow_forward" size={12} />
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </main>
+      </div>
+
+      <BottomNav />
+    </AuthAmbientBackground>
   );
 }

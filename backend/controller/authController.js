@@ -147,8 +147,12 @@ export async function verifyOTPController(req, res) {
 
     const isEmail = parsed.type === 'email';
     const userSearchQuery = isEmail
-      ? `SELECT * FROM users WHERE email = $1`
-      : `SELECT * FROM users WHERE phone_number = $1`;
+      ? `SELECT u.*, (a.user_id IS NOT NULL) AS is_admin
+         FROM users u LEFT JOIN admins a ON a.user_id = u.id
+         WHERE u.email = $1`
+      : `SELECT u.*, (a.user_id IS NOT NULL) AS is_admin
+         FROM users u LEFT JOIN admins a ON a.user_id = u.id
+         WHERE u.phone_number = $1`;
 
     let userResult = await query(userSearchQuery, [parsed.value]);
     let user = userResult.rows[0];

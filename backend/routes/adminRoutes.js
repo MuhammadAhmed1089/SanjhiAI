@@ -12,6 +12,7 @@ import {
   getComplaints,
   resolveComplaint,
   dismissComplaint,
+  reinvestigateComplaint,
   getActivityLogs,
   getAnalytics,
   getPlatformSettings,
@@ -42,6 +43,7 @@ router.post('/committees/:committeeId/unfreeze', requireAdmin, unfreezeCommittee
 router.get('/complaints', requireAdmin, getComplaints);
 router.post('/complaints/:complaintId/resolve', requireAdmin, resolveComplaint);
 router.post('/complaints/:complaintId/dismiss', requireAdmin, dismissComplaint);
+router.post('/complaints/:complaintId/reinvestigate', requireAdmin, reinvestigateComplaint);
 
 // Activity Logs
 router.get('/logs', requireAdmin, getActivityLogs);

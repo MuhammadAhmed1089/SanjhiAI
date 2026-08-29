@@ -1,4 +1,5 @@
 import { query } from '../config/db.js';
+import { processComplaint } from '../utilities/complaintAgent/index.js';
 
 /**
  * Ensure administrative helper tables exist in PostgreSQL
@@ -62,9 +63,9 @@ initAdminTables();
 async function logAdminAction(adminId, actionType, targetType, targetId, details = '') {
   try {
     await query(
-      `INSERT INTO admin_action_logs (admin_id, action_type, target_type, target_id, details, created_at)
+      `INSERT INTO admin_action_logs (admin_id, action_type, target_type, target_id, notes, created_at)
        VALUES ($1, $2, $3, $4, $5, NOW())`,
-      [adminId || null, actionType, targetType, String(targetId || ''), details]
+      [adminId || null, actionType, targetType, String(targetId || ''), typeof details === 'object' ? JSON.stringify(details) : details]
     );
   } catch (err) {
     console.warn('Note: admin_action_logs table write error:', err.message);
@@ -423,6 +424,56 @@ export async function dismissComplaint(req, res) {
   }
 }
 
+/**
+ * POST /api/admin/complaints/:complaintId/reinvestigate
+ * Re-runs the AI investigation on a complaint. Useful if new evidence emerges
+ * or admin disagrees with initial analysis. Overwrites previous ai_case_file
+ * (keeps audit trail in admin_action_logs).
+ */
+export async function reinvestigateComplaint(req, res) {
+  try {
+    const { complaintId } = req.params;
+
+    // Verify complaint exists
+    const checkRes = await query(
+      `SELECT id, status FROM complaints WHERE id = $1`,
+      [complaintId]
+    );
+
+    if (checkRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Complaint not found.' });
+    }
+
+    // Reset status to pending while investigation runs
+    await query(
+      `UPDATE complaints SET status = 'pending' WHERE id = $1`,
+      [complaintId]
+    );
+
+    // Log the re-investigation request
+    await logAdminAction(
+      req.user?.userId,
+      'REINVESTIGATE_COMPLAINT',
+      'complaint',
+      complaintId,
+      { triggered_by: req.user?.userId || 'unknown' }
+    );
+
+    // Trigger investigation asynchronously
+    processComplaint(complaintId).catch((err) => {
+      console.error(`[Complaint Agent] Re-investigation failed for ${complaintId}:`, err.message);
+    });
+
+    return res.status(202).json({
+      message: 'Re-investigation started. Case file will be updated shortly.',
+      complaintId,
+    });
+  } catch (error) {
+    console.error('Error re-investigating complaint:', error);
+    return res.status(500).json({ error: 'Failed to start re-investigation.' });
+  }
+}
+
 // ─── 5. AUDIT LOGS ────────────────────────────────────────────
 
 export async function getActivityLogs(req, res) {
@@ -448,19 +499,29 @@ export async function getActivityLogs(req, res) {
 
 export async function getAnalytics(req, res) {
   try {
+    const { range } = req.query; // 7d, 30d, 90d, 1y
     let totalVolume = 0;
     let activeUsers = 0;
     let avgDuration = 0;
     let onTimeRate = 95.0;
 
+    // Build date filter based on range parameter
+    let dateFilter = '';
+    const params = [];
+    if (range && range !== 'all') {
+      const rangeMap = { '7d': '7 days', '30d': '30 days', '90d': '90 days', '1y': '1 year' };
+      const interval = rangeMap[range] || '30 days';
+      dateFilter = `WHERE created_at >= NOW() - INTERVAL '${interval}'`;
+    }
+
     try {
-      const volRes = await query(`SELECT COALESCE(SUM(contribution_amount * capacity), 0)::numeric AS total_vol FROM committees`);
+      const volRes = await query(`SELECT COALESCE(SUM(contribution_amount * capacity), 0)::numeric AS total_vol FROM committees ${dateFilter}`);
       totalVolume = parseFloat(volRes.rows[0]?.total_vol ?? 0);
 
       const uRes = await query(`SELECT COUNT(*)::int AS count FROM users WHERE is_suspended = false`);
       activeUsers = uRes.rows[0]?.count ?? 0;
 
-      const durRes = await query(`SELECT COALESCE(AVG(capacity), 0)::numeric AS avg_cap FROM committees`);
+      const durRes = await query(`SELECT COALESCE(AVG(capacity), 0)::numeric AS avg_cap FROM committees ${dateFilter}`);
       avgDuration = Math.round(parseFloat(durRes.rows[0]?.avg_cap ?? 0));
     } catch (err) {
       // ignore

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
 import AdminMobileNav from '../../components/AdminMobileNav';
-import { getComplaints, resolveComplaint, dismissComplaint } from '../../services/adminService';
+import { getComplaints, resolveComplaint, dismissComplaint, reinvestigateComplaint } from '../../services/adminService';
 import { logout } from '../../services/authService';
 
 const GLASS_CARD = 'bg-white/70 backdrop-blur-2xl border border-white/90 shadow-[0_12px_40px_rgba(0,105,114,0.08)]';
@@ -282,7 +282,7 @@ export default function AdminDisputes() {
                       <div className="space-y-2 min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-mono text-[11px] font-bold text-[#006972] bg-[#006972]/10 px-2.5 py-0.5 rounded-lg border border-[#006972]/20">
-                            {c.id || 'CMP-101'}
+                            {c.id || '—'}
                           </span>
 
                           <span className={`px-2.5 py-0.5 rounded-full font-label text-[10px] font-bold uppercase tracking-wider border ${
@@ -292,7 +292,7 @@ export default function AdminDisputes() {
                               ? 'bg-amber-100 text-amber-900 border-amber-200'
                               : 'bg-[#006972]/10 text-[#006972] border-[#006972]/20'
                           }`}>
-                            {c.priority || 'HIGH'} Priority
+                            {c.priority || 'MEDIUM'} Priority
                           </span>
 
                           <span className={`px-2.5 py-0.5 rounded-full font-label text-[10px] font-bold uppercase border ${
@@ -304,14 +304,26 @@ export default function AdminDisputes() {
                           }`}>
                             {c.status || 'Open Triage'}
                           </span>
+
+                          {/* AI Agent Badge */}
+                          {c.ai_case_file?.judge_verdict && (
+                            <span className={`px-2 py-0.5 rounded-full font-label text-[10px] font-bold border flex items-center gap-1 ${
+                              c.ai_case_file.judge_verdict.confidence_score >= 0.85 && c.ai_case_file.judge_verdict.judge_satisfied
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : 'bg-violet-50 text-violet-700 border-violet-200'
+                            }`}>
+                              <Icon name="auto_awesome" size={10} />
+                              {Math.round((c.ai_case_file.judge_verdict.confidence_score ?? 0) * 100)}%
+                            </span>
+                          )}
                         </div>
 
                         <div>
                           <h3 className="font-headline text-[16px] font-bold text-deep-navy">
-                            {c.complainant_name || 'Participant'} — <span className="text-[#006972] font-semibold">{c.committee_name || 'Sanjhi Pool'}</span>
+                            {c.complainant_name || 'Unknown'} — <span className="text-[#006972] font-semibold">{c.committee_name || 'Unknown Pool'}</span>
                           </h3>
                           <p className="font-body text-[13px] text-on-surface-variant mt-1 line-clamp-2">
-                            {c.description || 'Dispute raised by participant regarding payment or payout status.'}
+                            {c.description || 'No description provided.'}
                           </p>
                         </div>
                       </div>
@@ -340,7 +352,7 @@ export default function AdminDisputes() {
       {/* ── DISPUTE INSPECTION & RESOLUTION MODAL ── */}
       {selectedDispute && (
         <div className="fixed inset-0 z-50 bg-deep-navy/40 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
-          <div className={`${GLASS_CARD} rounded-3xl p-6 max-w-lg w-full space-y-5 relative`}>
+          <div className={`${GLASS_CARD} rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto space-y-5 relative`}>
             <button
               onClick={() => setSelectedDispute(null)}
               className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center border-none cursor-pointer"
@@ -357,23 +369,136 @@ export default function AdminDisputes() {
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-[11px] font-bold text-[#006972]">{selectedDispute.id}</span>
                   <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-label text-[10px] font-bold uppercase">
-                    {selectedDispute.priority || 'HIGH'} Priority
+                    {selectedDispute.priority || 'N/A'} Priority
                   </span>
                 </div>
                 <h3 className="font-headline text-[17px] font-bold text-deep-navy mt-0.5">{selectedDispute.complainant_name}</h3>
               </div>
             </div>
 
-            {/* Dispute Case Summary Box */}
+            {/* AI Case File Section */}
+            {selectedDispute.ai_case_file ? (
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-[#006972]/5 to-[#f7d679]/5 border border-[#006972]/15 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="font-label text-[10px] uppercase font-bold text-[#006972] flex items-center gap-1.5">
+                    <Icon name="auto_awesome" size={14} /> AI Case-Builder Report
+                  </p>
+                  {selectedDispute.ai_case_file.judge_verdict && (
+                    <span className={`px-2.5 py-1 rounded-full font-label text-[10px] font-bold ${
+                      (selectedDispute.ai_case_file.judge_verdict.confidence_score ?? 0) >= 0.85 && selectedDispute.ai_case_file.judge_verdict.judge_satisfied
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-amber-100 text-amber-900'
+                    }`}>
+                      {((selectedDispute.ai_case_file.judge_verdict.confidence_score ?? 0) * 100).toFixed(0)}% — {selectedDispute.ai_case_file.judge_verdict.routing_decision}
+                    </span>
+                  )}
+                </div>
+
+                {/* Investigator Report */}
+                {selectedDispute.ai_case_file.investigator_report && (
+                  <div className="space-y-2">
+                    <p className="font-body text-[13px] text-deep-navy leading-relaxed">
+                      {selectedDispute.ai_case_file.investigator_report.case_summary}
+                    </p>
+
+                    {/* Contradictions */}
+                    {(selectedDispute.ai_case_file.investigator_report.contradictions || []).length > 0 && (
+                      <div className="space-y-1.5">
+                        <p className="font-label text-[10px] uppercase font-bold text-rose-700">Contradictions Found</p>
+                        {selectedDispute.ai_case_file.investigator_report.contradictions.map((c, i) => (
+                          <div key={i} className="p-2.5 rounded-xl bg-rose-50 border border-rose-100 text-[12px] font-body text-rose-900">
+                            <span className="font-bold">Claim:</span> {c.claim} → <span className="font-bold">Fact:</span> {c.fact}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Recommendation */}
+                    {selectedDispute.ai_case_file.investigator_report.recommended_action && (
+                      <div className="flex items-center gap-2 pt-1">
+                        <p className="font-label text-[10px] uppercase font-bold text-on-surface-variant">Recommendation:</p>
+                        <span className="px-2 py-0.5 rounded-lg bg-[#006972]/10 text-[#006972] font-label text-[11px] font-bold">
+                          {selectedDispute.ai_case_file.investigator_report.recommended_action.replace(/_/g, ' ')}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-lg font-label text-[10px] font-bold ${
+                          selectedDispute.ai_case_file.investigator_report.recommended_priority === 'URGENT' ? 'bg-rose-100 text-rose-800'
+                            : selectedDispute.ai_case_file.investigator_report.recommended_priority === 'HIGH' ? 'bg-amber-100 text-amber-900'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}>
+                          {selectedDispute.ai_case_file.investigator_report.recommended_priority || 'MEDIUM'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Judge Verdict Details */}
+                {selectedDispute.ai_case_file.judge_verdict?.concerns?.length > 0 && (
+                  <div className="pt-2 border-t border-[#006972]/10">
+                    <p className="font-label text-[10px] uppercase font-bold text-amber-800">Judge Concerns</p>
+                    {selectedDispute.ai_case_file.judge_verdict.concerns.map((concern, i) => (
+                      <p key={i} className="font-body text-[12px] text-amber-900 mt-1">• {concern}</p>
+                    ))}
+                  </div>
+                )}
+
+                {/* Reinvestigate Button */}
+                <div className="pt-2">
+                  <button
+                    onClick={async () => {
+                      try {
+                        await reinvestigateComplaint(selectedDispute.id);
+                        showToast('Agent re-investigation started. Check back in ~30 seconds.');
+                        setSelectedDispute(null);
+                        setTimeout(() => loadComplaintsData(), 35000);
+                      } catch (err) {
+                        showToast(err.message || 'Reinvestigation failed.');
+                      }
+                    }}
+                    className="w-full py-2.5 rounded-xl bg-[#006972]/10 hover:bg-[#006972]/20 text-[#006972] font-label text-[11px] font-bold transition-all cursor-pointer border border-[#006972]/20 flex items-center justify-center gap-1.5"
+                  >
+                    <Icon name="refresh" size={14} /> Re-investigate with AI Agent
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
+                <div className="flex items-center gap-3">
+                  <Icon name="hourglass_top" size={18} className="text-slate-400 animate-pulse" />
+                  <p className="font-body text-[12px] text-slate-500">
+                    {['pending', 'open'].includes(selectedDispute.status)
+                      ? 'AI Agent investigation pending or failed.'
+                      : 'No AI case file generated for this complaint.'}
+                  </p>
+                </div>
+                <button
+                  onClick={async () => {
+                    try {
+                      await reinvestigateComplaint(selectedDispute.id);
+                      showToast('AI Agent investigation started. Check back in ~30 seconds.');
+                      setSelectedDispute(null);
+                      setTimeout(() => loadComplaintsData(), 35000);
+                    } catch (err) {
+                      showToast(err.message || 'Failed to start investigation.');
+                    }
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-[#006972] text-white font-label text-[11px] font-bold transition-all cursor-pointer hover:bg-[#00575f] flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  <Icon name="play_arrow" size={16} /> Run AI Investigation
+                </button>
+              </div>
+            )}
+
+            {/* Dispute Description */}
             <div className="p-4 rounded-2xl bg-white/80 border border-white/90 space-y-2">
               <p className="font-label text-[10px] uppercase font-bold text-on-surface-variant">Committee Pool</p>
-              <p className="font-headline text-[14px] font-bold text-deep-navy">{selectedDispute.committee_name || 'Al-Kareem Store Committee'}</p>
+              <p className="font-headline text-[14px] font-bold text-deep-navy">{selectedDispute.committee_name || 'Unknown'}</p>
 
               <hr className="border-slate-100 my-2" />
 
               <p className="font-label text-[10px] uppercase font-bold text-on-surface-variant">Dispute Description</p>
               <p className="font-body text-[13px] text-deep-navy leading-relaxed">
-                {selectedDispute.description || 'The participant reported that their contribution payment proof was uploaded, but the pool organizer has delayed verification.'}
+                {selectedDispute.description || 'No description provided.'}
               </p>
             </div>
 

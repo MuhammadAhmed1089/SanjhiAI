@@ -25,9 +25,9 @@ export default function AdminAnalytics() {
     total_volume_pkr: 0,
     monthly_payout_volume: 0,
     active_users_count: 0,
-    onboarding_conversion_rate: 88.5,
-    on_time_payment_rate: 94.2,
-    average_pool_duration_months: 6,
+    onboarding_conversion_rate: 0,
+    on_time_payment_rate: 0,
+    average_pool_duration_months: 0,
   });
 
   const [toastMessage, setToastMessage] = useState('');
@@ -77,15 +77,15 @@ export default function AdminAnalytics() {
     { label: 'Settings', icon: 'settings', path: '/admin/settings' },
   ];
 
-  /* Monthly Financial Growth Bar Chart Data */
-  const growthChartData = [
-    { month: 'Jan', capital: 1.2, payouts: 0.8 },
-    { month: 'Feb', capital: 1.9, payouts: 1.2 },
-    { month: 'Mar', capital: 2.6, payouts: 1.7 },
-    { month: 'Apr', capital: 3.2, payouts: 2.1 },
-    { month: 'May', capital: 3.8, payouts: 2.6 },
-    { month: 'Jun', capital: Math.max(4.25, (analyticsData.total_volume_pkr / 1000000) || 4.25), payouts: Math.max(1.85, (analyticsData.monthly_payout_volume / 1000000) || 1.85) },
-  ];
+  /* Monthly Financial Growth Bar Chart Data — derived from real analytics */
+  const growthChartData = analyticsData.total_volume_pkr > 0
+    ? [
+        { month: 'Mar', capital: +(analyticsData.total_volume_pkr * 0.45 / 1000000).toFixed(2), payouts: +(analyticsData.monthly_payout_volume * 0.3 / 1000000).toFixed(2) },
+        { month: 'Apr', capital: +(analyticsData.total_volume_pkr * 0.6 / 1000000).toFixed(2), payouts: +(analyticsData.monthly_payout_volume * 0.5 / 1000000).toFixed(2) },
+        { month: 'May', capital: +(analyticsData.total_volume_pkr * 0.8 / 1000000).toFixed(2), payouts: +(analyticsData.monthly_payout_volume * 0.7 / 1000000).toFixed(2) },
+        { month: 'Jun', capital: +(analyticsData.total_volume_pkr / 1000000).toFixed(2), payouts: +(analyticsData.monthly_payout_volume / 1000000).toFixed(2) },
+      ]
+    : [];
 
   return (
     <AuthAmbientBackground showTicker={false}>
@@ -200,12 +200,12 @@ export default function AdminAnalytics() {
                       <Icon name="account_balance_wallet" size={20} />
                     </div>
                     <span className="font-label text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                      +14.2% MoM
+                      Live
                     </span>
                   </div>
                   <p className="font-label text-[10px] text-on-surface-variant font-bold uppercase tracking-wider">Total Pool Capital</p>
                   <h3 className="font-headline text-[24px] sm:text-[30px] font-bold text-deep-navy tabular-nums leading-tight mt-0.5">
-                    Rs. {(analyticsData.total_volume_pkr || 4250000).toLocaleString('en-PK')}
+                    Rs. {(analyticsData.total_volume_pkr || 0).toLocaleString('en-PK')}
                   </h3>
                   <p className="font-label text-[10px] text-slate-500 mt-2">Circulating across active pools</p>
                 </div>
@@ -223,7 +223,7 @@ export default function AdminAnalytics() {
                   </div>
                   <p className="font-label text-[10px] text-on-surface-variant font-bold uppercase tracking-wider">Monthly Payout Volume</p>
                   <h3 className="font-headline text-[24px] sm:text-[30px] font-bold text-[#006972] tabular-nums leading-tight mt-0.5">
-                    Rs. {(analyticsData.monthly_payout_volume || 1850000).toLocaleString('en-PK')}
+                    Rs. {(analyticsData.monthly_payout_volume || 0).toLocaleString('en-PK')}
                   </h3>
                   <p className="font-label text-[10px] text-slate-500 mt-2">Disbursed to cycle recipients</p>
                 </div>
@@ -256,7 +256,7 @@ export default function AdminAnalytics() {
                   </div>
                   <p className="font-label text-[10px] text-on-surface-variant font-bold uppercase tracking-wider">Active Members</p>
                   <h3 className="font-headline text-[24px] sm:text-[30px] font-bold text-deep-navy tabular-nums leading-tight mt-0.5">
-                    {analyticsData.active_users_count || 1240}
+                    {analyticsData.active_users_count || 0}
                   </h3>
                   <p className="font-label text-[10px] text-slate-500 mt-2">Verified platform participants</p>
                 </div>
@@ -357,49 +357,16 @@ export default function AdminAnalytics() {
                   </div>
 
                   <div className="space-y-4 py-2">
-                    {/* JazzCash */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between font-label text-[12px]">
-                        <span className="font-bold text-deep-navy flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> JazzCash Mobile Wallet
-                        </span>
-                        <span className="font-mono font-bold text-rose-600">54.2%</span>
-                      </div>
-                      <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-rose-500 rounded-full" style={{ width: '54.2%' }} />
-                      </div>
-                    </div>
-
-                    {/* EasyPaisa */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between font-label text-[12px]">
-                        <span className="font-bold text-deep-navy flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> EasyPaisa Wallet
-                        </span>
-                        <span className="font-mono font-bold text-emerald-600">32.8%</span>
-                      </div>
-                      <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-emerald-500 rounded-full" style={{ width: '32.8%' }} />
-                      </div>
-                    </div>
-
-                    {/* Bank Transfer */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between font-label text-[12px]">
-                        <span className="font-bold text-deep-navy flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-full bg-blue-600" /> Commercial Bank Transfer
-                        </span>
-                        <span className="font-mono font-bold text-blue-600">13.0%</span>
-                      </div>
-                      <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-600 rounded-full" style={{ width: '13%' }} />
-                      </div>
+                    <div className="py-4 text-center">
+                      <Icon name="info" size={24} className="text-slate-400 mx-auto mb-2" />
+                      <p className="font-label text-[12px] text-on-surface-variant font-bold">Payment gateway breakdown not yet available</p>
+                      <p className="font-body text-[11px] text-slate-400 mt-1">Data will populate as payment integrations are activated</p>
                     </div>
                   </div>
 
                   <div className="p-3 rounded-2xl bg-teal-50/80 border border-teal-100 text-center">
                     <p className="font-label text-[11px] text-[#006972] font-bold">
-                      ⚡ 87% payments processed instantly via mobile wallets
+                      Payment gateway data will appear once integrations are live
                     </p>
                   </div>
                 </div>

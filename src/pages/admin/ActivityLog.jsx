@@ -54,14 +54,14 @@ export default function ActivityLog() {
 
   /* Filtered Audit Logs */
   const filteredLogs = logs.filter((l) => {
-    if (activeFilter === 'RESOLUTIONS') return l.action_type === 'RESOLUTIONS';
-    if (activeFilter === 'FREEZES') return l.action_type === 'FREEZES';
-    if (activeFilter === 'USERS') return l.action_type === 'USERS';
+    if (activeFilter === 'RESOLUTIONS') return l.action_type === 'RESOLVE_COMPLAINT' || l.action_type === 'DISMISS_COMPLAINT';
+    if (activeFilter === 'FREEZES') return l.action_type === 'FREEZE_COMMITTEE' || l.action_type === 'UNFREEZE_COMMITTEE';
+    if (activeFilter === 'USERS') return l.action_type === 'SUSPEND_USER' || l.action_type === 'UNSUSPEND_USER';
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
-        (l.title || '').toLowerCase().includes(q) ||
+        (l.action_type || '').toLowerCase().includes(q) ||
         (l.admin_name || '').toLowerCase().includes(q) ||
         (l.details || '').toLowerCase().includes(q)
       );

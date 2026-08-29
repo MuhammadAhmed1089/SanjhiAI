@@ -107,7 +107,7 @@ export async function parseCommitteeAIText(req, res) {
         { role: 'system', content: SYSTEM_EXTRACTION_PROMPT },
         { role: 'user', content: `Extract from this text: "${text}"` }
       ],
-      model: 'llama-3.1-8b-instant',
+      model: 'qwen/qwen3.8-27b',
       response_format: { type: 'json_object' },
     });
 
@@ -234,7 +234,6 @@ export async function createCommittee(req, res) {
 
     const cycleStartDate = startDate ? new Date(startDate) : new Date();
     const cyclesCreated = [];
-    const poolPayoutAmount = amount * cap; // Total pool amount per cycle
 
     for (let i = 1; i <= cap; i++) {
       const dueDateStr = calculateDueDate(cycleStartDate, i, normInterval);
@@ -242,10 +241,10 @@ export async function createCommittee(req, res) {
 
       const cycleRes = await client.query(
         `INSERT INTO cycles (
-          committee_id, cycle_number, due_date, status, recipient_user_id, payout_status, amount
-        ) VALUES ($1, $2, $3, 'collecting', $4, 'pending', $5)
+          committee_id, cycle_number, due_date, status, recipient_user_id, payout_status
+        ) VALUES ($1, $2, $3, 'collecting', $4, 'pending')
         RETURNING *`,
-        [committee.id, i, dueDateStr, recipientId, poolPayoutAmount]
+        [committee.id, i, dueDateStr, recipientId]
       );
 
       cyclesCreated.push(cycleRes.rows[0]);
@@ -394,7 +393,7 @@ export async function parseCommitteeAIAudio(req, res) {
         role: "user",
         content: `Extract from this text: "${transcription.text}"`
       }],
-      model: "llama-3.1-8b-instant",
+      model: "qwen/qwen3.8-27b",
       response_format: { type: "json_object" },
     });
     

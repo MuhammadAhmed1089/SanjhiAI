@@ -102,14 +102,6 @@ export function getComplaints(params = {}) {
 }
 
 /**
- * Get complaint details (admin view with AI summary).
- * @param {string} complaintId
- */
-export function getComplaint(complaintId) {
-  return api.get(`${BASE}/complaints/${complaintId}`);
-}
-
-/**
  * Resolve a complaint.
  * @param {string} complaintId
  * @param {{ notes?: string }} payload
@@ -127,6 +119,14 @@ export function dismissComplaint(complaintId, payload = {}) {
   return api.post(`${BASE}/complaints/${complaintId}/dismiss`, payload);
 }
 
+/**
+ * Re-run the AI Case-Builder investigation for a complaint.
+ * @param {string} complaintId
+ */
+export function reinvestigateComplaint(complaintId) {
+  return api.post(`${BASE}/complaints/${complaintId}/reinvestigate`);
+}
+
 // ─── Activity Logs ───────────────────────────────────────────
 
 /**
@@ -136,25 +136,6 @@ export function dismissComplaint(complaintId, payload = {}) {
 export function getActivityLogs(params = {}) {
   const qs = new URLSearchParams(params).toString();
   return api.get(`${BASE}/logs?${qs}`);
-}
-
-// ─── Risk Flags ──────────────────────────────────────────────
-
-/**
- * Get risk flags for a committee.
- * @param {string} committeeId
- */
-export function getRiskFlags(committeeId) {
-  return api.get(`${BASE}/committees/${committeeId}/risk-flags`);
-}
-
-/**
- * Clear a risk flag.
- * @param {string} flagId
- * @param {{ notes?: string }} payload
- */
-export function clearRiskFlag(flagId, payload = {}) {
-  return api.post(`/admin/risk-flags/${flagId}/clear`, payload);
 }
 
 // ─── Analytics ───────────────────────────────────────────────

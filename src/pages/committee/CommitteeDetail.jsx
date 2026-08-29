@@ -57,6 +57,12 @@ export default function CommitteeDetail() {
   const [cycles, setCycles] = useState([]);
   const [cyclePayments, setCyclePayments] = useState([]);
 
+  // Toast helper — shows the message and auto-clears after 3.5s
+  function showToast(message) {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(''), 3500);
+  }
+
   useEffect(() => {
     async function loadDetails() {
       try {
@@ -136,12 +142,22 @@ export default function CommitteeDetail() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update request');
 
-      showToast(`Member request successfully ${actionStatus}!`);
-      // Move from pending to members if approved
-      const targetReq = pendingRequests.find(r => r.id === memberId);
+      showToast(data.message || `Member request successfully ${actionStatus}!`);
+      // Remove from pending list
       setPendingRequests(prev => prev.filter(r => r.id !== memberId));
-      if (actionStatus === 'approved' && targetReq) {
-        setMembers(prev => [...prev, { ...targetReq, status: 'approved', turn: prev.length + 1 }]);
+      // Move to members list if approved (prefer the backend's returned member row)
+      if (actionStatus === 'approved') {
+        const updated = data.member || pendingRequests.find(r => r.id === memberId);
+        if (updated) {
+          setMembers(prev => [...prev, {
+            ...updated,
+            name: updated.full_name,
+            photo: updated.profile_photo_url,
+            turn: updated.payout_turn_order || prev.length + 1,
+            role: 'Member',
+            status: 'approved',
+          }]);
+        }
       }
     } catch (err) {
       showToast(err.message || 'Action failed.');

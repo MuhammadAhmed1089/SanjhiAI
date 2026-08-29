@@ -195,7 +195,7 @@ export default function AdminCommitteeDetail() {
                 <div className="p-4 rounded-2xl bg-white/70 border border-white/80">
                   <p className="font-label text-[10px] text-on-surface-variant font-bold uppercase">Capacity Filled</p>
                   <p className="font-headline text-[22px] font-bold text-deep-navy">
-                    {members.length} / {committee.capacity || 10} Members
+                    {members.length} / {committee.capacity || 0} Members
                   </p>
                 </div>
 
@@ -283,7 +283,7 @@ export default function AdminCommitteeDetail() {
 
                     <div className="text-right shrink-0 font-label text-[11px]">
                       <span className="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                        Score: {m.trust_score || 85}
+                        Score: {m.trust_score || 0}
                       </span>
                     </div>
                   </div>

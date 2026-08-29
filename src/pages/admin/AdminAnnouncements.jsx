@@ -78,10 +78,10 @@ export default function AdminAnnouncements() {
           id: `ANC-${Date.now().toString().slice(-4)}`,
           title,
           body,
-          target: targetAudience,
+          target_audience: targetAudience,
           priority,
-          created_at: 'Just now',
-          sent_count: targetAudience === 'ALL' ? 1240 : 140,
+          created_at: new Date().toISOString(),
+          sent_count: 0,
         },
         ...prev,
       ]);
@@ -225,7 +225,7 @@ export default function AdminAnnouncements() {
                           {anc.id}
                         </span>
                         <span className="px-2.5 py-0.5 rounded-full font-label text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700">
-                          Target: {anc.target}
+                          Target: {anc.target_audience}
                         </span>
                       </div>
                       <span className="font-label text-[11px] text-slate-400 font-semibold">{anc.created_at}</span>
@@ -240,7 +240,7 @@ export default function AdminAnnouncements() {
 
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100 font-label text-[11px] text-slate-500">
                       <span className="flex items-center gap-1">
-                        <Icon name="send" size={14} className="text-[#006972]" /> Delivered to {anc.sent_count || 1240} users
+                        <Icon name="send" size={14} className="text-[#006972]" /> Delivered to {anc.sent_count || 0} users
                       </span>
                       <span className="text-emerald-600 font-bold flex items-center gap-0.5">
                         <Icon name="check_circle" size={13} /> Active Broadcast

@@ -42,10 +42,10 @@ CREATE TYPE notification_type AS ENUM (
   'join_request', 'join_approved', 'join_rejected', 'payment_received',
   'payout_released', 'overdue_flag', 'complaint_update'
 );
-CREATE TYPE notification_channel AS ENUM ('push', 'sms', 'whatsapp');
+CREATE TYPE notification_channel AS ENUM ('push', 'sms', 'whatsapp', 'in_app');
 
 CREATE TYPE complaint_category AS ENUM ('payment_dispute', 'harassment', 'suspected_fraud', 'other');
-CREATE TYPE complaint_status AS ENUM ('pending', 'in_review', 'resolved', 'dismissed');
+CREATE TYPE complaint_status AS ENUM ('pending', 'in_review', 'resolved', 'dismissed', 'ai_resolved', 'needs_human_review');
 CREATE TYPE complaint_priority AS ENUM ('low', 'medium', 'high', 'urgent');
 
 CREATE TYPE admin_action_type AS ENUM (
@@ -308,6 +308,7 @@ CREATE TABLE complaints (
   ai_summary               TEXT,
   ai_suggested_priority    complaint_priority,
   ai_suggested_category    VARCHAR(50),
+  ai_case_file             JSONB,
   -- ai_* fields are advisory only (FR-SUPPORT-02): populated solely
   -- by the triage job, never auto-applied without an Admin action.
   created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),

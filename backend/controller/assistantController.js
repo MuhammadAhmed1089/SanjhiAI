@@ -64,7 +64,7 @@ export async function handleAssistantChat(req, res) {
             { role: 'system', content: SYSTEM_ASSISTANT_PROMPT },
             { role: 'user', content: prompt }
           ],
-          model: 'llama-3.1-8b-instant',
+          model: 'qwen/qwen3.8-27b',
         });
         const aiReply = chatCompletion.choices[0]?.message?.content;
         if (aiReply) {

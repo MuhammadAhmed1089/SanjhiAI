@@ -322,7 +322,7 @@ export default function AdminCommittees() {
                             <Icon name="group" size={14} className="text-[#006972]" /> Capacity: <strong>{memberCount} / {capacity} Members</strong>
                           </span>
                           <span className="font-mono text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
-                            {c.invite_code || 'SANJHI'}
+                            {c.invite_code || '—'}
                           </span>
                         </div>
                       </div>

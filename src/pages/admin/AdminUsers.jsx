@@ -267,7 +267,7 @@ export default function AdminUsers() {
                 <div className="grid grid-cols-1 gap-3">
                   {filteredUsers.map((u) => {
                     const isSuspended = u.is_suspended;
-                    const trustScore = u.trust_score ?? 85;
+                    const trustScore = u.trust_score ?? 0;
 
                     return (
                       <div
@@ -381,7 +381,7 @@ export default function AdminUsers() {
               </div>
               <div>
                 <p className="font-label text-[9px] uppercase font-bold text-on-surface-variant">Trust Score</p>
-                <p className="font-body text-[13px] font-semibold text-[#006972]">{selectedUser.trust_score ?? 85} / 100</p>
+                <p className="font-body text-[13px] font-semibold text-[#006972]">{selectedUser.trust_score ?? 0} / 100</p>
               </div>
               <div>
                 <p className="font-label text-[9px] uppercase font-bold text-on-surface-variant">Committees Joined</p>
