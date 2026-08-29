@@ -56,7 +56,8 @@ export async function processComplaint(complaintId) {
        SET status = $1,
            ai_case_file = $2,
            ai_summary = $3,
-           ai_suggested_priority = $4
+           ai_suggested_priority = $4,
+           user_facing_summary = $6
        WHERE id = $5`,
       [
         status,
@@ -64,6 +65,7 @@ export async function processComplaint(complaintId) {
         caseFile.case_summary,
         caseFile.recommended_priority,
         complaintId,
+        caseFile.user_facing_summary || caseFile.case_summary,
       ]
     );
 
@@ -99,7 +101,7 @@ export async function processComplaint(complaintId) {
           filed_by,
           'complaint_update',
           'in_app',
-          `Your complaint has been investigated and resolved. Recommended action: ${caseFile.recommended_action}. ${caseFile.case_summary}`,
+          caseFile.user_facing_summary || caseFile.case_summary,
           committee_id
         );
 

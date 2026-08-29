@@ -14,6 +14,9 @@ import initNotificationRoutes from './routes/notificationRoutes.js';
 import activityRoutes from './routes/activityRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import complaintRoutes from './routes/complaintRoutes.js';
+import { initQueue } from './utilities/complaintAgent/queue.js';
+import { startSweeper } from './utilities/complaintAgent/sweeper.js';
+import { processComplaint } from './utilities/complaintAgent/index.js';
 
 dotenv.config();
 
@@ -203,6 +206,18 @@ async function ensureComplaintStatusEnum() {
  */
 async function ensureAdminActionLogsCompat() {
   try {
+    // Rename 'details' column to 'notes' if old schema exists
+    const hasDetails = await query(
+      `SELECT column_name FROM information_schema.columns WHERE table_name = 'admin_action_logs' AND column_name = 'details'`
+    );
+    const hasNotes = await query(
+      `SELECT column_name FROM information_schema.columns WHERE table_name = 'admin_action_logs' AND column_name = 'notes'`
+    );
+    if (hasDetails.rows.length > 0 && hasNotes.rows.length === 0) {
+      await query(`ALTER TABLE admin_action_logs RENAME COLUMN details TO notes`);
+      console.log('\u2705 [Schema] Renamed details -> notes in admin_action_logs.');
+    }
+
     // Make admin_id nullable
     const colInfo = await query(
       `SELECT is_nullable FROM information_schema.columns WHERE table_name = 'admin_action_logs' AND column_name = 'admin_id'`
@@ -212,7 +227,7 @@ async function ensureAdminActionLogsCompat() {
       console.log('\u2705 [Schema] Made admin_id nullable in admin_action_logs.');
     }
   } catch (err) {
-    console.warn('\u26a0\ufe0f [Schema] admin_id nullable check failed:', err.message);
+    console.warn('\u26a0\ufe0f [Schema] admin_action_logs compat check failed:', err.message);
   }
 
   // Add enum values
@@ -246,5 +261,7 @@ app.listen(PORT, async () => {
   await ensureComplaintStatusEnum(); // ensures 'ai_resolved' + 'needs_human_review' in enum
   await ensureAdminActionLogsCompat(); // ensures admin_action_logs supports AI agent actions
   await initDefaultAdmin(); // ensures default super admin account exists
+  initQueue(processComplaint); // initialize complaint agent queue
+  startSweeper(); // start periodic stuck-complaint sweeper
   initWhatsAppGateway();  // Initializes WhatsApp Web Socket Gateway
 });

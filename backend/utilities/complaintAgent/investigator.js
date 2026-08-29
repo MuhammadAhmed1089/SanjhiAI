@@ -29,6 +29,7 @@ INVESTIGATION PROCESS:
 OUTPUT FORMAT (JSON):
 {
   "case_summary": "Brief summary of the complaint and investigation findings",
+  "user_facing_summary": "A warm, clear explanation written directly for the complainant in everyday language — no technical jargon, no database references. Explain what was found and what action is being taken. Write in 2-4 sentences as if speaking to the person face-to-face. Example: 'We looked into your concern about the Al-Karim Committee payment. Our records show your payment for this cycle was received on time on March 3rd. There is no outstanding due amount. If you believe there is still an error, please reach out and we will look into it further.'",
   "evidence_trail": [
     {
       "type": "payment_record|trust_score|risk_flag|committee_context",
@@ -78,12 +79,28 @@ export async function investigate(complaintId) {
   }
   toolsCalled.push('fetchComplaintDetails');
 
+  // Step 1b: If committee_id is missing, try to infer from complainant's memberships
+  let resolvedCommitteeId = complaint.committee_id;
+  if (!resolvedCommitteeId) {
+    try {
+      const { query } = await import('../../config/db.js');
+      const memberRes = await query(
+        `SELECT committee_id FROM members WHERE user_id = $1 AND status = 'approved' LIMIT 1`,
+        [complaint.filed_by]
+      );
+      if (memberRes.rows.length > 0) {
+        resolvedCommitteeId = memberRes.rows[0].committee_id;
+        console.log(`[Investigator] Inferred committee_id ${resolvedCommitteeId} from complainant memberships`);
+      }
+    } catch (err) {
+      console.error('[Investigator] Failed to infer committee:', err.message);
+    }
+  }
+
   // Step 2: Fetch payment ledger
-  const payments = await fetchPaymentLedger(
-    complaint.committee_id,
-    complaint.filed_by,
-    complaint.accused_user_id
-  );
+  const payments = resolvedCommitteeId
+    ? await fetchPaymentLedger(resolvedCommitteeId, complaint.filed_by, complaint.accused_user_id)
+    : [];
   toolsCalled.push('fetchPaymentLedger');
 
   // Step 3: Fetch trust profiles
@@ -94,7 +111,9 @@ export async function investigate(complaintId) {
   toolsCalled.push('fetchTrustProfiles');
 
   // Step 4: Fetch committee context
-  const committee = await fetchCommitteeContext(complaint.committee_id);
+  const committee = resolvedCommitteeId
+    ? await fetchCommitteeContext(resolvedCommitteeId)
+    : null;
   toolsCalled.push('fetchCommitteeContext');
 
   // Step 5: Build evidence context for LLM
@@ -103,10 +122,11 @@ COMPLAINT DETAILS:
 - ID: ${complaint.id}
 - Complainant: ${complaint.complainant_name} (${complaint.complainant_email})
 - Accused: ${complaint.accused_name || 'Unknown'} (${complaint.accused_email || 'N/A'})
-- Committee: ${complaint.committee_name}
+- Committee: ${complaint.committee_name || committee?.name || 'UNKNOWN — no committee was linked to this complaint'}
 - Category: ${complaint.category}
 - Description: ${complaint.description}
 - Filed: ${complaint.created_at}
+${!complaint.committee_id ? '\nIMPORTANT NOTE: This complaint was filed without a committee_id. The committee was inferred from the complainant\'s memberships. If no committee could be inferred, base your analysis solely on the complaint description and trust profiles.' : ''}
 
 PAYMENT LEDGER (${payments.length} records):
 ${payments.map(p => `  - Cycle ${p.cycle_number}: ${p.user_id === complaint.filed_by ? 'Complainant' : 'Accused'} | Status: ${p.status} | Submitted: ${p.submitted_at || 'N/A'} | Confirmed: ${p.confirmed_at || 'N/A'} | Due: ${p.due_date}`).join('\n') || '  No payments found'}
@@ -155,7 +175,7 @@ COMMITTEE CONTEXT:
   );
 
   // Step 7: Validate output schema
-  const requiredFields = ['case_summary', 'evidence_trail', 'recommended_priority', 'recommended_action', 'reasoning'];
+  const requiredFields = ['case_summary', 'user_facing_summary', 'evidence_trail', 'recommended_priority', 'recommended_action', 'reasoning'];
   for (const field of requiredFields) {
     if (!caseFile[field]) {
       throw new Error(`Investigator output missing required field: ${field}`);

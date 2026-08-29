@@ -65,8 +65,8 @@ export default function AdminDisputes() {
 
   /* Filter Complaints */
   const filteredComplaints = complaints.filter((c) => {
-    if (activeTab === 'OPEN') return c.status === 'open' || c.status === 'pending' || c.status === 'in_review';
-    if (activeTab === 'RESOLVED') return c.status === 'resolved';
+    if (activeTab === 'OPEN') return c.status === 'open' || c.status === 'pending' || c.status === 'in_review' || c.status === 'needs_human_review';
+    if (activeTab === 'RESOLVED') return c.status === 'resolved' || c.status === 'ai_resolved';
     if (activeTab === 'DISMISSED') return c.status === 'dismissed';
 
     if (searchQuery.trim()) {
@@ -80,6 +80,11 @@ export default function AdminDisputes() {
     }
     return true;
   });
+
+  function openDispute(c) {
+    setSelectedDispute(c);
+    setResolutionNotes(c.resolution_notes || c.user_facing_summary || '');
+  }
 
   async function handleResolve(actionType) {
     if (!selectedDispute || processingAction) return;
@@ -276,7 +281,7 @@ export default function AdminDisputes() {
                   return (
                     <div
                       key={c.id}
-                      onClick={() => setSelectedDispute(c)}
+                      onClick={() => openDispute(c)}
                       className={`${GLASS_CARD} rounded-3xl p-5 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:shadow-[0_12px_40px_rgba(0,105,114,0.14)] hover:-translate-y-0.5 cursor-pointer border border-white/90`}
                     >
                       <div className="space-y-2 min-w-0 flex-1">
@@ -306,14 +311,14 @@ export default function AdminDisputes() {
                           </span>
 
                           {/* AI Agent Badge */}
-                          {c.ai_case_file?.judge_verdict && (
+                          {c.ai_case_file?.judge_assessment && (
                             <span className={`px-2 py-0.5 rounded-full font-label text-[10px] font-bold border flex items-center gap-1 ${
-                              c.ai_case_file.judge_verdict.confidence_score >= 0.85 && c.ai_case_file.judge_verdict.judge_satisfied
+                              c.ai_case_file.judge_assessment.confidence_score >= 0.85 && c.ai_case_file.judge_assessment.judge_satisfied
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                 : 'bg-violet-50 text-violet-700 border-violet-200'
                             }`}>
                               <Icon name="auto_awesome" size={10} />
-                              {Math.round((c.ai_case_file.judge_verdict.confidence_score ?? 0) * 100)}%
+                              {Math.round((c.ai_case_file.judge_assessment.confidence_score ?? 0) * 100)}%
                             </span>
                           )}
                         </div>
@@ -332,7 +337,7 @@ export default function AdminDisputes() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedDispute(c);
+                            openDispute(c);
                           }}
                           className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#006972] to-[#007a82] hover:from-[#00575f] hover:to-[#006972] text-white font-label text-[12px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer border-none shadow-sm"
                         >
@@ -383,60 +388,81 @@ export default function AdminDisputes() {
                   <p className="font-label text-[10px] uppercase font-bold text-[#006972] flex items-center gap-1.5">
                     <Icon name="auto_awesome" size={14} /> AI Case-Builder Report
                   </p>
-                  {selectedDispute.ai_case_file.judge_verdict && (
+                  {selectedDispute.ai_case_file.judge_assessment && (
                     <span className={`px-2.5 py-1 rounded-full font-label text-[10px] font-bold ${
-                      (selectedDispute.ai_case_file.judge_verdict.confidence_score ?? 0) >= 0.85 && selectedDispute.ai_case_file.judge_verdict.judge_satisfied
+                      (selectedDispute.ai_case_file.judge_assessment.confidence_score ?? 0) >= 0.85 && selectedDispute.ai_case_file.judge_assessment.judge_satisfied
                         ? 'bg-emerald-100 text-emerald-800'
                         : 'bg-amber-100 text-amber-900'
                     }`}>
-                      {((selectedDispute.ai_case_file.judge_verdict.confidence_score ?? 0) * 100).toFixed(0)}% — {selectedDispute.ai_case_file.judge_verdict.routing_decision}
+                      {((selectedDispute.ai_case_file.judge_assessment.confidence_score ?? 0) * 100).toFixed(0)}% — {selectedDispute.ai_case_file.judge_assessment.routing_decision}
                     </span>
                   )}
                 </div>
 
                 {/* Investigator Report */}
-                {selectedDispute.ai_case_file.investigator_report && (
+                {selectedDispute.ai_case_file.case_summary && (
                   <div className="space-y-2">
                     <p className="font-body text-[13px] text-deep-navy leading-relaxed">
-                      {selectedDispute.ai_case_file.investigator_report.case_summary}
+                      {selectedDispute.ai_case_file.case_summary}
                     </p>
 
                     {/* Contradictions */}
-                    {(selectedDispute.ai_case_file.investigator_report.contradictions || []).length > 0 && (
+                    {(selectedDispute.ai_case_file.contradictions || []).length > 0 && (
                       <div className="space-y-1.5">
                         <p className="font-label text-[10px] uppercase font-bold text-rose-700">Contradictions Found</p>
-                        {selectedDispute.ai_case_file.investigator_report.contradictions.map((c, i) => (
+                        {selectedDispute.ai_case_file.contradictions.map((c, i) => (
                           <div key={i} className="p-2.5 rounded-xl bg-rose-50 border border-rose-100 text-[12px] font-body text-rose-900">
-                            <span className="font-bold">Claim:</span> {c.claim} → <span className="font-bold">Fact:</span> {c.fact}
+                            {typeof c === 'string' ? c : `${c.claim} → ${c.fact}`}
                           </div>
                         ))}
                       </div>
                     )}
 
+                    {/* Evidence Trail */}
+                    {(selectedDispute.ai_case_file.evidence_trail || []).length > 0 && (
+                      <div className="space-y-1.5">
+                        <p className="font-label text-[10px] uppercase font-bold text-[#006972]">Evidence Trail ({selectedDispute.ai_case_file.evidence_trail.length} items)</p>
+                        {selectedDispute.ai_case_file.evidence_trail.map((ev, i) => (
+                          <div key={i} className="p-2.5 rounded-xl bg-[#006972]/5 border border-[#006972]/10 text-[12px] font-body text-deep-navy">
+                            <span className="font-bold text-[#006972]">[{ev.type}]</span> {ev.description}
+                            {ev.relevance && <p className="text-on-surface-variant text-[11px] mt-0.5 italic">{ev.relevance}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Reasoning */}
+                    {selectedDispute.ai_case_file.reasoning && (
+                      <div className="space-y-1">
+                        <p className="font-label text-[10px] uppercase font-bold text-on-surface-variant">Agent Reasoning</p>
+                        <p className="font-body text-[12px] text-deep-navy leading-relaxed">{selectedDispute.ai_case_file.reasoning}</p>
+                      </div>
+                    )}
+
                     {/* Recommendation */}
-                    {selectedDispute.ai_case_file.investigator_report.recommended_action && (
+                    {selectedDispute.ai_case_file.recommended_action && (
                       <div className="flex items-center gap-2 pt-1">
                         <p className="font-label text-[10px] uppercase font-bold text-on-surface-variant">Recommendation:</p>
                         <span className="px-2 py-0.5 rounded-lg bg-[#006972]/10 text-[#006972] font-label text-[11px] font-bold">
-                          {selectedDispute.ai_case_file.investigator_report.recommended_action.replace(/_/g, ' ')}
+                          {selectedDispute.ai_case_file.recommended_action.replace(/_/g, ' ')}
                         </span>
                         <span className={`px-2 py-0.5 rounded-lg font-label text-[10px] font-bold ${
-                          selectedDispute.ai_case_file.investigator_report.recommended_priority === 'URGENT' ? 'bg-rose-100 text-rose-800'
-                            : selectedDispute.ai_case_file.investigator_report.recommended_priority === 'HIGH' ? 'bg-amber-100 text-amber-900'
+                          selectedDispute.ai_case_file.recommended_priority === 'urgent' ? 'bg-rose-100 text-rose-800'
+                            : selectedDispute.ai_case_file.recommended_priority === 'high' ? 'bg-amber-100 text-amber-900'
                             : 'bg-slate-100 text-slate-700'
                         }`}>
-                          {selectedDispute.ai_case_file.investigator_report.recommended_priority || 'MEDIUM'}
+                          {(selectedDispute.ai_case_file.recommended_priority || 'medium').toUpperCase()}
                         </span>
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* Judge Verdict Details */}
-                {selectedDispute.ai_case_file.judge_verdict?.concerns?.length > 0 && (
+                {/* Judge Assessment Details */}
+                {selectedDispute.ai_case_file.judge_assessment?.concerns?.length > 0 && (
                   <div className="pt-2 border-t border-[#006972]/10">
                     <p className="font-label text-[10px] uppercase font-bold text-amber-800">Judge Concerns</p>
-                    {selectedDispute.ai_case_file.judge_verdict.concerns.map((concern, i) => (
+                    {selectedDispute.ai_case_file.judge_assessment.concerns.map((concern, i) => (
                       <p key={i} className="font-body text-[12px] text-amber-900 mt-1">• {concern}</p>
                     ))}
                   </div>

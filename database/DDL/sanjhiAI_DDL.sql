@@ -313,7 +313,9 @@ CREATE TABLE complaints (
   -- by the triage job, never auto-applied without an Admin action.
   created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
   resolved_at              TIMESTAMPTZ,
-  resolved_by              UUID REFERENCES users(id)
+  resolved_by              UUID REFERENCES users(id),
+  resolution_notes         TEXT,
+  user_facing_summary      TEXT
 );
 
 CREATE INDEX idx_complaints_filed_by ON complaints(filed_by);

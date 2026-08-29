@@ -9,7 +9,21 @@
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 const DEFAULT_MODEL = 'nvidia/nemotron-3-super-120b-a12b';
-const FALLBACK_MODEL = 'google/gemma-4-31b-it';
+// Ordered fallbacks tried when the primary model is rate-limited / unavailable / invalid.
+const FALLBACK_MODELS = [
+  'nvidia/nemotron-3-nano-30b-a3b',
+  'meta-llama/llama-3.3-70b-instruct',
+  'google/gemma-3-27b-it',
+];
+
+/**
+ * Returns true when the error indicates the model itself is unusable right now
+ * (rate-limited 429, not available, or invalid model ID) and a fallback should be tried.
+ */
+function shouldFallback(err) {
+  const m = err.message || '';
+  return /429|rate.?limit|not available|not a valid model|no endpoints|temporarily/i.test(m);
+}
 
 /**
  * Send a chat completion request to OpenRouter and return the assistant content.
@@ -56,10 +70,17 @@ export async function chatCompletion(messages, options = {}) {
     if (!content) throw new Error('OpenRouter API returned empty content');
     return content;
   } catch (err) {
-    // If the primary model fails, try fallback
-    if (model !== FALLBACK_MODEL && err.message.includes('not available')) {
-      console.warn(`LLM: ${model} unavailable, falling back to ${FALLBACK_MODEL}`);
-      return chatCompletion(messages, { ...options, model: FALLBACK_MODEL });
+    // If the model is rate-limited / unavailable / invalid, try fallbacks in order
+    if (shouldFallback(err)) {
+      for (const fb of FALLBACK_MODELS) {
+        if (fb === model) continue;
+        console.warn(`LLM: ${model} unusable (${err.message.slice(0, 60)}), falling back to ${fb}`);
+        try {
+          return await chatCompletion(messages, { ...options, model: fb });
+        } catch (fbErr) {
+          console.warn(`LLM: fallback ${fb} also failed (${fbErr.message.slice(0, 60)})`);
+        }
+      }
     }
     throw err;
   } finally {

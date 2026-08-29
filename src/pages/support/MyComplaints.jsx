@@ -148,8 +148,8 @@ export default function MyComplaints() {
                 <button key={c.id} onClick={() => navigate(`/support/complaints/${c.id}`)}
                   className="w-full bg-white border border-[#006972]/10 rounded-xl p-4 text-left hover:border-[#006972]/30 hover:shadow-[0_4px_16px_rgba(0,105,114,0.08)] transition-all cursor-pointer group relative overflow-hidden"
                 >
-                  {/* Top accent bar for AI cases */}
-                  {c.ai_case_file && (
+                  {/* Top accent bar for investigated cases */}
+                  {c.user_facing_summary && (
                     <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-[#006972] via-emerald-400 to-[#006972] opacity-60" />
                   )}
 
@@ -163,21 +163,13 @@ export default function MyComplaints() {
                   </div>
 
                   <p className="font-body text-[13px] text-deep-navy line-clamp-2 leading-relaxed">
-                    {c.description || 'No description'}
+                    {c.user_facing_summary || c.description || 'No description'}
                   </p>
 
                   <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[#006972]/6">
                     <span className="font-body text-[11px] text-on-surface-variant/60">
                       {c.created_at ? new Date(c.created_at).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                     </span>
-
-                    {/* AI Confidence Badge */}
-                    {c.ai_case_file?.judge_verdict && (
-                      <span className="flex items-center gap-1 font-label text-[10px] font-bold text-[#006972]">
-                        <Icon name="auto_awesome" size={12} />
-                        {Math.round((c.ai_case_file.judge_verdict.confidence_score ?? 0) * 100)}% confidence
-                      </span>
-                    )}
 
                     <span className="font-label text-[11px] font-bold text-[#006972] group-hover:underline flex items-center gap-0.5">
                       View <Icon name="arrow_forward" size={12} />

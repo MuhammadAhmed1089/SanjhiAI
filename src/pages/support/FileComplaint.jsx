@@ -1,17 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
 import BottomNav from '../../components/BottomNav';
 import { fileComplaint } from '../../services/supportService';
+import { getMyCommittees } from '../../services/committeeService';
 
 export default function FileComplaint() {
   const navigate = useNavigate();
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
+  const [committees, setCommittees] = useState([]);
+  const [selectedCommitteeId, setSelectedCommitteeId] = useState('');
+  const [loadingCommittees, setLoadingCommittees] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getMyCommittees();
+        const list = data?.committees || data || [];
+        setCommittees(list);
+      } catch (err) {
+        console.error('Failed to load committees:', err);
+      } finally {
+        setLoadingCommittees(false);
+      }
+    })();
+  }, []);
 
   const categories = [
     { id: 'payment_dispute', label: 'Payment Dispute', icon: 'payments' },
@@ -32,9 +50,11 @@ export default function FileComplaint() {
       setError('Description must be 3000 characters or less.'); return;
     }
 
+    if (!selectedCommitteeId) { setError('Please select the committee this dispute is about.'); return; }
+
     setSubmitting(true);
     try {
-      await fileComplaint({ category, description: description.trim() });
+      await fileComplaint({ category, description: description.trim(), committee_id: selectedCommitteeId });
       setSuccess(true);
     } catch (err) {
       setError(err.message || 'Failed to submit complaint.');
@@ -101,6 +121,39 @@ export default function FileComplaint() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Committee Selection */}
+            <section>
+              <label className="font-label text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-2.5 block">Select Committee Pool</label>
+              {loadingCommittees ? (
+                <div className="p-3.5 rounded-xl border border-[#006972]/10 bg-white text-on-surface-variant font-body text-[13px] animate-pulse">Loading committees...</div>
+              ) : committees.length === 0 ? (
+                <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 font-body text-[13px] flex items-center gap-2">
+                  <Icon name="warning" size={16} className="shrink-0" /> You are not a member of any committee yet.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-2">
+                  {committees.map((c) => (
+                    <button key={c.id} type="button"
+                      onClick={() => setSelectedCommitteeId(c.id)}
+                      className={`flex items-center gap-3 p-3.5 rounded-xl text-left font-label text-[13px] font-bold transition-all border-2 cursor-pointer ${
+                        selectedCommitteeId === c.id
+                          ? 'bg-[#006972] text-white border-[#006972] shadow-md'
+                          : 'bg-white text-deep-navy border-[#006972]/10 hover:border-[#006972]/35'
+                      }`}>
+                      <Icon name="groups" size={18} className={selectedCommitteeId === c.id ? 'text-white' : 'text-[#006972]'} />
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate">{c.name || 'Unnamed Committee'}</p>
+                        <p className={`text-[11px] font-body font-normal mt-0.5 ${selectedCommitteeId === c.id ? 'text-white/70' : 'text-on-surface-variant'}`}>
+                          {c.member_count || c.capacity || '?'} members • Rs. {c.contribution_amount?.toLocaleString() || '0'}
+                        </p>
+                      </div>
+                      {selectedCommitteeId === c.id && <Icon name="check_circle" size={18} className="text-emerald-300" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </section>
+
             {/* Category Selection */}
             <section>
               <label className="font-label text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-2.5 block">Category</label>
@@ -138,7 +191,7 @@ export default function FileComplaint() {
             </section>
 
             {/* Submit */}
-            <button type="submit" disabled={submitting || !category || description.trim().length < 20}
+            <button type="submit" disabled={submitting || !category || !selectedCommitteeId || description.trim().length < 20}
               className="w-full bg-gradient-to-r from-[#006972] to-[#007a82] text-white py-3.5 px-6 rounded-xl font-label text-[14px] font-bold hover:from-[#00575f] hover:to-[#006972] transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2 cursor-pointer">
               {submitting ? (
                 <><Icon name="hourglass_top" size={18} className="animate-pulse" /> Filing & Starting AI Investigation...</>

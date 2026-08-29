@@ -41,9 +41,7 @@ export default function ComplaintDetail() {
     }
   }
 
-  const caseFile = complaint?.ai_case_file;
-  const investigator = caseFile?.investigator_report;
-  const judge = caseFile?.judge_verdict;
+  const friendlySummary = complaint?.user_facing_summary || complaint?.resolution_notes;
 
   return (
     <AuthAmbientBackground showTicker={true}>
@@ -107,134 +105,55 @@ export default function ComplaintDetail() {
                 <p className="font-body text-[13px] text-deep-navy leading-relaxed">{complaint.description}</p>
               </section>
 
-              {/* ─── AI Case File Section ─── */}
-              {caseFile ? (
-                <section className="rounded-xl border border-[#006972]/15 overflow-hidden">
-                  {/* Section Header */}
-                  <div className="bg-gradient-to-r from-[#006972]/8 to-[#006972]/3 px-4 py-3 flex items-center justify-between border-b border-[#006972]/10">
-                    <div className="flex items-center gap-2">
-                      <Icon name="auto_awesome" size={16} className="text-[#006972]" />
-                      <span className="font-label text-[11px] font-bold text-[#006972] uppercase tracking-wider">AI Investigation Report</span>
+              {/* ─── Investigation Result ─── */}
+              {friendlySummary ? (
+                <section className={`p-5 rounded-xl border overflow-hidden ${
+                  complaint.status === 'dismissed'
+                    ? 'bg-slate-50/60 border-slate-200'
+                    : ['resolved', 'ai_resolved'].includes(complaint.status)
+                      ? 'bg-emerald-50/40 border-emerald-150'
+                      : 'bg-[#006972]/3 border border-[#006972]/12'
+                }`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      complaint.status === 'dismissed' ? 'bg-slate-100' : ['resolved', 'ai_resolved'].includes(complaint.status) ? 'bg-emerald-100' : 'bg-amber-100'
+                    }`}>
+                      <Icon name={
+                        complaint.status === 'dismissed' ? 'cancel'
+                          : ['resolved', 'ai_resolved'].includes(complaint.status) ? 'check_circle'
+                          : 'hourglass_top'
+                      } size={16} className={
+                        complaint.status === 'dismissed' ? 'text-slate-500' : ['resolved', 'ai_resolved'].includes(complaint.status) ? 'text-emerald-600' : 'text-amber-600'
+                      } />
                     </div>
-                    {judge && (
-                      <span className={`px-2 py-0.5 rounded-full font-label text-[10px] font-bold ${
-                        judge.confidence_score >= 0.85 && judge.judge_satisfied
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-amber-100 text-amber-900'
+                    <div>
+                      <p className={`font-label text-[11px] font-bold uppercase tracking-wider ${
+                        complaint.status === 'dismissed' ? 'text-slate-600' : ['resolved', 'ai_resolved'].includes(complaint.status) ? 'text-emerald-700' : 'text-amber-700'
                       }`}>
-                        {Math.round((judge.confidence_score ?? 0) * 100)}%
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="p-4 space-y-4 bg-white">
-                    {/* Case Summary */}
-                    {investigator?.case_summary && (
-                      <div>
-                        <p className="font-label text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1">Summary</p>
-                        <p className="font-body text-[13px] text-deep-navy leading-relaxed">{investigator.case_summary}</p>
-                      </div>
-                    )}
-
-                    {/* Contradictions Found */}
-                    {(investigator?.contradictions || []).length > 0 && (
-                      <div>
-                        <p className="font-label text-[10px] font-bold uppercase tracking-wider text-rose-700 mb-1.5 flex items-center gap-1">
-                          <Icon name="warning" size={12} /> Contradictions Detected
+                        {complaint.status === 'dismissed' ? 'Complaint Dismissed' : ['resolved', 'ai_resolved'].includes(complaint.status) ? 'Resolved' : 'Under Review'}
+                      </p>
+                      {complaint.resolved_by_name && (
+                        <p className="font-body text-[10px] text-on-surface-variant">
+                          by {complaint.resolved_by_name} • {complaint.resolved_at ? new Date(complaint.resolved_at).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
                         </p>
-                        <div className="space-y-2">
-                          {investigator.contradictions.map((item, i) => (
-                            <div key={i} className="p-3 rounded-lg bg-rose-50/60 border border-rose-100">
-                              <p className="font-body text-[12px] text-rose-900"><strong>Claim:</strong> {item.claim}</p>
-                              <p className="font-body text-[12px] text-rose-700 mt-0.5"><strong>Fact:</strong> {item.fact}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Evidence Trail */}
-                    {(investigator?.evidence_trail || []).length > 0 && (
-                      <div>
-                        <p className="font-label text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1.5">Evidence Trail</p>
-                        <div className="space-y-1.5">
-                          {investigator.evidence_trail.map((e, i) => (
-                            <div key={i} className="flex items-start gap-2 text-[12px] font-body text-deep-navy">
-                              <Icon name="check_circle" size={14} className="text-emerald-600 shrink-0 mt-0.5" />
-                              <span>{typeof e === 'string' ? e : `${e.source}: ${e.finding}`}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Recommended Action */}
-                    {investigator?.recommended_action && (
-                      <div className="pt-2 border-t border-[#006972]/8">
-                        <p className="font-label text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1.5">Agent Recommendation</p>
-                        <div className="flex items-center gap-2">
-                          <span className="px-2.5 py-1 rounded-lg bg-[#006972]/10 text-[#006972] font-label text-[11px] font-bold capitalize">
-                            {investigator.recommended_action.replace(/_/g, ' ')}
-                          </span>
-                          {investigator.recommended_priority && (
-                            <span className={`px-2 py-0.5 rounded-full font-label text-[10px] font-bold ${
-                              investigator.recommended_priority === 'URGENT' ? 'bg-rose-100 text-rose-800'
-                                : investigator.recommended_priority === 'HIGH' ? 'bg-amber-100 text-amber-900'
-                                : 'bg-slate-100 text-slate-700'
-                            }`}>
-                              {investigator.recommended_priority}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Judge Decision */}
-                    {judge && (
-                      <div className="pt-3 border-t border-[#006972]/8">
-                        <p className="font-label text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-1.5">Judge Decision</p>
-                        <div className="p-3 rounded-lg bg-slate-50 border border-slate-100 space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <span className="font-body text-[12px] text-on-surface-variant">Routing:</span>
-                            <span className="font-label text-[11px] font-bold text-deep-navy capitalize">{judge.routing_decision?.replace(/_/g, ' ')}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="font-body text-[12px] text-on-surface-variant">Judge Satisfied:</span>
-                            <span className={`font-label text-[11px] font-bold ${judge.judge_satisfied ? 'text-emerald-600' : 'text-amber-700'}`}>
-                              {judge.judge_satisfied ? 'Yes' : 'No — Referred to Human'}
-                            </span>
-                          </div>
-                          {(judge.concerns || []).length > 0 && (
-                            <div className="mt-2 pt-2 border-t border-slate-100">
-                              {judge.concerns.map((c, i) => (
-                                <p key={i} className="font-body text-[11px] text-amber-800 mt-0.5">• {c}</p>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
+                  <p className={`font-body text-[14px] leading-relaxed ${
+                    complaint.status === 'dismissed' ? 'text-slate-700' : ['resolved', 'ai_resolved'].includes(complaint.status) ? 'text-emerald-900' : 'text-deep-navy'
+                  }`}>{friendlySummary}</p>
                 </section>
               ) : (
-                /* No Case File Yet */
+                /* Investigation Pending */
                 <section className="p-5 rounded-xl bg-slate-50 border border-slate-100 text-center">
                   <div className="w-12 h-12 rounded-full bg-[#006972]/8 flex items-center justify-center mx-auto mb-3">
                     <Icon name="hourglass_top" size={22} className="text-[#006972] animate-pulse" />
                   </div>
                   <p className="font-body text-[13px] text-on-surface-variant">
-                    {['pending', 'open'].includes(complaint.status)
-                      ? 'AI Agent is investigating your complaint. This usually takes 30-60 seconds.'
-                      : 'AI case file not available for this complaint.'}
+                    {['pending', 'open', 'needs_human_review'].includes(complaint.status)
+                      ? 'Your complaint is being investigated. We\'ll update you as soon as a decision is made.'
+                      : 'No details available for this complaint yet.'}
                   </p>
-                </section>
-              )}
-
-              {/* Resolution Notes (if resolved) */}
-              {complaint.resolution_notes && (
-                <section className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-100">
-                  <p className="font-label text-[10px] font-bold uppercase tracking-wider text-emerald-700 mb-1">Resolution</p>
-                  <p className="font-body text-[13px] text-emerald-900">{complaint.resolution_notes}</p>
                 </section>
               )}
             </div>

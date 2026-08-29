@@ -8,7 +8,7 @@
  */
 
 import { query } from '../config/db.js';
-import { processComplaint } from '../utilities/complaintAgent/index.js';
+import { getQueue } from '../utilities/complaintAgent/queue.js';
 
 const MAX_DESCRIPTION_LENGTH = 3000; // Cost control per plan
 
@@ -51,10 +51,13 @@ export async function fileComplaint(req, res) {
 
     const complaint = insertRes.rows[0];
 
-    // Trigger AI investigation asynchronously (don't block user response)
-    processComplaint(complaint.id).catch((err) => {
-      console.error(`[Complaint Agent] Background investigation failed for ${complaint.id}:`, err.message);
-    });
+    // Enqueue for AI investigation (queue handles concurrency + retries)
+    try {
+      getQueue().enqueue(complaint.id);
+    } catch (queueErr) {
+      console.error('[ComplaintController] Queue enqueue failed:', queueErr.message);
+      // Complaint is still saved, sweeper will pick it up
+    }
 
     return res.status(201).json({
       message: 'Complaint filed successfully. AI investigation in progress.',
@@ -82,15 +85,20 @@ export async function getMyComplaints(req, res) {
     }
 
     const result = await query(
-      `SELECT cmp.*, c.name AS committee_name
+      `SELECT cmp.*, c.name AS committee_name,
+        u.full_name AS resolved_by_name
        FROM complaints cmp
        LEFT JOIN committees c ON c.id = cmp.committee_id
+       LEFT JOIN users u ON u.id = cmp.resolved_by
        WHERE cmp.filed_by = $1
        ORDER BY cmp.created_at DESC`,
       [userId]
     );
 
-    return res.status(200).json({ complaints: result.rows });
+    return res.status(200).json({ complaints: result.rows.map(r => {
+      const { ai_case_file, ...rest } = r;
+      return rest;
+    }) });
   } catch (err) {
     console.error('Error fetching user complaints:', err);
     return res.status(500).json({ error: 'Failed to fetch complaints.' });
@@ -111,9 +119,11 @@ export async function getComplaintById(req, res) {
     const { id } = req.params;
 
     const result = await query(
-      `SELECT cmp.*, c.name AS committee_name
+      `SELECT cmp.*, c.name AS committee_name,
+        u.full_name AS resolved_by_name
        FROM complaints cmp
        LEFT JOIN committees c ON c.id = cmp.committee_id
+       LEFT JOIN users u ON u.id = cmp.resolved_by
        WHERE cmp.id = $1 AND (cmp.filed_by = $2 OR cmp.accused_user_id = $2)`,
       [id, userId]
     );
@@ -122,7 +132,9 @@ export async function getComplaintById(req, res) {
       return res.status(404).json({ error: 'Complaint not found or access denied.' });
     }
 
-    return res.status(200).json({ complaint: result.rows[0] });
+    const row = result.rows[0];
+    const { ai_case_file, ...complaint } = row;
+    return res.status(200).json({ complaint });
   } catch (err) {
     console.error('Error fetching complaint:', err);
     return res.status(500).json({ error: 'Failed to fetch complaint.' });

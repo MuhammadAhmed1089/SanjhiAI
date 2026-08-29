@@ -1,5 +1,5 @@
 import { query } from '../config/db.js';
-import { processComplaint } from '../utilities/complaintAgent/index.js';
+import { getQueue } from '../utilities/complaintAgent/queue.js';
 
 /**
  * Ensure administrative helper tables exist in PostgreSQL
@@ -13,7 +13,7 @@ async function initAdminTables() {
         action_type VARCHAR(100) NOT NULL,
         target_type VARCHAR(100) NOT NULL,
         target_id VARCHAR(255),
-        details TEXT,
+        notes TEXT,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
     `);
@@ -114,7 +114,7 @@ export async function getOverview(req, res) {
     // Count Active Complaints
     try {
       const cmpRes = await query(
-        `SELECT COUNT(*)::int AS count FROM complaints WHERE status IN ('pending', 'in_review', 'open')`
+        `SELECT COUNT(*)::int AS count FROM complaints WHERE status IN ('pending', 'in_review', 'open', 'needs_human_review')`
       );
       activeComplaints = cmpRes.rows[0]?.count ?? 0;
     } catch (err) {
@@ -382,17 +382,18 @@ export async function resolveComplaint(req, res) {
   try {
     const { complaintId } = req.params;
     const { notes } = req.body;
+    const adminId = req.user?.userId;
 
     try {
       await query(
-        `UPDATE complaints SET status = 'resolved', resolved_at = NOW() WHERE id = $1`,
-        [complaintId]
+        `UPDATE complaints SET status = 'resolved', resolved_at = NOW(), resolved_by = $2, resolution_notes = $3, user_facing_summary = $3 WHERE id = $1`,
+        [complaintId, adminId, notes || null]
       );
     } catch (err) {
-      // ignore
+      console.error('[AdminController] Failed to update complaint resolution:', err.message);
     }
 
-    await logAdminAction(req.user?.userId, 'RESOLVE_COMPLAINT', 'complaint', complaintId, notes || 'Dispute resolved by staff');
+    await logAdminAction(adminId, 'RESOLVE_COMPLAINT', 'complaint', complaintId, notes || 'Dispute resolved by staff');
 
     return res.status(200).json({ message: 'Dispute marked as resolved.' });
   } catch (error) {
@@ -405,17 +406,18 @@ export async function dismissComplaint(req, res) {
   try {
     const { complaintId } = req.params;
     const { notes } = req.body;
+    const adminId = req.user?.userId;
 
     try {
       await query(
-        `UPDATE complaints SET status = 'dismissed' WHERE id = $1`,
-        [complaintId]
+        `UPDATE complaints SET status = 'dismissed', resolved_at = NOW(), resolved_by = $2, resolution_notes = $3, user_facing_summary = $3 WHERE id = $1`,
+        [complaintId, adminId, notes || null]
       );
     } catch (err) {
-      // ignore
+      console.error('[AdminController] Failed to update complaint dismissal:', err.message);
     }
 
-    await logAdminAction(req.user?.userId, 'DISMISS_COMPLAINT', 'complaint', complaintId, notes || 'Dispute dismissed');
+    await logAdminAction(adminId, 'DISMISS_COMPLAINT', 'complaint', complaintId, notes || 'Dispute dismissed');
 
     return res.status(200).json({ message: 'Dispute dismissed.' });
   } catch (error) {
@@ -459,10 +461,12 @@ export async function reinvestigateComplaint(req, res) {
       { triggered_by: req.user?.userId || 'unknown' }
     );
 
-    // Trigger investigation asynchronously
-    processComplaint(complaintId).catch((err) => {
-      console.error(`[Complaint Agent] Re-investigation failed for ${complaintId}:`, err.message);
-    });
+    // Enqueue for AI investigation (queue handles concurrency + retries)
+    try {
+      getQueue().enqueue(complaintId);
+    } catch (queueErr) {
+      console.error('[Admin] Queue enqueue failed:', queueErr.message);
+    }
 
     return res.status(202).json({
       message: 'Re-investigation started. Case file will be updated shortly.',
