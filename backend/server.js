@@ -253,7 +253,7 @@ app.get('/', (req, res) => {
   res.json({ message: 'Server is running', status: 'OK' });
 });
 
-app.listen(PORT, async () => {
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`Server listening on port ${PORT}`);
   await testConnection(); // logs DB connection status to terminal on startup
   await ensureInAppNotificationChannel(); // ensures 'in_app' notification channel exists
