@@ -1,7 +1,35 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../components/Icon';
-import logo from '../../assets/screen.png';
+import aiLogo from '../../assets/sanjhi-ai-logo.png';
+import whatsappIcon from '../../assets/whatsapp-icon.svg';
+import chatbotIcon from '../../assets/chatbot-icon.svg';
+
+const WHATSAPP_NUMBER = '923411713517';
+
+/* ── How-to-use guide steps ── */
+const HOW_TO_USE_STEPS = [
+  {
+    icon: 'chat',
+    title: 'Type or Tap a Prompt',
+    description: 'Ask a question in the text box below or tap one of the suggested topic cards to get instant answers about committees, payments, and more.',
+  },
+  {
+    icon: 'mic',
+    title: 'Use Voice Input',
+    description: 'Tap the microphone icon to speak your question instead of typing. Sanjhi AI converts your voice to text automatically.',
+  },
+  {
+    icon: 'volume_up',
+    title: 'Listen to Responses',
+    description: 'Tap the "Listen" button on any AI response to hear it read aloud. Tap again to stop the voice playback.',
+  },
+  {
+    icon: 'smart_display',
+    title: 'Explore Suggested Topics',
+    description: 'When you start a new chat, topic cards appear covering the most common questions — creating committees, trust scores, payments, and payout schedules.',
+  },
+];
 
 /* ── Suggested Prompt Cards ── */
 const SUGGESTED_PROMPTS = [
@@ -74,12 +102,19 @@ All payment receipts are verified on our PostgreSQL ledger for 100% transparency
 • Click **File a Complaint** to submit details directly to our admin team.
 • Our AI triage system prioritizes urgent financial queries within 2 hours!`,
   },
+  {
+    keywords: ['whatsapp', 'chat', 'message', 'contact', 'number'],
+    response: `You can reach our support team directly on **WhatsApp**!
+
+• Tap the green **WhatsApp button** at the bottom-right corner of this screen.
+• Or message us at **+92 341 1713517** for instant assistance.
+• Our team typically responds within minutes during business hours (9 AM – 9 PM PKT).`,
+  },
 ];
 
 export default function Assistant() {
   const navigate = useNavigate();
 
-  // Chat message state
   const [messages, setMessages] = useState([
     {
       id: 'welcome-1',
@@ -93,16 +128,15 @@ export default function Assistant() {
   const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speakingMessageId, setSpeakingMessageId] = useState(null);
+  const [showGuide, setShowGuide] = useState(false);
 
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
 
-  // Auto-scroll to bottom of chat
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  // Clean up speech synthesis on unmount
   useEffect(() => {
     return () => {
       if ('speechSynthesis' in window) {
@@ -111,7 +145,6 @@ export default function Assistant() {
     };
   }, []);
 
-  /* ── Voice Input (Speech-to-Text) ── */
   function toggleVoiceRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -161,7 +194,6 @@ export default function Assistant() {
     }
   }
 
-  /* ── Text-to-Speech (AI Voice Reader) ── */
   function handleSpeak(messageId, text) {
     if (!('speechSynthesis' in window)) {
       alert('Text-to-speech is not supported in your browser.');
@@ -175,7 +207,6 @@ export default function Assistant() {
     }
 
     window.speechSynthesis.cancel();
-    // Clean markdown formatting for speech
     const cleanText = text.replace(/[*#_`]/g, '');
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.rate = 1.0;
@@ -188,7 +219,6 @@ export default function Assistant() {
     window.speechSynthesis.speak(utterance);
   }
 
-  /* ── Send Message Handler ── */
   function handleSendMessage(textToSend) {
     const query = (textToSend || inputText).trim();
     if (!query) return;
@@ -204,7 +234,6 @@ export default function Assistant() {
     setInputText('');
     setIsTyping(true);
 
-    // Simulate AI thinking and generating answer
     setTimeout(() => {
       const lowerQuery = query.toLowerCase();
       let matchedResponse = null;
@@ -243,6 +272,10 @@ export default function Assistant() {
     ]);
   }
 
+  function openWhatsApp() {
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi! I need help with my Sanjhi account.')}`, '_blank');
+  }
+
   return (
     <div className="min-h-screen bg-white text-deep-navy font-body antialiased flex flex-col relative overflow-x-hidden">
 
@@ -257,9 +290,8 @@ export default function Assistant() {
         <div className="absolute w-[360px] h-[360px] rounded-full bg-amber-400/6 blur-3xl bottom-[15%] right-[-60px]"
           style={{ animation: 'float-y 8s ease-in-out infinite 2s' }} />
 
-        <img src={logo} alt="" aria-hidden
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] sm:w-[650px] opacity-[0.035] select-none pointer-events-none"
-          style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(85%) saturate(1450%) hue-rotate(152deg)' }} />
+        <img src={aiLogo} alt="" aria-hidden
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] sm:w-[650px] opacity-[0.04] select-none pointer-events-none rounded-full" />
       </div>
 
       {/* ══════════════════════════════════════════════════ */}
@@ -267,7 +299,7 @@ export default function Assistant() {
       {/* ══════════════════════════════════════════════════ */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#006972]/12 shadow-sm shrink-0">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-3">
-          
+
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => navigate('/dashboard')}
@@ -277,12 +309,13 @@ export default function Assistant() {
               <Icon name="arrow_back" size={20} />
             </button>
 
-            {/* AI Avatar & Title */}
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative shrink-0">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#006972] to-[#00a8b5] text-white flex items-center justify-center shadow-md shadow-[#006972]/20 border border-white">
-                  <Icon name="auto_awesome" size={22} className="animate-float-y-fast" />
-                </div>
+                <img
+                  src={aiLogo}
+                  alt="Sanjhi AI"
+                  className="w-10 h-10 rounded-2xl object-cover shadow-md shadow-[#006972]/20 border-2 border-white animate-float-y-fast"
+                />
                 <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white">
                   <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping-slow" />
                 </span>
@@ -299,13 +332,27 @@ export default function Assistant() {
                 </div>
                 <p className="font-body text-[12px] text-emerald-700 font-semibold flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                  Online • Voice Enabled
+                  Online - Voice Enabled
                 </p>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setShowGuide((prev) => !prev)}
+              className="p-2.5 rounded-full bg-[#006972]/10 hover:bg-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer border-none"
+              title="How to use Sanjhi AI"
+            >
+              <Icon name="help" size={20} />
+            </button>
+            <button
+              onClick={openWhatsApp}
+              className="p-2.5 rounded-full bg-[#25D366]/10 hover:bg-[#25D366]/20 transition-all active:scale-95 cursor-pointer border-none"
+              title="Chat on WhatsApp"
+            >
+              <img src={whatsappIcon} alt="WhatsApp" className="w-5 h-5" />
+            </button>
             <button
               onClick={handleClearChat}
               className="p-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-deep-navy/70 transition-all active:scale-95 cursor-pointer border-none"
@@ -318,6 +365,62 @@ export default function Assistant() {
       </header>
 
       {/* ══════════════════════════════════════════════════ */}
+      {/*  HOW-TO-USE GUIDE PANEL (collapsible)             */}
+      {/* ══════════════════════════════════════════════════ */}
+      {showGuide && (
+        <section className="relative z-30 max-w-4xl w-full mx-auto px-4 sm:px-6 pt-4 animate-fade-in">
+          <div className="bg-gradient-to-br from-[#006972]/5 to-amber-50/50 rounded-3xl border-2 border-[#006972]/15 p-5 sm:p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <img src={chatbotIcon} alt="" className="w-8 h-8" />
+                <h2 className="font-headline text-[18px] font-bold text-deep-navy">How to Use Sanjhi AI</h2>
+              </div>
+              <button
+                onClick={() => setShowGuide(false)}
+                className="w-8 h-8 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-deep-navy/60 transition-colors cursor-pointer border border-[#006972]/15"
+              >
+                <Icon name="close" size={18} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {HOW_TO_USE_STEPS.map((step, idx) => (
+                <div key={idx} className="flex items-start gap-3 bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-[#006972]/10">
+                  <div className="w-9 h-9 rounded-xl bg-[#006972] text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <span className="font-headline text-[14px] font-bold">{idx + 1}</span>
+                  </div>
+                  <div>
+                    <h3 className="font-headline text-[13px] font-bold text-deep-navy mb-0.5 flex items-center gap-1.5">
+                      <Icon name={step.icon} size={16} className="text-[#006972]" />
+                      {step.title}
+                    </h3>
+                    <p className="font-body text-[12px] text-on-surface-variant leading-relaxed">{step.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-3 p-4 bg-white/60 rounded-2xl border border-[#25D366]/20">
+              <img src={whatsappIcon} alt="WhatsApp" className="w-7 h-7 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-headline text-[13px] font-bold text-deep-navy">Need human help? Chat on WhatsApp</p>
+                <p className="font-body text-[12px] text-on-surface-variant">
+                  Message us at <span className="font-bold text-[#006972]">+92 341 1713517</span> for instant support from our team.
+                </p>
+              </div>
+              <button
+                onClick={openWhatsApp}
+                className="px-4 py-2 rounded-full bg-[#25D366] hover:bg-[#1da851] text-white font-label text-[12px] font-bold transition-colors cursor-pointer border-none shadow-sm flex items-center gap-1.5 shrink-0 active:scale-95"
+              >
+                <img src={whatsappIcon} alt="" className="w-4 h-4 brightness-0 invert" />
+                Open WhatsApp
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ══════════════════════════════════════════════════ */}
       {/*  CHAT MESSAGES CONTAINER                          */}
       {/* ══════════════════════════════════════════════════ */}
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6 relative z-10 pb-36">
@@ -326,13 +429,18 @@ export default function Assistant() {
         {messages.length <= 1 && (
           <section className="space-y-4 my-2 animate-fade-in">
             <div className="text-center space-y-1">
-              <div className="w-14 h-14 rounded-2xl bg-[#006972]/10 text-[#006972] flex items-center justify-center mx-auto mb-2 border border-[#006972]/20">
-                <Icon name="psychology" size={32} />
-              </div>
+              <img src={aiLogo} alt="Sanjhi AI" className="w-16 h-16 rounded-2xl mx-auto mb-2 object-cover shadow-md shadow-[#006972]/15 border-2 border-[#006972]/20" />
               <h2 className="font-headline text-[22px] font-bold text-deep-navy">How can Sanjhi AI help you today?</h2>
               <p className="font-body text-[13px] text-on-surface-variant max-w-md mx-auto">
                 Ask anything using voice or text about your savings pools, payments, or trust score.
               </p>
+              <button
+                onClick={() => setShowGuide(true)}
+                className="mt-2 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 text-[#006972] font-label text-[12px] font-bold transition-colors cursor-pointer border border-[#006972]/20"
+              >
+                <Icon name="menu_book" size={16} />
+                How to use Sanjhi AI
+              </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
@@ -365,25 +473,24 @@ export default function Assistant() {
               key={msg.id}
               className={`flex items-end gap-3 ${isAI ? 'justify-start' : 'justify-end'} animate-scale-up`}
             >
-              {/* AI Avatar Icon */}
               {isAI && (
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#006972] to-[#00a8b5] text-white flex items-center justify-center shrink-0 shadow-sm border border-white mb-1">
-                  <Icon name="auto_awesome" size={16} />
-                </div>
+                <img
+                  src={aiLogo}
+                  alt="Sanjhi AI"
+                  className="w-8 h-8 rounded-xl object-cover shrink-0 shadow-sm border border-white mb-1"
+                />
               )}
 
-              {/* Message Bubble */}
               <div className={`relative max-w-[85%] sm:max-w-[75%] rounded-3xl p-4 sm:p-5 shadow-sm space-y-2 ${
                 isAI
                   ? 'bg-white border-2 border-[#006972]/15 text-deep-navy rounded-bl-sm'
                   : 'bg-[#006972] text-white rounded-br-sm shadow-[#006972]/20'
               }`}>
 
-                {/* Message Header & Action Toolbar for AI */}
                 {isAI && (
                   <div className="flex items-center justify-between pb-2 border-b border-[#006972]/10 text-[11px] font-label text-[#006972] font-bold">
                     <span className="flex items-center gap-1">
-                      <Icon name="auto_awesome" size={14} /> Sanjhi AI
+                      <img src={chatbotIcon} alt="" className="w-3.5 h-3.5" /> Sanjhi AI
                     </span>
                     <button
                       type="button"
@@ -399,12 +506,10 @@ export default function Assistant() {
                   </div>
                 )}
 
-                {/* Message Body Content */}
                 <div className="font-body text-[14px] leading-relaxed whitespace-pre-line">
                   {msg.text}
                 </div>
 
-                {/* Timestamp */}
                 <div className={`text-[10px] font-label text-right font-medium ${isAI ? 'text-on-surface-variant/70' : 'text-white/70'}`}>
                   {msg.time}
                 </div>
@@ -417,9 +522,11 @@ export default function Assistant() {
         {/* TYPING INDICATOR */}
         {isTyping && (
           <div className="flex items-end gap-3 justify-start animate-fade-in">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#006972] to-[#00a8b5] text-white flex items-center justify-center shrink-0 shadow-sm border border-white">
-              <Icon name="auto_awesome" size={16} />
-            </div>
+            <img
+              src={aiLogo}
+              alt="Sanjhi AI"
+              className="w-8 h-8 rounded-xl object-cover shrink-0 shadow-sm border border-white"
+            />
             <div className="bg-white border-2 border-[#006972]/15 text-[#006972] rounded-3xl rounded-bl-sm px-5 py-3 shadow-sm flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#006972] animate-bounce" style={{ animationDelay: '0ms' }} />
               <span className="w-2 h-2 rounded-full bg-[#006972] animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -432,12 +539,25 @@ export default function Assistant() {
       </main>
 
       {/* ══════════════════════════════════════════════════ */}
+      {/*  FLOATING WHATSAPP BUTTON                         */}
+      {/* ══════════════════════════════════════════════════ */}
+      <button
+        onClick={openWhatsApp}
+        className="fixed bottom-24 right-4 sm:bottom-28 sm:right-6 z-50 w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#1da851] text-white flex items-center justify-center shadow-lg shadow-[#25D366]/30 transition-all active:scale-90 cursor-pointer border-4 border-white animate-float-y-fast group"
+        title="Chat with us on WhatsApp"
+      >
+        <img src={whatsappIcon} alt="WhatsApp" className="w-7 h-7 brightness-0 invert" />
+        <span className="absolute right-full mr-3 px-3 py-1.5 rounded-xl bg-deep-navy text-white font-label text-[11px] font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
+          Chat on WhatsApp
+        </span>
+      </button>
+
+      {/* ══════════════════════════════════════════════════ */}
       {/*  BOTTOM CHAT INPUT & VOICE CONTROL BAR            */}
       {/* ══════════════════════════════════════════════════ */}
       <footer className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#006972]/15 p-3 sm:p-4 shadow-[0_-6px_24px_rgba(0,105,114,0.12)]">
         <div className="max-w-4xl mx-auto space-y-2">
 
-          {/* Voice Recording Active Toast Banner */}
           {isListening && (
             <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-2 rounded-2xl text-[12px] font-label font-bold flex items-center justify-between animate-bounce-short shadow-sm">
               <div className="flex items-center gap-2">
@@ -453,7 +573,6 @@ export default function Assistant() {
             </div>
           )}
 
-          {/* Main Input Controls */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -461,7 +580,15 @@ export default function Assistant() {
             }}
             className="flex items-center gap-2 bg-slate-50 border-2 border-[#006972]/20 focus-within:border-[#006972] focus-within:ring-4 focus-within:ring-[#006972]/10 rounded-3xl p-1.5 transition-all shadow-sm"
           >
-            {/* Voice Dictation Button */}
+            <button
+              type="button"
+              onClick={openWhatsApp}
+              className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer border-none shrink-0 bg-[#25D366]/10 hover:bg-[#25D366]/20"
+              title="Send message on WhatsApp"
+            >
+              <img src={whatsappIcon} alt="WhatsApp" className="w-5 h-5" />
+            </button>
+
             <button
               type="button"
               onClick={toggleVoiceRecognition}
@@ -475,7 +602,6 @@ export default function Assistant() {
               <Icon name={isListening ? 'mic_off' : 'mic'} size={22} />
             </button>
 
-            {/* Text Input */}
             <input
               type="text"
               value={inputText}
@@ -484,7 +610,6 @@ export default function Assistant() {
               className="flex-1 bg-transparent px-3 py-2 font-body text-[14px] text-deep-navy outline-none placeholder:text-on-surface-variant/50"
             />
 
-            {/* Send Button */}
             <button
               type="submit"
               disabled={!inputText.trim()}
@@ -495,9 +620,8 @@ export default function Assistant() {
             </button>
           </form>
 
-          {/* Subtext info */}
           <p className="text-[11px] font-label text-center text-on-surface-variant/60">
-            Sanjhi AI provides automated guidance for committees, trust scores, & payouts.
+            Sanjhi AI provides automated guidance. For urgent help, tap the WhatsApp button.
           </p>
         </div>
       </footer>

@@ -5,8 +5,9 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    host: '0.0.0.0',
+    host: 'localhost',
     port: 5173,
+    strictPort: true,
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:3000',
@@ -14,9 +15,12 @@ export default defineConfig({
         secure: false,
       },
     },
+    warmup: {
+      clientFiles: ['./src/main.jsx', './src/App.jsx', './src/index.css'],
+    },
   },
   optimizeDeps: {
-    // Explicitly exclude backend-only packages so Vite doesn't pre-bundle them
+    include: ['react', 'react-dom', 'react-router-dom'],
     exclude: [
       '@whiskeysockets/baileys',
       'pino',

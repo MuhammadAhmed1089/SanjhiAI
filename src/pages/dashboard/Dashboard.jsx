@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Icon from '../../components/Icon';
 import logo from '../../assets/screen.png';
+import aiLogo from '../../assets/sanjhi-ai-logo.png';
 import { dashboardService, notificationService } from '../../services';
 
 /* ── Count-up hook ── */
@@ -287,7 +288,7 @@ export default function Dashboard() {
             <button onClick={(e) => { ripple(e, 'ai'); navigate('/assistant'); }}
               className="relative overflow-hidden flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#006972]/10 hover:bg-[#006972]/18 text-[#006972] font-label text-[13px] font-bold border border-[#006972]/25 transition-all active:scale-95 cursor-pointer">
               {ripples.ai && <span key={ripples.ai.k} className="absolute rounded-full bg-[#006972]/20 w-28 h-28 -translate-x-1/2 -translate-y-1/2 animate-ping pointer-events-none" style={{ left: ripples.ai.x, top: ripples.ai.y }} />}
-              <Icon name="auto_awesome" size={17} className="animate-float-y-fast" />
+              <img src={aiLogo} alt="Sanjhi AI" className="w-5 h-5 rounded-lg object-cover animate-float-y-fast" />
               <span className="hidden sm:inline">Sanjhi AI</span>
             </button>
 
