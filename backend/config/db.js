@@ -30,9 +30,9 @@ const poolConfig = useConnectionString
 
 const pool = new Pool({
   ...poolConfig,
-  max: 15,
+  max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
+  connectionTimeoutMillis: 30000,
   keepAlive: true,
 });
 
@@ -49,8 +49,8 @@ export const query = async (text, params) => {
     const isConnErr = err.code === 'ECONNRESET' ||
       (err.message && (
         err.message.includes('closed') ||
-        err.message.includes('timeout') ||
-        err.message.includes('terminated')
+        err.message.includes('terminated') ||
+        err.message.includes('socket')
       ));
 
     if (isConnErr) {

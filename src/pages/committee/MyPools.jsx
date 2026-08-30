@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
+import BottomNav from '../../components/BottomNav';
+import { useNavDrawer } from '../../context/NavDrawerContext';
 import { getMyCommittees, joinByCode } from '../../services/committeeService';
 
 const GLASS_CARD = 'bg-white/60 backdrop-blur-xl border border-white/80 shadow-[0_8px_32px_rgba(0,105,114,0.12)]';
@@ -13,6 +15,7 @@ function Bone({ className = '' }) {
 
 export default function MyPools() {
   const navigate = useNavigate();
+  const { openDrawer } = useNavDrawer();
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [committees, setCommittees] = useState([]);
@@ -159,6 +162,16 @@ export default function MyPools() {
             >
               <Icon name="add_circle" size={18} />
               <span>Create Pool</span>
+            </button>
+
+            {/* Mobile Menu Drawer Toggle */}
+            <button
+              onClick={openDrawer}
+              className="md:hidden w-10 h-10 flex items-center justify-center rounded-2xl bg-white/70 hover:bg-white text-[#006972] border border-white/80 shadow-sm transition-all active:scale-95 cursor-pointer"
+              aria-label="Open Navigation Menu"
+              title="Open Menu"
+            >
+              <Icon name="menu" size={20} />
             </button>
           </div>
         </header>
@@ -522,6 +535,7 @@ export default function MyPools() {
         )}
 
       </div>
+      <BottomNav />
     </AuthAmbientBackground>
   );
 }

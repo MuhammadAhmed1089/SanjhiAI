@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Icon from '../../components/Icon';
+import BottomNav from '../../components/BottomNav';
+import { useNavDrawer } from '../../context/NavDrawerContext';
 import logo from '../../assets/screen.png';
 import aiLogo from '../../assets/sanjhi-ai-logo.png';
+import whatsappIcon from '../../assets/whatsapp-icon.svg';
 import { dashboardService, notificationService } from '../../services';
 
 /* ── Count-up hook ── */
@@ -60,6 +63,8 @@ const PARTICLES = [
   { x: 72, y: 90, size: 4, delay: 3.5, dur: 7 },
 ];
 
+const WHATSAPP_NUMBER = '923411713517';
+
 const BACKEND_URL = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace('/api', '')
   : 'http://localhost:3000';
@@ -73,6 +78,7 @@ function resolvePhotoUrl(url) {
 export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { openDrawer } = useNavDrawer();
 
   // User state — initially null so no mock name flashes
   const [userName, setUserName] = useState('');
@@ -177,6 +183,10 @@ export default function Dashboard() {
     const r = e.currentTarget.getBoundingClientRect();
     setRipples((p) => ({ ...p, [id]: { x: e.clientX - r.left, y: e.clientY - r.top, k: Date.now() } }));
     setTimeout(() => setRipples((p) => { const n = { ...p }; delete n[id]; return n; }), 700);
+  }
+
+  function openWhatsApp() {
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi! I need help with my Sanjhi account.')}`, '_blank');
   }
 
   const navTabs = [
@@ -292,6 +302,12 @@ export default function Dashboard() {
               <span className="hidden sm:inline">Sanjhi AI</span>
             </button>
 
+            <button onClick={openWhatsApp}
+              className="relative p-2.5 rounded-full bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/25 transition-all active:scale-95 cursor-pointer group" aria-label="Chat on WhatsApp"
+              title="Chat with us on WhatsApp">
+              <img src={whatsappIcon} alt="WhatsApp" className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+            </button>
+
             <button onClick={() => navigate('/notifications')}
               className="relative p-2.5 rounded-full bg-white hover:bg-[#006972]/5 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer group" aria-label="Notifications">
               <Icon name="notifications" size={22} className="group-hover:rotate-12 transition-transform duration-300" />
@@ -300,6 +316,16 @@ export default function Dashboard() {
                     {unreadCount > 9 ? '9+' : unreadCount}
                  </span>
               )}
+            </button>
+
+            {/* Mobile Menu Drawer Toggle */}
+            <button
+              onClick={openDrawer}
+              className="md:hidden relative p-2.5 rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer"
+              aria-label="Open Navigation Menu"
+              title="Open Menu"
+            >
+              <Icon name="menu" size={22} />
             </button>
           </div>
         </div>
@@ -415,10 +441,11 @@ export default function Dashboard() {
         </section>
 
         {/* ── QUICK ACTIONS ── */}
-        <section ref={actionsRef} className={`grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 transition-all duration-700 delay-100 ${actionsInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+        <section ref={actionsRef} className={`grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 transition-all duration-700 delay-100 ${actionsInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           {[
             { label: 'Create Committee', icon: 'add_circle', primary: true, path: '/committee/create', id: 'act-create' },
             { label: 'Join Committee', icon: 'group_add', primary: false, path: '/join', id: 'act-join' },
+            { label: 'Explore Public', icon: 'public', primary: false, path: '/committees/public', id: 'act-explore' },
             { label: 'Pay Dues', icon: 'payments', primary: false, path: '/payments', id: 'act-pay' },
             { label: 'Support Ticket', icon: 'report_problem', primary: false, path: '/support/file-complaint', id: 'act-support' },
           ].map((action, idx) => (
@@ -612,19 +639,21 @@ export default function Dashboard() {
       {/* ══════════════════════════════════════════════════ */}
       {/*  MOBILE BOTTOM NAV BAR                           */}
       {/* ══════════════════════════════════════════════════ */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-[#006972]/20 shadow-[0_-6px_24px_rgba(0,105,114,0.12)] px-2 py-2 flex justify-around items-center">
-        {navTabs.map((tab) => {
-          const isActive = location.pathname === tab.path;
-          return (
-            <button key={tab.path} onClick={() => navigate(tab.path)}
-              className="relative flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all duration-200 active:scale-90 cursor-pointer border-none bg-transparent">
-              {isActive && <span className="absolute inset-0 bg-[#006972]/10 rounded-2xl" />}
-              <Icon name={tab.icon} size={24} className={`relative z-10 transition-all duration-200 ${isActive ? 'text-[#006972] icon-filled scale-110' : 'text-deep-navy/50'}`} />
-              <span className={`font-label text-[10px] mt-0.5 font-semibold relative z-10 ${isActive ? 'text-[#006972]' : 'text-deep-navy/50'}`}>{tab.label}</span>
-            </button>
-          );
-        })}
-      </nav>
+      <BottomNav />
+
+      {/* ══════════════════════════════════════════════════ */}
+      {/*  FLOATING WHATSAPP BUTTON                         */}
+      {/* ══════════════════════════════════════════════════ */}
+      <button
+        onClick={openWhatsApp}
+        className="fixed bottom-24 right-4 md:bottom-6 md:right-6 z-50 w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#1da851] text-white flex items-center justify-center shadow-lg shadow-[#25D366]/30 transition-all active:scale-90 cursor-pointer border-4 border-white animate-float-y-fast group"
+        title="Chat with us on WhatsApp"
+      >
+        <img src={whatsappIcon} alt="WhatsApp" className="w-7 h-7 brightness-0 invert" />
+        <span className="absolute right-full mr-3 px-3 py-1.5 rounded-xl bg-deep-navy text-white font-label text-[11px] font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
+          Chat on WhatsApp
+        </span>
+      </button>
 
     </div>
   );

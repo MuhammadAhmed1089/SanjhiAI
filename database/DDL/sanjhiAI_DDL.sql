@@ -40,7 +40,9 @@ CREATE TYPE payment_status AS ENUM ('awaiting_confirmation', 'paid', 'overdue');
 
 CREATE TYPE notification_type AS ENUM (
   'join_request', 'join_approved', 'join_rejected', 'payment_received',
-  'payout_released', 'overdue_flag', 'complaint_update'
+  'payout_released', 'overdue_flag', 'complaint_update',
+  'cnic_verified', 'cnic_rejected',
+  'public_toggle_request', 'public_toggle_approved'
 );
 CREATE TYPE notification_channel AS ENUM ('push', 'sms', 'whatsapp', 'in_app');
 
@@ -49,8 +51,9 @@ CREATE TYPE complaint_status AS ENUM ('pending', 'in_review', 'resolved', 'dismi
 CREATE TYPE complaint_priority AS ENUM ('low', 'medium', 'high', 'urgent');
 
 CREATE TYPE admin_action_type AS ENUM (
-  'suspend_user', 'freeze_committee', 'resolve_complaint',
-  'dismiss_complaint', 'view_full_ledger'
+  'SUSPEND_USER', 'FREEZE_COMMITTEE', 'RESOLVE_COMPLAINT',
+  'DISMISS_COMPLAINT', 'VIEW_FULL_LEDGER',
+  'VERIFY_CNIC', 'REJECT_CNIC'
 );
 CREATE TYPE admin_target_type AS ENUM ('user', 'committee', 'complaint');
 
@@ -75,6 +78,17 @@ CREATE TABLE users (
   -- to avoid maintaining two auth paths under deadline.
 
   is_suspended       BOOLEAN NOT NULL DEFAULT FALSE,
+
+  -- CNIC identity verification
+  cnic_number             VARCHAR(15),
+  cnic_front_url          TEXT,
+  cnic_back_url           TEXT,
+  cnic_status             VARCHAR(20) NOT NULL DEFAULT 'unverified'
+                            CHECK (cnic_status IN ('unverified', 'pending', 'verified', 'rejected')),
+  cnic_submitted_at       TIMESTAMPTZ,
+  cnic_verified_at        TIMESTAMPTZ,
+  cnic_rejection_reason   TEXT,
+
   created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
 
@@ -142,11 +156,21 @@ CREATE TABLE committees (
   invite_code           VARCHAR(20) UNIQUE,
   invite_link           VARCHAR(500),
   invite_expires_at     TIMESTAMPTZ,
+
+  -- Public marketplace fields
+  is_public                   BOOLEAN NOT NULL DEFAULT FALSE,
+  category                    VARCHAR(50),
+  description                 TEXT,
+  rules                       TEXT,
+  public_toggle_requested_by  UUID REFERENCES users(id),
+  public_toggle_approved_by   UUID REFERENCES users(id),
+
   created_at            TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_committees_created_by ON committees(created_by);
 CREATE INDEX idx_committees_invite_code ON committees(invite_code);
+CREATE INDEX idx_committees_public_marketplace ON committees(is_public, status, category);
 
 CREATE TABLE collection_accounts (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -332,4 +356,14 @@ CREATE TABLE admin_action_logs (
 );
 
 CREATE INDEX idx_admin_logs_admin_id ON admin_action_logs(admin_id);
+
+-- ============================================================
+-- WhatsApp (Baileys) Auth State — replaces .whatsapp_auth folder
+-- ============================================================
+CREATE TABLE IF NOT EXISTS whatsapp_auth_state (
+  key         TEXT PRIMARY KEY,
+  value       JSONB NOT NULL,
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE INDEX idx_admin_logs_target ON admin_action_logs(target_type, target_id);

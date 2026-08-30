@@ -46,8 +46,8 @@ export async function sendOTP(target, code) {
 async function sendEmailOTP(email, code) {
   try {
     if (!process.env.SMTP_USER) {
-      console.log(`[OTP EMAIL MOCK] SMTP_USER not set. Email code ${code} printed to console for ${email}.`);
-      return { success: true, channel: 'email', mock: true };
+      console.error(`[OTP EMAIL] SMTP_USER not set. Cannot send email OTP to ${email}.`);
+      return { success: false, channel: 'email', error: 'Email service is not configured.' };
     }
 
     const info = await transporter.sendMail({
@@ -72,8 +72,7 @@ async function sendEmailOTP(email, code) {
     return { success: true, channel: 'email', messageId: info.messageId };
   } catch (error) {
     console.error(`❌ [OTP EMAIL FAILED]:`, error.message);
-    // Fallback so application flow does not hard break in local dev without SMTP
-    return { success: true, channel: 'email', fallback: true, error: error.message };
+    return { success: false, channel: 'email', error: error.message };
   }
 }
 
@@ -97,8 +96,8 @@ async function sendSMSOTP(phone, code) {
     return sendWhatsAppOTP(phone, code);
   }
 
-  console.log(`[OTP PHONE/WHATSAPP MOCK] Printed OTP code ${code} for ${phone} in console.`);
-  return { success: true, channel: 'whatsapp', mock: true };
+  console.error(`[OTP PHONE/WHATSAPP] No WhatsApp/SMS gateway configured. Cannot send OTP to ${phone}.`);
+  return { success: false, channel: 'whatsapp', error: 'No WhatsApp or SMS gateway is configured.' };
 }
 
 /**
@@ -127,11 +126,11 @@ async function sendGreenAPIWhatsAppOTP(phone, code) {
       return { success: true, channel: 'whatsapp', idMessage: data.idMessage };
     } else {
       console.error(`❌ [GREEN API WHATSAPP FAILED] Status: ${response.status}`, data);
-      return { success: true, channel: 'whatsapp', fallback: true, error: JSON.stringify(data) };
+      return { success: false, channel: 'whatsapp', error: JSON.stringify(data) };
     }
   } catch (error) {
     console.error(`❌ [GREEN API WHATSAPP ERROR]:`, error.message);
-    return { success: true, channel: 'whatsapp', fallback: true, error: error.message };
+    return { success: false, channel: 'whatsapp', error: error.message };
   }
 }
 
@@ -151,11 +150,11 @@ async function sendWhatsAppOTP(phone, code) {
       return { success: true, channel: 'whatsapp' };
     } else {
       console.error(`❌ [OTP WHATSAPP FAILED] CallMeBot status: ${response.status}`);
-      return { success: true, channel: 'whatsapp', fallback: true };
+      return { success: false, channel: 'whatsapp', error: `CallMeBot returned status ${response.status}` };
     }
   } catch (error) {
     console.error(`❌ [OTP WHATSAPP ERROR]:`, error.message);
-    return { success: true, channel: 'whatsapp', fallback: true, error: error.message };
+    return { success: false, channel: 'whatsapp', error: error.message };
   }
 }
 

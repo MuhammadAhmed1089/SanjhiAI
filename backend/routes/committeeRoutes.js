@@ -24,6 +24,9 @@ import {
   getCyclePayments,
   confirmPayment,
   releasePayout,
+  getPublicCommittees,
+  requestPublicToggle,
+  approvePublicToggle,
 } from '../controller/committeeController.js';
 import { requireAuth } from '../utilities/jwt.js';
 
@@ -37,8 +40,13 @@ router.post('/parse-ai-text', parseCommitteeAIText);
 // Protected routes
 router.post('/', requireAuth, createCommittee);
 router.get('/', requireAuth, getMyCommittees);
+router.get('/public', requireAuth, getPublicCommittees);
 router.get('/:id', requireAuth, getCommittee);
 router.get('/code/:code', getCommitteeByCode);
+
+// Public/private toggle with co-organizer approval
+router.post('/:id/request-public-toggle', requireAuth, requestPublicToggle);
+router.post('/:id/approve-public-toggle', requireAuth, approvePublicToggle);
 router.get('/:id/members/requests', requireAuth, getJoinRequests);
 router.get('/:id/members/search-users', requireAuth, searchUsers);
 router.post('/:id/members/add', requireAuth, addMemberDirectly);

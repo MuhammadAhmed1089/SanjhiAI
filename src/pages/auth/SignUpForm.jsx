@@ -75,7 +75,7 @@ export default function SignUpForm() {
     const target = isPhone ? `${country.dial}${phone}` : email;
 
     try {
-      const response = await sendOTP({ target, purpose: 'signup' });
+      await sendOTP({ target, purpose: 'signup' });
       navigate('/otp', {
         state: {
           target,
@@ -84,7 +84,6 @@ export default function SignUpForm() {
           age: parseInt(age, 10),
           sex: gender,
           password,
-          devCode: response?.devCode,
         },
       });
     } catch (err) {

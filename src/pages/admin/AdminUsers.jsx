@@ -67,6 +67,8 @@ export default function AdminUsers() {
     // Status tab filter
     if (activeFilter === 'ACTIVE') return !u.is_suspended;
     if (activeFilter === 'SUSPENDED') return u.is_suspended;
+    if (activeFilter === 'CNIC_PENDING') return u.cnic_status === 'pending';
+    if (activeFilter === 'CNIC_VERIFIED') return u.cnic_status === 'verified';
 
     // Search query
     if (searchQuery.trim()) {
@@ -75,7 +77,8 @@ export default function AdminUsers() {
         (u.full_name || '').toLowerCase().includes(q) ||
         (u.email || '').toLowerCase().includes(q) ||
         (u.phone_number || '').includes(q) ||
-        (u.id || '').toLowerCase().includes(q)
+        (u.id || '').toLowerCase().includes(q) ||
+        (u.cnic_number || '').includes(q)
       );
     }
     return true;
@@ -213,6 +216,8 @@ export default function AdminUsers() {
               { id: 'ALL', label: 'All Users', count: users.length, icon: 'group' },
               { id: 'ACTIVE', label: 'Active Users', count: users.filter((u) => !u.is_suspended).length, icon: 'check_circle' },
               { id: 'SUSPENDED', label: 'Suspended', count: users.filter((u) => u.is_suspended).length, icon: 'block' },
+              { id: 'CNIC_PENDING', label: 'CNIC Pending', count: users.filter((u) => u.cnic_status === 'pending').length, icon: 'schedule' },
+              { id: 'CNIC_VERIFIED', label: 'CNIC Verified', count: users.filter((u) => u.cnic_status === 'verified').length, icon: 'verified' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -295,6 +300,19 @@ export default function AdminUsers() {
                               }`}>
                                 {isSuspended ? 'Suspended' : 'Active'}
                               </span>
+                              {u.cnic_status === 'verified' ? (
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-label text-[10px] font-bold flex items-center gap-0.5">
+                                  <Icon name="verified" size={12} /> CNIC
+                                </span>
+                              ) : u.cnic_status === 'pending' ? (
+                                <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-label text-[10px] font-bold flex items-center gap-0.5">
+                                  <Icon name="schedule" size={12} /> CNIC Pending
+                                </span>
+                              ) : u.cnic_status === 'rejected' ? (
+                                <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-label text-[10px] font-bold flex items-center gap-0.5">
+                                  <Icon name="error" size={12} /> CNIC Rejected
+                                </span>
+                              ) : null}
                             </div>
 
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-body text-[12px] text-on-surface-variant">
@@ -391,6 +409,22 @@ export default function AdminUsers() {
                 <p className="font-label text-[9px] uppercase font-bold text-on-surface-variant">Member Since</p>
                 <p className="font-body text-[13px] font-semibold text-deep-navy">{selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString() : 'Recently'}</p>
               </div>
+              <div>
+                <p className="font-label text-[9px] uppercase font-bold text-on-surface-variant">CNIC Status</p>
+                <p className={`font-body text-[13px] font-semibold capitalize ${
+                  selectedUser.cnic_status === 'verified' ? 'text-emerald-700' :
+                  selectedUser.cnic_status === 'pending' ? 'text-amber-700' :
+                  selectedUser.cnic_status === 'rejected' ? 'text-rose-700' : 'text-slate-600'
+                }`}>
+                  {selectedUser.cnic_status || 'Unverified'}
+                </p>
+              </div>
+              {selectedUser.cnic_number && (
+                <div className="col-span-2">
+                  <p className="font-label text-[9px] uppercase font-bold text-on-surface-variant">CNIC Number</p>
+                  <p className="font-body text-[13px] font-semibold text-deep-navy">{selectedUser.cnic_number}</p>
+                </div>
+              )}
             </div>
 
             {/* Action Section */}

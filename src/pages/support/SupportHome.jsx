@@ -2,29 +2,42 @@ import { useNavigate } from 'react-router-dom';
 import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
 import BottomNav from '../../components/BottomNav';
+import { useNavDrawer } from '../../context/NavDrawerContext';
 
 export default function SupportHome() {
   const navigate = useNavigate();
+  const { openDrawer } = useNavDrawer();
 
   return (
     <AuthAmbientBackground showTicker={true}>
-      <div className="w-full max-w-lg mx-auto px-3 sm:px-6 py-4 sm:py-8 flex flex-col items-center min-h-[calc(100vh-36px)]">
+      <div className="w-full max-w-lg mx-auto px-3 sm:px-6 py-4 sm:py-8 flex flex-col items-center min-h-[calc(100vh-36px)] pb-28 md:pb-12">
 
         {/* Main Glass Card */}
         <main className="w-full bg-white/85 backdrop-blur-2xl border border-[#006972]/20 shadow-[0_24px_70px_-15px_rgba(0,105,114,0.22),0_0_0_1px_rgba(0,105,114,0.1)] rounded-2xl sm:rounded-3xl p-5 sm:p-8 animate-fade-up relative z-10">
 
           {/* Header */}
-          <header className="w-full flex items-center gap-3 mb-6">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-[#006972]/5 hover:bg-[#006972]/15 border border-[#006972]/15 text-[#006972] transition-colors cursor-pointer active:scale-95"
-            >
-              <Icon name="arrow_back" size={20} />
-            </button>
-            <div>
-              <h1 className="font-headline text-[20px] sm:text-[22px] font-bold text-deep-navy">Support Center</h1>
-              <p className="font-body text-[12px] text-on-surface-variant">How can we help you today?</p>
+          <header className="w-full flex items-center justify-between gap-3 mb-6">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-[#006972]/5 hover:bg-[#006972]/15 border border-[#006972]/15 text-[#006972] transition-colors cursor-pointer active:scale-95"
+                aria-label="Back to Dashboard"
+              >
+                <Icon name="arrow_back" size={20} />
+              </button>
+              <div>
+                <h1 className="font-headline text-[20px] sm:text-[22px] font-bold text-deep-navy">Support Center</h1>
+                <p className="font-body text-[12px] text-on-surface-variant">How can we help you today?</p>
+              </div>
             </div>
+
+            <button
+              onClick={openDrawer}
+              className="md:hidden w-10 h-10 flex items-center justify-center rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/15 text-[#006972] transition-colors active:scale-95 cursor-pointer"
+              aria-label="Open Menu"
+            >
+              <Icon name="menu" size={20} />
+            </button>
           </header>
 
           {/* Action Cards */}

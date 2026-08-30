@@ -3,7 +3,9 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
+import fs from 'fs';
 import { testConnection, query } from './config/db.js';
+import { requireAuth } from './utilities/jwt.js';
 import { initWhatsAppGateway } from './utilities/whatsappGateway.js';
 import authRoutes from './routes/authRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
@@ -248,6 +250,173 @@ async function ensureAdminActionLogsCompat() {
   }
 }
 
+/**
+ * Ensures users table has CNIC verification columns.
+ */
+async function ensureCnicColumns() {
+  const columns = [
+    { name: 'cnic_number', type: 'VARCHAR(15)' },
+    { name: 'cnic_front_url', type: 'TEXT' },
+    { name: 'cnic_back_url', type: 'TEXT' },
+    { name: 'cnic_status', type: "VARCHAR(20) NOT NULL DEFAULT 'unverified'" },
+    { name: 'cnic_submitted_at', type: 'TIMESTAMPTZ' },
+    { name: 'cnic_verified_at', type: 'TIMESTAMPTZ' },
+    { name: 'cnic_rejection_reason', type: 'TEXT' },
+  ];
+
+  for (const col of columns) {
+    try {
+      const check = await query(
+        `SELECT column_name FROM information_schema.columns
+         WHERE table_name = 'users' AND column_name = $1`,
+        [col.name]
+      );
+      if (check.rows.length === 0) {
+        await query(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`);
+        console.log(`\u2705 [Schema] Added ${col.name} column to users table.`);
+      }
+    } catch (err) {
+      console.warn(`\u26a0\ufe0f [Schema] CNIC column check for '${col.name}' failed:`, err.message);
+    }
+  }
+
+  // Add CHECK constraint idempotently if not present
+  try {
+    const constraintCheck = await query(
+      `SELECT constraint_name FROM information_schema.table_constraints
+       WHERE table_name = 'users' AND constraint_name = 'users_cnic_status_check'`
+    );
+    if (constraintCheck.rows.length === 0) {
+      await query(`ALTER TABLE users ADD CONSTRAINT users_cnic_status_check
+        CHECK (cnic_status IN ('unverified', 'pending', 'verified', 'rejected'))`);
+      console.log('\u2705 [Schema] Added cnic_status CHECK constraint.');
+    }
+  } catch (err) {
+    console.warn('\u26a0\ufe0f [Schema] cnic_status CHECK constraint check failed:', err.message);
+  }
+}
+
+/**
+ * Ensures committees table supports public marketplace fields.
+ */
+async function ensurePublicCommitteeColumns() {
+  const columns = [
+    { name: 'is_public', type: 'BOOLEAN NOT NULL DEFAULT FALSE' },
+    { name: 'category', type: 'VARCHAR(50)' },
+    { name: 'description', type: 'TEXT' },
+    { name: 'rules', type: 'TEXT' },
+    { name: 'public_toggle_requested_by', type: 'UUID REFERENCES users(id)' },
+    { name: 'public_toggle_approved_by', type: 'UUID REFERENCES users(id)' },
+  ];
+
+  for (const col of columns) {
+    try {
+      const check = await query(
+        `SELECT column_name FROM information_schema.columns
+         WHERE table_name = 'committees' AND column_name = $1`,
+        [col.name]
+      );
+      if (check.rows.length === 0) {
+        await query(`ALTER TABLE committees ADD COLUMN ${col.name} ${col.type}`);
+        console.log(`\u2705 [Schema] Added ${col.name} column to committees table.`);
+      }
+    } catch (err) {
+      console.warn(`\u26a0\ufe0f [Schema] Public committee column check for '${col.name}' failed:`, err.message);
+    }
+  }
+
+  // Add marketplace index idempotently
+  try {
+    const idxCheck = await query(
+      `SELECT indexname FROM pg_indexes
+       WHERE tablename = 'committees' AND indexname = 'idx_committees_public_marketplace'`
+    );
+    if (idxCheck.rows.length === 0) {
+      await query(`CREATE INDEX idx_committees_public_marketplace
+        ON committees(is_public, status, category)`);
+      console.log('\u2705 [Schema] Added public marketplace index to committees.');
+    }
+  } catch (err) {
+    console.warn('\u26a0\ufe0f [Schema] Public marketplace index check failed:', err.message);
+  }
+}
+
+/**
+ * Ensures notification_type enum includes CNIC-related values.
+ */
+async function ensureCnicNotificationTypes() {
+  const newValues = ['cnic_verified', 'cnic_rejected', 'public_toggle_request', 'public_toggle_approved'];
+  for (const val of newValues) {
+    try {
+      const check = await query(
+        `SELECT 1 FROM pg_enum WHERE enumlabel = $1 AND enumtypid = 'notification_type'::regtype`,
+        [val]
+      );
+      if (check.rows.length === 0) {
+        await query(`ALTER TYPE notification_type ADD VALUE '${val}'`);
+        console.log(`\u2705 [Schema] Added '${val}' to notification_type enum.`);
+      }
+    } catch (err) {
+      console.warn(`\u26a0\ufe0f [Schema] notification_type enum check for '${val}' failed:`, err.message);
+    }
+  }
+}
+
+/**
+ * Ensures admin_action_type enum includes CNIC-related actions.
+ */
+async function ensureAdminActionTypeCnic() {
+  const newValues = ['VERIFY_CNIC', 'REJECT_CNIC'];
+  for (const val of newValues) {
+    try {
+      const check = await query(
+        `SELECT 1 FROM pg_enum WHERE enumlabel = $1 AND enumtypid = 'admin_action_type'::regtype`,
+        [val]
+      );
+      if (check.rows.length === 0) {
+        await query(`ALTER TYPE admin_action_type ADD VALUE '${val}'`);
+        console.log(`\u2705 [Schema] Added '${val}' to admin_action_type enum.`);
+      }
+    } catch (err) {
+      console.warn(`\u26a0\ufe0f [Schema] admin_action_type enum check for '${val}' failed:`, err.message);
+    }
+  }
+}
+
+// Authenticated CNIC image endpoint (do not serve via public /uploads static mount)
+app.get('/api/uploads/cnic/:filename', requireAuth, async (req, res) => {
+  try {
+    const { filename } = req.params;
+    const userId = req.user?.userId;
+    const isAdmin = await query(
+      'SELECT 1 FROM admins WHERE user_id = $1',
+      [userId]
+    );
+
+    if (isAdmin.rows.length === 0) {
+      const ownerCheck = await query(
+        `SELECT 1 FROM users
+         WHERE id = $1 AND (cnic_front_url LIKE $2 OR cnic_back_url LIKE $2)`,
+        [userId, `%/uploads/cnic/${filename}`]
+      );
+      if (ownerCheck.rows.length === 0) {
+        return res.status(403).json({ error: 'Access denied.' });
+      }
+    }
+
+    const filePath = path.join(__dirname, '../public/uploads/cnic', filename);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found.' });
+    }
+
+    res.sendFile(filePath);
+  } catch (err) {
+    console.error('Error serving CNIC image:', err.message);
+    res.status(500).json({ error: 'Failed to serve image.' });
+  }
+});
+
+
 // Health check
 app.get('/', (req, res) => {
   res.json({ message: 'Server is running', status: 'OK' });
@@ -260,6 +429,10 @@ app.listen(PORT, '0.0.0.0', async () => {
   await ensureAiCaseFileColumn(); // ensures ai_case_file column exists
   await ensureComplaintStatusEnum(); // ensures 'ai_resolved' + 'needs_human_review' in enum
   await ensureAdminActionLogsCompat(); // ensures admin_action_logs supports AI agent actions
+  await ensureCnicColumns(); // ensures users table CNIC verification columns
+  await ensurePublicCommitteeColumns(); // ensures committees table public marketplace columns
+  await ensureCnicNotificationTypes(); // ensures 'cnic_verified' + 'cnic_rejected' notification types
+  await ensureAdminActionTypeCnic(); // ensures CNIC admin action types
   await initDefaultAdmin(); // ensures default super admin account exists
   initQueue(processComplaint); // initialize complaint agent queue
   startSweeper(); // start periodic stuck-complaint sweeper

@@ -23,12 +23,11 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      const response = await sendOTP({ target: trimmed, purpose: 'password_reset' });
+      await sendOTP({ target: trimmed, purpose: 'password_reset' });
       navigate('/otp', {
         state: {
           target: trimmed,
           purpose: 'password_reset',
-          devCode: response?.devCode,
         },
       });
     } catch (err) {

@@ -159,3 +159,29 @@ export function getCommitteeProgress(committeeId) {
 export function getCommitteeOrganizers(committeeId) {
   return api.get(`${BASE}/${committeeId}/organizers`);
 }
+
+/**
+ * List public committees in the marketplace.
+ * @param {{ category?: string, search?: string }} params
+ */
+export function getPublicCommittees(params = {}) {
+  const qs = new URLSearchParams(params).toString();
+  return api.get(`${BASE}/public?${qs}`);
+}
+
+/**
+ * Request to toggle a committee between public and private.
+ * If co-organizers exist, this creates a pending approval request.
+ * @param {string} committeeId
+ */
+export function requestPublicToggle(committeeId) {
+  return api.post(`${BASE}/${committeeId}/request-public-toggle`);
+}
+
+/**
+ * Approve a pending public/private toggle request.
+ * @param {string} committeeId
+ */
+export function approvePublicToggle(committeeId) {
+  return api.post(`${BASE}/${committeeId}/approve-public-toggle`);
+}

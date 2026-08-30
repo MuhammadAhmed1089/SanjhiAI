@@ -9,9 +9,11 @@ import { signToken } from '../utilities/jwt.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Ensure uploads directory exists
+// Ensure uploads directories exist
 const UPLOADS_DIR = path.join(__dirname, '../../public/uploads/profile-photos');
+const CNIC_UPLOADS_DIR = path.join(__dirname, '../../public/uploads/cnic');
 fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+fs.mkdirSync(CNIC_UPLOADS_DIR, { recursive: true });
 
 
 const OTP_EXPIRY_MINUTES = 10;
@@ -75,13 +77,17 @@ export async function sendOTPController(req, res) {
     // Trigger Email/SMS dispatch
     const dispatchResult = await sendOTP(parsed.value, rawCode);
 
+    if (!dispatchResult.success) {
+      return res.status(500).json({
+        error: dispatchResult.error || 'Failed to send OTP code. Please try again.',
+      });
+    }
+
     return res.status(200).json({
       message: `OTP sent successfully to ${parsed.value}`,
       target: parsed.value,
       purpose,
       channel: dispatchResult.channel,
-      // For local testing convenience if SMTP/Twilio not configured
-      ...(dispatchResult.mock && { devCode: rawCode }),
     });
   } catch (error) {
     console.error('Error in sendOTPController:', error);
@@ -234,7 +240,9 @@ export async function resendOTPController(req, res) {
 export async function getProfileController(req, res) {
   try {
     const userRes = await query(
-      `SELECT id, full_name, age, sex, profile_photo_url, phone_number, email, created_at
+      `SELECT id, full_name, age, sex, profile_photo_url, phone_number, email, created_at,
+              cnic_number, cnic_front_url, cnic_back_url, cnic_status,
+              cnic_submitted_at, cnic_verified_at, cnic_rejection_reason
        FROM users WHERE id = $1`,
       [req.user.userId]
     );
@@ -314,6 +322,115 @@ export async function uploadProfilePhotoController(req, res) {
   } catch (error) {
     console.error('Error in uploadProfilePhotoController:', error);
     return res.status(500).json({ error: 'Failed to upload profile photo.' });
+  }
+}
+
+/**
+ * Validates Pakistani CNIC format: XXXXX-XXXXXXX-X
+ */
+function isValidCnicFormat(cnic) {
+  return /^\d{5}-\d{7}-\d{1}$/.test(cnic);
+}
+
+async function getAutoVerifyCnicSetting() {
+  try {
+    const result = await query(`SELECT auto_verify_cnic FROM platform_settings WHERE id = 1`);
+    if (result.rows.length > 0) {
+      return result.rows[0].auto_verify_cnic === true;
+    }
+  } catch (err) {
+    // ignore
+  }
+  return true; // default to auto-verify for smoother onboarding
+}
+
+/**
+ * POST /api/auth/cnic/submit
+ * Submits CNIC number + front/back images for verification.
+ */
+export async function submitCnicController(req, res) {
+  try {
+    const { cnic_number } = req.body;
+    const userId = req.user.userId;
+
+    if (!cnic_number || !isValidCnicFormat(cnic_number)) {
+      return res.status(400).json({ error: 'CNIC must be in format XXXXX-XXXXXXX-X' });
+    }
+
+    const files = req.files || {};
+    const frontFile = files.front?.[0];
+    const backFile = files.back?.[0];
+
+    if (!frontFile || !backFile) {
+      return res.status(400).json({ error: 'Both CNIC front and back images are required.' });
+    }
+
+    const frontExt = path.extname(frontFile.originalname).toLowerCase() || '.jpg';
+    const backExt = path.extname(backFile.originalname).toLowerCase() || '.jpg';
+
+    const frontFilename = `${userId}-cnic-front-${Date.now()}${frontExt}`;
+    const backFilename = `${userId}-cnic-back-${Date.now()}${backExt}`;
+
+    fs.writeFileSync(path.join(CNIC_UPLOADS_DIR, frontFilename), frontFile.buffer);
+    fs.writeFileSync(path.join(CNIC_UPLOADS_DIR, backFilename), backFile.buffer);
+
+    const autoVerify = await getAutoVerifyCnicSetting();
+    const status = autoVerify ? 'verified' : 'pending';
+    const now = new Date();
+
+    const updateRes = await query(
+      `UPDATE users
+       SET cnic_number = $1,
+           cnic_front_url = $2,
+           cnic_back_url = $3,
+           cnic_status = $4,
+           cnic_submitted_at = $5,
+           cnic_verified_at = CASE WHEN $4 = 'verified' THEN $5 ELSE NULL END,
+           cnic_rejection_reason = NULL,
+           updated_at = NOW()
+       WHERE id = $6
+       RETURNING cnic_number, cnic_front_url, cnic_back_url, cnic_status, cnic_submitted_at, cnic_verified_at`,
+      [
+        cnic_number,
+        `/uploads/cnic/${frontFilename}`,
+        `/uploads/cnic/${backFilename}`,
+        status,
+        now,
+        userId,
+      ]
+    );
+
+    return res.status(200).json({
+      message: autoVerify ? 'CNIC submitted and auto-verified.' : 'CNIC submitted for review.',
+      cnic: updateRes.rows[0],
+    });
+  } catch (error) {
+    console.error('Error in submitCnicController:', error);
+    return res.status(500).json({ error: 'Failed to submit CNIC.' });
+  }
+}
+
+/**
+ * GET /api/auth/cnic/status
+ * Returns current user's CNIC verification status.
+ */
+export async function getCnicStatusController(req, res) {
+  try {
+    const result = await query(
+      `SELECT cnic_number, cnic_front_url, cnic_back_url, cnic_status,
+              cnic_submitted_at, cnic_verified_at, cnic_rejection_reason
+       FROM users WHERE id = $1`,
+      [req.user.userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    return res.status(200).json({ cnic: result.rows[0] });
+  } catch (error) {
+    console.error('Error in getCnicStatusController:', error);
+    return res.status(500).json({ error: 'Failed to fetch CNIC status.' });
   }
 }
 
@@ -418,12 +535,17 @@ export async function sendContactOTPController(req, res) {
     // Dispatch OTP
     const dispatchResult = await sendOTP(parsed.value, rawCode);
 
+    if (!dispatchResult.success) {
+      return res.status(500).json({
+        error: dispatchResult.error || 'Failed to send OTP code. Please try again.',
+      });
+    }
+
     return res.status(200).json({
       message: `OTP verification code sent to ${parsed.value}`,
       target: parsed.value,
       type: parsed.type,
       channel: dispatchResult.channel,
-      ...(dispatchResult.mock && { devCode: rawCode }),
     });
   } catch (error) {
     console.error('Error in sendContactOTPController:', error);
@@ -590,6 +712,8 @@ export async function getSessionController(req, res) {
   try {
     const userRes = await query(
       `SELECT u.id, u.full_name, u.email, u.phone_number, u.profile_photo_url,
+              u.cnic_number, u.cnic_front_url, u.cnic_back_url, u.cnic_status,
+              u.cnic_submitted_at, u.cnic_verified_at, u.cnic_rejection_reason,
               (a.user_id IS NOT NULL) AS is_admin
        FROM users u
        LEFT JOIN admins a ON a.user_id = u.id

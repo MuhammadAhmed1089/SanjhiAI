@@ -2,6 +2,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { committeeService } from '../../services';
 import AuthAmbientBackground from '../../components/AuthAmbientBackground';
+import CnicVerificationModal from '../../components/CnicVerificationModal';
 import logo from '../../assets/screen.png';
 import Icon from '../../components/Icon';
 
@@ -14,6 +15,7 @@ export default function JoinCommittee() {
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [showCnicModal, setShowCnicModal] = useState(false);
 
   useEffect(() => {
     async function fetchCommittee() {
@@ -45,7 +47,11 @@ export default function JoinCommittee() {
       navigate('/join-request-sent', { state: { committee } });
     } catch (err) {
       console.error('Error joining committee:', err);
-      setSubmitError(err.message || 'Failed to submit join request. Please try again.');
+      if (err.data?.code === 'CNIC_REQUIRED') {
+        setShowCnicModal(true);
+      } else {
+        setSubmitError(err.data?.error || err.message || 'Failed to submit join request. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -166,6 +172,15 @@ export default function JoinCommittee() {
           </p>
         </main>
       </div>
+
+      <CnicVerificationModal
+        isOpen={showCnicModal}
+        onClose={() => setShowCnicModal(false)}
+        onVerified={() => {
+          setShowCnicModal(false);
+          handleJoinRequest();
+        }}
+      />
     </AuthAmbientBackground>
   );
 }

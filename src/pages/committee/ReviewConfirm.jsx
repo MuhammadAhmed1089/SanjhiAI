@@ -59,6 +59,10 @@ export default function ReviewConfirm() {
           contribution_amount: data.contribution,
           capacity: data.capacity,
           interval_type: data.interval,
+          is_public: data.is_public,
+          category: data.category,
+          description: data.description,
+          rules: data.rules,
           collection_account: {
             account_type: data.provider,
             account_title: data.accountTitle,
@@ -175,6 +179,28 @@ export default function ReviewConfirm() {
                 value={data.payoutOrder === 'fixed' ? 'Fixed Sequential Order' : data.payoutOrder}
                 onEdit={() => navigate('/committee/schedule', { state: data })}
               />
+
+              <SummaryRow
+                label="Visibility"
+                value={data.is_public ? `Public Marketplace — ${data.category || 'Uncategorized'}` : 'Private (invite-only)'}
+                onEdit={() => navigate('/committee/create', { state: data })}
+              />
+
+              {data.description && (
+                <SummaryRow
+                  label="Description"
+                  value={data.description}
+                  onEdit={() => navigate('/committee/create', { state: data })}
+                />
+              )}
+
+              {data.rules && (
+                <SummaryRow
+                  label="Rules / Notes"
+                  value={data.rules}
+                  onEdit={() => navigate('/committee/create', { state: data })}
+                />
+              )}
 
               <SummaryRow
                 label="Linked Account"

@@ -142,7 +142,10 @@ export async function getUsers(req, res) {
     let sql = `
       SELECT u.id, u.full_name, u.email, u.phone_number, u.is_suspended, u.created_at,
         COALESCE(ts.score, 85) AS trust_score,
-        true AS cnic_verified,
+        u.cnic_status,
+        u.cnic_number,
+        u.cnic_submitted_at,
+        u.cnic_verified_at,
         (SELECT COUNT(*)::int FROM members m WHERE m.user_id = u.id) AS committees_count
       FROM users u
       LEFT JOIN trust_scores ts ON ts.user_id = u.id
@@ -673,5 +676,108 @@ export async function createAnnouncement(req, res) {
   } catch (error) {
     console.error('Error creating announcement:', error);
     return res.status(500).json({ error: 'Failed to create announcement.' });
+  }
+}
+
+// ─── 9. CNIC VERIFICATION ──────────────────────────────────────
+
+export async function getPendingCnicsController(req, res) {
+  try {
+    const result = await query(
+      `SELECT id, full_name, email, phone_number, cnic_number, cnic_status,
+              cnic_front_url, cnic_back_url, cnic_submitted_at, cnic_rejection_reason
+       FROM users
+       WHERE cnic_status = 'pending'
+       ORDER BY cnic_submitted_at ASC NULLS LAST`
+    );
+    return res.status(200).json({ submissions: result.rows });
+  } catch (error) {
+    console.error('Error fetching pending CNIC submissions:', error);
+    return res.status(500).json({ error: 'Failed to fetch pending CNIC submissions.' });
+  }
+}
+
+export async function verifyCnicController(req, res) {
+  try {
+    const { userId } = req.params;
+    const adminId = req.user?.userId;
+
+    const userRes = await query(
+      `SELECT id, cnic_status FROM users WHERE id = $1`,
+      [userId]
+    );
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    await query(
+      `UPDATE users
+       SET cnic_status = 'verified',
+           cnic_verified_at = NOW(),
+           cnic_rejection_reason = NULL,
+           updated_at = NOW()
+       WHERE id = $1`,
+      [userId]
+    );
+
+    try {
+      await query(
+        `INSERT INTO notifications (user_id, type, title, body, data, is_read, created_at)
+         VALUES ($1, 'cnic_verified', 'CNIC Verified', 'Your CNIC verification has been approved.', '{}', false, NOW())`,
+        [userId]
+      );
+    } catch (notifErr) {
+      console.warn('CNIC verified notification warning:', notifErr.message);
+    }
+
+    await logAdminAction(adminId, 'VERIFY_CNIC', 'user', userId, 'CNIC approved by admin');
+
+    return res.status(200).json({ message: 'CNIC verified successfully.' });
+  } catch (error) {
+    console.error('Error verifying CNIC:', error);
+    return res.status(500).json({ error: 'Failed to verify CNIC.' });
+  }
+}
+
+export async function rejectCnicController(req, res) {
+  try {
+    const { userId } = req.params;
+    const { reason } = req.body;
+    const adminId = req.user?.userId;
+
+    const userRes = await query(
+      `SELECT id, cnic_status FROM users WHERE id = $1`,
+      [userId]
+    );
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    await query(
+      `UPDATE users
+       SET cnic_status = 'rejected',
+           cnic_verified_at = NULL,
+           cnic_rejection_reason = $2,
+           updated_at = NOW()
+       WHERE id = $1`,
+      [userId, reason || 'Submission rejected by admin']
+    );
+
+    try {
+      await query(
+        `INSERT INTO notifications (user_id, type, title, body, data, is_read, created_at)
+         VALUES ($1, 'cnic_rejected', 'CNIC Rejected', 'Your CNIC verification was rejected. Please resubmit a clear photo of your CNIC.', $2, false, NOW())`,
+        [userId, JSON.stringify({ reason: reason || 'Submission rejected by admin' })]
+      );
+    } catch (notifErr) {
+      console.warn('CNIC rejected notification warning:', notifErr.message);
+    }
+
+    await logAdminAction(adminId, 'REJECT_CNIC', 'user', userId, reason || 'CNIC rejected by admin');
+
+    return res.status(200).json({ message: 'CNIC submission rejected.' });
+  } catch (error) {
+    console.error('Error rejecting CNIC:', error);
+    return res.status(500).json({ error: 'Failed to reject CNIC submission.' });
   }
 }

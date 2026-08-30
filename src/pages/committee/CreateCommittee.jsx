@@ -14,6 +14,10 @@ export default function CreateCommittee() {
   const [name, setName] = useState(initialData.name || '');
   const [contribution, setContribution] = useState(initialData.contribution || '5000');
   const [capacity, setCapacity] = useState(initialData.capacity || '10');
+  const [isPublic, setIsPublic] = useState(initialData.is_public || false);
+  const [category, setCategory] = useState(initialData.category || '');
+  const [description, setDescription] = useState(initialData.description || '');
+  const [rules, setRules] = useState(initialData.rules || '');
   const [isParsing, setIsParsing] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
@@ -122,6 +126,10 @@ export default function CreateCommittee() {
         name: name || 'Sanjhi Savings Pool',
         contribution: monthlyContrib,
         capacity: numMembers,
+        is_public: isPublic,
+        category,
+        description,
+        rules,
       },
     });
   }
@@ -296,6 +304,92 @@ export default function CreateCommittee() {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* Public Marketplace Toggle */}
+            <div className="flex items-center justify-between p-4 rounded-xl border border-[#c4c6cc] bg-[#f5f4e8]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#006972]/10 flex items-center justify-center text-[#006972]">
+                  <Icon name="public" size={20} />
+                </div>
+                <div>
+                  <p className="font-label text-[14px] text-deep-navy font-semibold">List on Public Marketplace</p>
+                  <p className="font-body text-[12px] text-on-surface-variant/80">
+                    Anyone can discover and request to join. Requires CNIC verification.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPublic((v) => !v)}
+                className={`relative w-12 h-7 rounded-full transition-colors ${isPublic ? 'bg-[#006972]' : 'bg-[#c4c6cc]'}`}
+                aria-label="Toggle public marketplace"
+              >
+                <span
+                  className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${
+                    isPublic ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Category */}
+            {isPublic && (
+              <div>
+                <label htmlFor="category" className="block font-label text-[14px] text-deep-navy mb-2">
+                  Category
+                </label>
+                <div className="relative flex items-center">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Icon name="category" size={20} className="text-[#006972] ml-1" />
+                  </div>
+                  <select
+                    id="category"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="block w-full pl-12 pr-3 py-3 border border-[#c4c6cc] rounded-xl bg-[#f5f4e8] focus:ring-[#000000] focus:border-[#000000] transition-colors text-deep-navy outline-none appearance-none"
+                  >
+                    <option value="">Select a category</option>
+                    <option value="savings">Savings</option>
+                    <option value="education">Education</option>
+                    <option value="wedding">Wedding</option>
+                    <option value="emergency">Emergency</option>
+                    <option value="business">Business</option>
+                    <option value="travel">Travel</option>
+                    <option value="health">Health</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Description */}
+            <div>
+              <label htmlFor="description" className="block font-label text-[14px] text-deep-navy mb-2">
+                Description
+              </label>
+              <textarea
+                id="description"
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Briefly describe the purpose of this committee…"
+                className="block w-full px-4 py-3 border border-[#c4c6cc] rounded-xl bg-[#f5f4e8] focus:ring-[#000000] focus:border-[#000000] transition-colors text-deep-navy outline-none resize-none"
+              />
+            </div>
+
+            {/* Rules */}
+            <div>
+              <label htmlFor="rules" className="block font-label text-[14px] text-deep-navy mb-2">
+                Rules / Notes
+              </label>
+              <textarea
+                id="rules"
+                rows={2}
+                value={rules}
+                onChange={(e) => setRules(e.target.value)}
+                placeholder="Any specific rules members should know…"
+                className="block w-full px-4 py-3 border border-[#c4c6cc] rounded-xl bg-[#f5f4e8] focus:ring-[#000000] focus:border-[#000000] transition-colors text-deep-navy outline-none resize-none"
+              />
             </div>
           </form>
 

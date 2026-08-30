@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Icon from '../../components/Icon';
+import BottomNav from '../../components/BottomNav';
+import { useNavDrawer } from '../../context/NavDrawerContext';
 import logo from '../../assets/screen.png';
+import aiLogo from '../../assets/sanjhi-ai-logo.png';
 import {
   getProfile,
   updateProfile,
@@ -66,6 +69,7 @@ const PARTICLES = [
 export default function Profile() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { openDrawer } = useNavDrawer();
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -87,7 +91,6 @@ export default function Profile() {
   const [contactCode, setContactCode] = useState('');
   const [sendingOTP, setSendingOTP] = useState(false);
   const [verifyingOTP, setVerifyingOTP] = useState(false);
-  const [devCodeHint, setDevCodeHint] = useState('');
   const [modalError, setModalError] = useState('');
 
   const [notifPrefs, setNotifPrefs] = useState({
@@ -210,7 +213,6 @@ export default function Profile() {
     setAddContactValue('');
     setContactStep('input');
     setContactCode('');
-    setDevCodeHint('');
     setModalError('');
     setShowAddContact(true);
   }
@@ -223,11 +225,7 @@ export default function Profile() {
     try {
       setSendingOTP(true);
       setModalError('');
-      const res = await sendContactOTP({ target: addContactValue.trim() });
-      if (res?.devCode) {
-        setDevCodeHint(res.devCode);
-        setContactCode(res.devCode); // prefill dev code for seamless testing
-      }
+      await sendContactOTP({ target: addContactValue.trim() });
       setContactStep('otp');
       showToast(`Verification OTP sent to ${addContactValue.trim()}`);
     } catch (err) {
@@ -326,9 +324,9 @@ export default function Profile() {
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => navigate('/assistant')}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full bg-[#006972]/10 hover:bg-[#006972]/18 text-[#006972] font-label text-[12px] sm:text-[13px] font-bold border border-[#006972]/20 transition-all active:scale-95 cursor-pointer"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full bg-[#006972]/10 hover:bg-[#006972]/18 text-[#006972] font-label text-[12px] sm:text-[13px] font-bold border border-[#006972]/20 transition-all active:scale-95 cursor-pointer shadow-sm shadow-[#006972]/5"
             >
-              <Icon name="auto_awesome" size={16} className="animate-float-y-fast" />
+              <img src={aiLogo} alt="AI" className="w-5 h-5 rounded-md object-cover animate-float-y-fast shrink-0" />
               <span className="hidden sm:inline">Sanjhi AI</span>
             </button>
             <button
@@ -337,6 +335,16 @@ export default function Profile() {
               title="Log Out"
             >
               <Icon name="logout" size={18} />
+            </button>
+
+            {/* Mobile Menu Drawer Toggle */}
+            <button
+              onClick={openDrawer}
+              className="md:hidden p-2.5 rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer"
+              aria-label="Open Navigation Menu"
+              title="Open Menu"
+            >
+              <Icon name="menu" size={20} />
             </button>
           </div>
         </div>
@@ -863,19 +871,6 @@ export default function Profile() {
                   We've sent a 6-digit verification code to <strong className="text-deep-navy">{addContactValue}</strong>. Enter the code below to complete linking.
                 </p>
 
-                {devCodeHint && (
-                  <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-[12px] font-label font-bold flex items-center justify-between">
-                    <span>🔑 Dev Testing Code: <strong>{devCodeHint}</strong></span>
-                    <button
-                      type="button"
-                      onClick={() => setContactCode(devCodeHint)}
-                      className="text-[#006972] underline bg-transparent border-none cursor-pointer text-[11px]"
-                    >
-                      Use Code
-                    </button>
-                  </div>
-                )}
-
                 <div className="relative">
                   <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#006972]">
                     <Icon name="key" size={18} />
@@ -960,20 +955,7 @@ export default function Profile() {
       )}
 
       {/* ── MOBILE BOTTOM NAV ── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-[#006972]/15 px-1 py-2 flex justify-around items-center safe-area-inset-bottom shadow-[0_-4px_20px_rgba(0,105,114,0.10)]">
-        {navTabs.map((tab) => {
-          const isProfileActive = tab.path === '/profile' && location.pathname === '/profile';
-          const isActive = isProfileActive || (tab.path !== '/profile' && location.pathname.startsWith(tab.path));
-          return (
-            <button key={tab.path} onClick={() => navigate(tab.path)}
-              className="relative flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl transition-all duration-200 active:scale-90 cursor-pointer border-none bg-transparent min-w-0">
-              {tab.path === location.pathname && <span className="absolute inset-0 bg-[#006972]/10 rounded-2xl" />}
-              <Icon name={tab.icon} size={22} className={`relative z-10 transition-all duration-200 ${tab.path === location.pathname ? 'text-[#006972] scale-110' : 'text-deep-navy/45'}`} />
-              <span className={`font-label text-[9px] mt-0.5 font-semibold relative z-10 truncate max-w-[48px] ${tab.path === location.pathname ? 'text-[#006972]' : 'text-deep-navy/45'}`}>{tab.label}</span>
-            </button>
-          );
-        })}
-      </nav>
+      <BottomNav />
 
     </div>
   );

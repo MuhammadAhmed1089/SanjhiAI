@@ -1,0 +1,115 @@
+# Public Committees & CNIC Verification Implementation Plan
+
+Transform **Sanjhi** into a community-driven discovery platform by introducing a **Public Committee Marketplace** (allowing users to explore and join public savings pools) backed by **CNIC Identity Verification** (preventing default/fraud in open committees).
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Compulsory CNIC Enforcement for Public Committees**:
+> Users will be able to browse public committees freely, but **must complete CNIC verification** (CNIC number format `XXXXX-XXXXXXX-X` + uploading Front & Back photos) before submitting a join request for any public committee. Private committees (via invite codes) will remain accessible as usual.
+
+> [!NOTE]
+> **Admin CNIC Approval Workflow**:
+> Submitted CNICs will be stored securely in `public/uploads/cnic/` and reviewed via the Admin Dashboard. Admin approval updates `cnic_status` to `'verified'`. Organizers will see a "CNIC Verified ✅" badge next to applicant names in join requests.
+
+---
+
+## Open Questions
+
+> [!TIP]
+> **Question for User**: Should committee organizers be allowed to convert an existing private committee into a public committee, or should this setting only be chosen during committee creation? *(Default plan allows toggling `is_public` from Committee Settings).*
+
+---
+
+## Proposed Changes
+
+---
+
+### Backend Components
+
+#### [MODIFY] [db.js](file:///d:/hack/sanjhi/backend/config/db.js) / Database Migration
+- Add `is_public` (boolean), `category` (varchar), `description` (text), `rules` (text) to `committees` table.
+- Add `cnic_number` (varchar), `cnic_front_url` (text), `cnic_back_url` (text), `cnic_status` (varchar: `'unverified'`, `'pending'`, `'verified'`, `'rejected'`), `cnic_submitted_at` (timestamptz), `cnic_verified_at` (timestamptz), `cnic_rejection_reason` (text) to `users` table.
+
+#### [MODIFY] [authController.js](file:///d:/hack/sanjhi/backend/controller/authController.js)
+- Add `submitCnicController`: Validates 13-digit Pakistani CNIC format (`^\d{5}-\d{7}-\d{1}$`), saves front and back uploaded image files, sets user `cnic_status = 'pending'`.
+- Add `getCnicStatusController`: Returns user's current CNIC verification state, uploaded document URLs, and any rejection reason.
+
+#### [MODIFY] [adminController.js](file:///d:/hack/sanjhi/backend/controller/adminController.js)
+- Add `getPendingCnicsController`: Fetches list of users awaiting CNIC verification.
+- Add `verifyCnicController`: Admin endpoint to approve (`cnic_status = 'verified'`) or reject (`cnic_status = 'rejected'`, with rejection reason) user CNIC submissions. Sends notification to the user upon status update.
+
+#### [MODIFY] [committeeController.js](file:///d:/hack/sanjhi/backend/controller/committeeController.js)
+- Update `createCommittee`: Support `is_public`, `category`, `description`, `rules` fields.
+- Add `getPublicCommittees`: Public marketplace feed query with category filtering (e.g. *Gadgets, Travel, Emergency, Business, General Savings*), search by name, and pagination/sorting (by spots left, monthly amount).
+- Update `joinByCode` / `requestToJoin`: Check if target committee `is_public === true`. If so, verify that requesting user has `cnic_status === 'verified'`. If unverified or pending, return HTTP 403 with `CNIC_REQUIRED` error code.
+
+#### [MODIFY] [authRoutes.js](file:///d:/hack/sanjhi/backend/routes/authRoutes.js)
+- Add Multer upload middleware (`uploadCnic.fields([{ name: 'front' }, { name: 'back' }])`).
+- Add `POST /api/auth/cnic/submit` and `GET /api/auth/cnic/status`.
+
+#### [MODIFY] [committeeRoutes.js](file:///d:/hack/sanjhi/backend/routes/committeeRoutes.js)
+- Add `GET /api/committees/public` (public list endpoint).
+- Add `PATCH /api/committees/:id/toggle-public` (organizer setting endpoint).
+
+#### [MODIFY] [adminRoutes.js](file:///d:/hack/sanjhi/backend/routes/adminRoutes.js)
+- Add `GET /api/admin/cnic/pending` and `PATCH /api/admin/cnic/:userId/verify`.
+
+---
+
+### Frontend Components
+
+#### [NEW] [PublicCommittees.jsx](file:///d:/hack/sanjhi/src/pages/committee/PublicCommittees.jsx)
+- Social Discovery Marketplace page.
+- Category pills (*All, Tech & Gadgets, Travel, Emergency, Small Business, Savings*).
+- Search bar & filter controls (amount range, interval).
+- Committee cards featuring:
+  - Category badge & Public icon.
+  - Monthly amount & Total payout pool size.
+  - Member capacity bar (*e.g., 8/12 slots filled*).
+  - Organizer profile info & verified status.
+  - "Join Committee" button (triggers CNIC check modal if unverified).
+
+#### [NEW] [CnicVerificationModal.jsx](file:///d:/hack/sanjhi/src/components/CnicVerificationModal.jsx)
+- Interactive modal / drawer for CNIC submission:
+  - Form field for CNIC Number with auto-formatting (`35202-1234567-1`).
+  - File upload inputs for CNIC Front Photo and CNIC Back Photo with live thumbnail previews.
+  - Status display badge (*Unverified / Pending Review / Verified / Rejected*).
+
+#### [NEW] [AdminCnicVerification.jsx](file:///d:/hack/sanjhi/src/pages/admin/AdminCnicVerification.jsx)
+- Admin verification tab:
+  - Grid/Table of users awaiting verification.
+  - High-res image modal viewer to inspect CNIC front & back images alongside user profile info.
+  - Approve & Reject actions with optional rejection notes.
+
+#### [MODIFY] [CreateCommittee.jsx](file:///d:/hack/sanjhi/src/pages/committee/CreateCommittee.jsx)
+- Add "Make Committee Public" toggle switch with helper text explaining CNIC enforcement for public join requests.
+- Category dropdown & description text area.
+
+#### [MODIFY] [CommitteeDetail.jsx](file:///d:/hack/sanjhi/src/pages/committee/CommitteeDetail.jsx)
+- Add "Public Pool" badge & CNIC Verified indicators on applicant join requests.
+
+#### [MODIFY] [App.jsx](file:///d:/hack/sanjhi/src/App.jsx) & [Header.jsx](file:///d:/hack/sanjhi/src/components/common/Header.jsx)
+- Add "Explore Public Pools" link in navigation bar and routing definitions (`/committees/public`).
+
+---
+
+## Verification Plan
+
+### Automated Tests / API Testing
+- Verify table migration runs cleanly on server start.
+- Test `GET /api/committees/public` returns public committees with category filters.
+- Test `POST /api/auth/cnic/submit` with multipart form data (CNIC number + front/back images).
+- Test `POST /api/committees/public/join-request` blocks unverified users (403 Forbidden) and allows verified users (200 OK).
+- Test Admin verification API (`PATCH /api/admin/cnic/:userId/verify`).
+
+### Manual Verification
+- **User Flow**:
+  1. Open Sanjhi web app -> Navigate to **Explore Public Pools**.
+  2. Filter committees by category (*Tech & Gadgets*).
+  3. Click **Join Committee** as an unverified user -> Verify CNIC Verification modal pops up.
+  4. Submit CNIC number & document photos -> Observe status update to "Pending Review".
+  5. Log in as Admin -> Open **Admin CNIC Panel** -> Approve the user's CNIC.
+  6. Return as User -> Click **Join Committee** again -> Verify join request successfully submits to the committee organizer.

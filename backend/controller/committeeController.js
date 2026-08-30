@@ -178,6 +178,10 @@ export async function createCommittee(req, res) {
       accountNumber,
       provider,
       startDate,
+      is_public,
+      category,
+      description,
+      rules,
     } = req.body;
 
     const committeeName = (name || 'New Savings Committee').trim();
@@ -198,6 +202,11 @@ export async function createCommittee(req, res) {
       return res.status(400).json({ error: 'Valid contribution amount (>0) and member capacity (>1) are required.' });
     }
 
+    const isPublic = Boolean(is_public);
+    const cleanCategory = category ? String(category).trim().slice(0, 50) : null;
+    const cleanDescription = description ? String(description).trim() : null;
+    const cleanRules = rules ? String(rules).trim() : null;
+
     const inviteCode = generateInviteCode();
     const inviteLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/join/${inviteCode}`;
 
@@ -205,10 +214,11 @@ export async function createCommittee(req, res) {
 
     const committeeRes = await client.query(
       `INSERT INTO committees (
-        created_by, name, contribution_amount, capacity, interval_type, duration_cycles, payout_order_type, status, invite_code, invite_link
-      ) VALUES ($1, $2, $3, $4, $5, $6, 'fixed', 'active', $7, $8)
+        created_by, name, contribution_amount, capacity, interval_type, duration_cycles, payout_order_type, status, invite_code, invite_link,
+        is_public, category, description, rules
+      ) VALUES ($1, $2, $3, $4, $5, $6, 'fixed', 'active', $7, $8, $9, $10, $11, $12)
       RETURNING *`,
-      [userId, committeeName, amount, cap, normInterval, cap, inviteCode, inviteLink]
+      [userId, committeeName, amount, cap, normInterval, cap, inviteCode, inviteLink, isPublic, cleanCategory, cleanDescription, cleanRules]
     );
 
     const committee = committeeRes.rows[0];
@@ -460,6 +470,36 @@ export async function joinByCode(req, res) {
 
     const committee = committeeRes.rows[0];
 
+    // Prevent users from joining committees they already belong to
+    const existingRoleRes = await query(
+      `SELECT
+         CASE
+           WHEN EXISTS (SELECT 1 FROM organizers o WHERE o.committee_id = $1 AND o.user_id = $2) THEN 'organizer'
+           WHEN EXISTS (SELECT 1 FROM co_organizers co WHERE co.committee_id = $1 AND co.user_id = $2 AND co.demoted_at IS NULL) THEN 'co_organizer'
+           WHEN EXISTS (SELECT 1 FROM members m WHERE m.committee_id = $1 AND m.user_id = $2 AND m.status IN ('approved', 'pending')) THEN 'member'
+           ELSE NULL
+         END AS role`,
+      [committee.id, userId]
+    );
+    if (existingRoleRes.rows[0]?.role) {
+      return res.status(400).json({ error: 'You are already a member of this committee.' });
+    }
+
+    if (committee.is_public) {
+      const userRes = await query(
+        `SELECT cnic_status FROM users WHERE id = $1`,
+        [userId]
+      );
+      const cnicStatus = userRes.rows[0]?.cnic_status || 'unverified';
+      if (cnicStatus !== 'verified') {
+        return res.status(403).json({
+          code: 'CNIC_REQUIRED',
+          error: 'CNIC verification is required to join a public committee.',
+          cnic_status: cnicStatus,
+        });
+      }
+    }
+
     const memberRes = await query(
       `INSERT INTO members (user_id, committee_id, status, joined_at)
        VALUES ($1, $2, 'pending', NOW())
@@ -502,7 +542,7 @@ export async function getJoinRequests(req, res) {
     }
 
     const membersRes = await query(
-      `SELECT m.id, u.full_name, u.profile_photo_url, ts.score
+      `SELECT m.id, u.full_name, u.profile_photo_url, u.cnic_status, ts.score
        FROM members m
        JOIN users u ON u.id = m.user_id
        LEFT JOIN trust_scores ts ON ts.user_id = u.id
@@ -1352,5 +1392,202 @@ export async function removeMember(req, res) {
   } catch (error) {
     console.error('Error removing member:', error);
     return res.status(500).json({ error: 'Failed to remove member.' });
+  }
+}
+
+// ─── PUBLIC COMMITTEE MARKETPLACE ───────────────────────────────
+
+async function hasActiveCoOrganizers(committeeId) {
+  const res = await query(
+    `SELECT 1 FROM co_organizers WHERE committee_id = $1 AND demoted_at IS NULL LIMIT 1`,
+    [committeeId]
+  );
+  return res.rows.length > 0;
+}
+
+async function isOrganizer(committeeId, userId) {
+  const res = await query(
+    `SELECT 1 FROM organizers WHERE committee_id = $1 AND user_id = $2`,
+    [committeeId, userId]
+  );
+  return res.rows.length > 0;
+}
+
+export async function getPublicCommittees(req, res) {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+
+    const { category, search } = req.query;
+    const params = [userId];
+    let sql = `
+      SELECT c.*,
+        u.full_name AS organizer_name,
+        u.cnic_status AS organizer_cnic_status,
+        (SELECT COUNT(*)::int FROM members m2 WHERE m2.committee_id = c.id AND m2.status = 'approved') AS member_count
+      FROM committees c
+      LEFT JOIN users u ON u.id = c.created_by
+      WHERE c.is_public = true AND c.status = 'active'
+        AND NOT EXISTS (
+          SELECT 1 FROM organizers o WHERE o.committee_id = c.id AND o.user_id = $1
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM members m WHERE m.committee_id = c.id AND m.user_id = $1
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM co_organizers co WHERE co.committee_id = c.id AND co.user_id = $1 AND co.demoted_at IS NULL
+        )
+    `;
+
+    if (category) {
+      params.push(category);
+      sql += ` AND c.category = $${params.length}`;
+    }
+
+    if (search) {
+      params.push(`%${search.toLowerCase()}%`);
+      sql += ` AND (LOWER(c.name) LIKE $${params.length} OR LOWER(c.description) LIKE $${params.length} OR LOWER(c.category) LIKE $${params.length})`;
+    }
+
+    sql += ` ORDER BY c.created_at DESC LIMIT 100`;
+
+    const result = await query(sql, params);
+    return res.status(200).json({ committees: result.rows });
+  } catch (error) {
+    console.error('Error fetching public committees:', error);
+    return res.status(500).json({ error: 'Failed to fetch public committees.' });
+  }
+}
+
+export async function requestPublicToggle(req, res) {
+  try {
+    const userId = req.user?.userId;
+    const { id: committeeId } = req.params;
+
+    if (!(await isOrganizer(committeeId, userId))) {
+      return res.status(403).json({ error: 'Only the organizer can request a public/private toggle.' });
+    }
+
+    const commRes = await query(
+      `SELECT is_public FROM committees WHERE id = $1`,
+      [committeeId]
+    );
+    if (commRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Committee not found.' });
+    }
+
+    const committee = commRes.rows[0];
+    const hasCoOrgs = await hasActiveCoOrganizers(committeeId);
+
+    if (!hasCoOrgs) {
+      // No co-organizer: toggle immediately
+      const newValue = !committee.is_public;
+      const result = await query(
+        `UPDATE committees
+         SET is_public = $1,
+             public_toggle_requested_by = NULL,
+             public_toggle_approved_by = NULL,
+             updated_at = NOW()
+         WHERE id = $2
+         RETURNING *`,
+        [newValue, committeeId]
+      );
+      return res.status(200).json({
+        message: `Committee is now ${newValue ? 'public' : 'private'}.`,
+        committee: result.rows[0],
+      });
+    }
+
+    // Co-organizers exist: create a pending toggle request
+    const result = await query(
+      `UPDATE committees
+       SET public_toggle_requested_by = $1,
+           public_toggle_approved_by = NULL,
+           updated_at = NOW()
+       WHERE id = $2
+       RETURNING *`,
+      [userId, committeeId]
+    );
+
+    // Notify co-organizers
+    const coOrgsRes = await query(
+      `SELECT user_id FROM co_organizers WHERE committee_id = $1 AND demoted_at IS NULL`,
+      [committeeId]
+    );
+    for (const co of coOrgsRes.rows) {
+      await createNotification(
+        co.user_id,
+        'public_toggle_request',
+        'in_app',
+        `The organizer requested to make the committee "${committee.name}" ${committee.is_public ? 'private' : 'public'}. Please review.`,
+        committeeId
+      );
+    }
+
+    return res.status(200).json({
+      message: 'Public/private toggle request sent to co-organizers for approval.',
+      committee: result.rows[0],
+    });
+  } catch (error) {
+    console.error('Error requesting public toggle:', error);
+    return res.status(500).json({ error: 'Failed to request public toggle.' });
+  }
+}
+
+export async function approvePublicToggle(req, res) {
+  try {
+    const userId = req.user?.userId;
+    const { id: committeeId } = req.params;
+
+    const role = await getMyRole(committeeId, userId);
+    if (role !== 'organizer' && role !== 'co_organizer') {
+      return res.status(403).json({ error: 'Only management can approve a public toggle request.' });
+    }
+
+    const commRes = await query(
+      `SELECT is_public, public_toggle_requested_by, name FROM committees WHERE id = $1`,
+      [committeeId]
+    );
+    if (commRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Committee not found.' });
+    }
+
+    const committee = commRes.rows[0];
+    if (!committee.public_toggle_requested_by) {
+      return res.status(400).json({ error: 'No pending public toggle request.' });
+    }
+    if (committee.public_toggle_requested_by === userId) {
+      return res.status(400).json({ error: 'You cannot approve your own toggle request.' });
+    }
+
+    const newValue = !committee.is_public;
+    const result = await query(
+      `UPDATE committees
+       SET is_public = $1,
+           public_toggle_approved_by = $2,
+           public_toggle_requested_by = NULL,
+           updated_at = NOW()
+       WHERE id = $3
+       RETURNING *`,
+      [newValue, userId, committeeId]
+    );
+
+    await createNotification(
+      committee.public_toggle_requested_by,
+      'public_toggle_approved',
+      'in_app',
+      `Your request to make "${committee.name}" ${newValue ? 'public' : 'private'} was approved.`,
+      committeeId
+    );
+
+    return res.status(200).json({
+      message: `Toggle approved. Committee is now ${newValue ? 'public' : 'private'}.`,
+      committee: result.rows[0],
+    });
+  } catch (error) {
+    console.error('Error approving public toggle:', error);
+    return res.status(500).json({ error: 'Failed to approve public toggle.' });
   }
 }

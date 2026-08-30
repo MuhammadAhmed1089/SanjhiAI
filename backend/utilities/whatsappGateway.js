@@ -1,47 +1,80 @@
-import makeWASocket, { useMultiFileAuthState, DisconnectReason } from '@whiskeysockets/baileys';
+import makeWASocket, { DisconnectReason } from '@whiskeysockets/baileys';
 import qrcode from 'qrcode-terminal';
 import pino from 'pino';
+import fs from 'fs';
 import path from 'path';
+import { usePostgresAuthState } from './postgresAuthState.js';
 
 let sock = null;
 let isConnected = false;
+let legacyCleanupDone = false;
 
-/**
- * Initialize WhatsApp Web Socket Gateway
- */
+function cleanupOldAuthFolder() {
+  if (legacyCleanupDone) return;
+  legacyCleanupDone = true;
+
+  const authFolder = path.resolve('.whatsapp_auth');
+  if (fs.existsSync(authFolder)) {
+    const count = fs.readdirSync(authFolder).length;
+    if (count > 0) {
+      console.log(`🧹 [WhatsApp Auth] Cleaning up ${count} legacy files from ${authFolder}...`);
+      fs.rmSync(authFolder, { recursive: true, force: true });
+      console.log('✅ [WhatsApp Auth] Legacy auth folder removed. Using PostgreSQL now.');
+    }
+  }
+}
+
 export async function initWhatsAppGateway() {
   try {
-    const authFolder = path.resolve('.whatsapp_auth');
-    const { state, saveCreds } = await useMultiFileAuthState(authFolder);
+    cleanupOldAuthFolder();
+    const { state, saveCreds } = await usePostgresAuthState();
+
+    const hasExistingSession = Boolean(state.creds && state.creds.me && state.creds.me.id);
+    if (hasExistingSession) {
+      console.log('🔑 [WhatsApp Auth] Found existing session in PostgreSQL. Attempting auto-connect...');
+    }
 
     sock = makeWASocket({
       auth: state,
-      logger: pino({ level: 'silent' }),
+      logger: pino({ level: 'error' }),
       printQRInTerminal: false,
     });
 
-    sock.ev.on('creds.update', saveCreds);
+    sock.ev.on('creds.update', async (updatedCreds) => {
+      try {
+        await saveCreds(updatedCreds);
+      } catch (err) {
+        console.error('⚠️ [WhatsApp Auth] Failed to save creds to DB:', err.message);
+      }
+    });
 
     sock.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
         console.log('\n======================================================');
-        console.log('📲 WHATSAPP OTP GATEWAY INITIALIZED');
+        console.log('📲 WHATSAPP OTP GATEWAY — QR CODE REQUIRED');
         console.log('Scan the QR code below with WhatsApp > Linked Devices:');
+        console.log('After scanning, session persists in PostgreSQL.');
+        console.log('No re-scanning needed after restarts or deploys.');
         console.log('======================================================\n');
         qrcode.generate(qr, { small: true });
       }
 
       if (connection === 'close') {
-        const statusCode = lastDisconnect?.error?.output?.statusCode;
-        const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-        console.log(`⚠️ [WHATSAPP GATEWAY] Connection closed (code: ${statusCode}). Reconnecting: ${shouldReconnect}`);
+        const error = lastDisconnect?.error;
+        const statusCode = error?.output?.statusCode;
+        const errorMsg = error?.message || error?.data?.error || 'unknown';
+        const isLoggedOut = statusCode === DisconnectReason.loggedOut;
         isConnected = false;
 
-        if (shouldReconnect) {
-          setTimeout(initWhatsAppGateway, 5000);
+        if (isLoggedOut) {
+          console.log('🚪 [WHATSAPP GATEWAY] Session logged out. Will request new QR code...');
+        } else {
+          console.log(`⚠️ [WHATSAPP GATEWAY] Disconnected (code: ${statusCode}, reason: ${errorMsg}). Reconnecting...`);
         }
+
+        setTimeout(initWhatsAppGateway, 5000);
       } else if (connection === 'open') {
         const rawId = sock?.user?.id || '';
         const phone = rawId.split(':')[0] || rawId.split('@')[0] || 'Unknown';
@@ -51,6 +84,7 @@ export async function initWhatsAppGateway() {
         console.log('🎉 WHATSAPP GATEWAY SUCCESSFULLY CONNECTED!');
         console.log(`📱 Linked Phone Number : +${phone}`);
         console.log(`👤 WhatsApp Account    : ${name}`);
+        console.log('💾 Session saved to PostgreSQL (persists across restarts)');
         console.log('🚀 Ready to send automatic WhatsApp OTPs!');
         console.log('======================================================\n');
         isConnected = true;
@@ -65,12 +99,10 @@ export async function initWhatsAppGateway() {
     });
   } catch (err) {
     console.error('❌ [WHATSAPP GATEWAY INIT ERROR]:', err.message);
+    console.error(err.stack);
   }
 }
 
-/**
- * Get current WhatsApp Gateway connection status
- */
 export function getWhatsAppStatus() {
   const rawId = sock?.user?.id || '';
   const phone = rawId.split(':')[0] || rawId.split('@')[0] || null;
@@ -81,15 +113,10 @@ export function getWhatsAppStatus() {
   };
 }
 
-/**
- * Send WhatsApp OTP message to any phone number
- * @param {string} phone - e.g. +923001234567
- * @param {string} code - 6-digit OTP code
- */
 export async function sendWhatsAppWebOTP(phone, code) {
   if (!sock || !isConnected) {
-    console.log(`[WHATSAPP GATEWAY OFFLINE] WhatsApp not connected yet. Printed OTP code ${code} for ${phone} in console.`);
-    return { success: true, channel: 'whatsapp', mock: true };
+    console.error(`[WHATSAPP GATEWAY OFFLINE] WhatsApp not connected. Cannot send OTP to ${phone}.`);
+    return { success: false, channel: 'whatsapp', error: 'WhatsApp gateway is not connected.' };
   }
 
   try {
@@ -102,6 +129,6 @@ export async function sendWhatsAppWebOTP(phone, code) {
     return { success: true, channel: 'whatsapp' };
   } catch (error) {
     console.error(`❌ [WHATSAPP OTP ERROR]:`, error.message);
-    return { success: true, channel: 'whatsapp', fallback: true, error: error.message };
+    return { success: false, channel: 'whatsapp', error: error.message };
   }
 }

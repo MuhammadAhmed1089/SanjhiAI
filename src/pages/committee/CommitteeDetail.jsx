@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Icon from '../../components/Icon';
 import logo from '../../assets/screen.png';
-import { getCommitteeById } from '../../services/committeeService';
+import { getCommitteeById, requestPublicToggle, approvePublicToggle } from '../../services/committeeService';
 import { getCyclePayments, confirmPayment } from '../../services/paymentService';
 import { memberService } from '../../services';
 
@@ -34,6 +34,7 @@ export default function CommitteeDetail() {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [paymentToVerify, setPaymentToVerify] = useState(null); // { member, payment }
   const [verifying, setVerifying] = useState(false);
+  const [toggleLoading, setToggleLoading] = useState(false);
 
   // Committee State
   const [committee, setCommittee] = useState({
@@ -220,6 +221,34 @@ export default function CommitteeDetail() {
     }
   }
 
+  async function handlePublicToggle() {
+    if (toggleLoading) return;
+    setToggleLoading(true);
+    try {
+      const data = await requestPublicToggle(id || '1');
+      setCommittee((prev) => ({ ...prev, ...data.committee }));
+      showToast(data.message);
+    } catch (err) {
+      showToast(err.data?.error || err.message || 'Failed to toggle visibility.');
+    } finally {
+      setToggleLoading(false);
+    }
+  }
+
+  async function handleApproveToggle() {
+    if (toggleLoading) return;
+    setToggleLoading(true);
+    try {
+      const data = await approvePublicToggle(id || '1');
+      setCommittee((prev) => ({ ...prev, ...data.committee }));
+      showToast(data.message);
+    } catch (err) {
+      showToast(err.data?.error || err.message || 'Failed to approve toggle.');
+    } finally {
+      setToggleLoading(false);
+    }
+  }
+
   const paidCount = cyclePayments.filter((p) => p.status === 'paid').length;
   const selectedCycle = cycles.find((cy) => cy.id === selectedCycleId) || null;
   const totalPoolAmount = committee.contributionAmount * committee.capacity;
@@ -269,6 +298,15 @@ export default function CommitteeDetail() {
                 <span className="px-2 py-0.5 rounded-full bg-[#006972]/10 text-[#006972] font-label text-[10px] font-bold uppercase tracking-wider">
                   {committee.userRole}
                 </span>
+                {committee.is_public ? (
+                  <span className="px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200 font-label text-[10px] font-bold uppercase tracking-wider">
+                    Public
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-label text-[10px] font-bold uppercase tracking-wider">
+                    Private
+                  </span>
+                )}
                 <span className="text-[11px] font-label text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-bold hidden sm:inline">
                   Cycle {selectedCycle?.cycle_number ?? '—'} of {committee.capacity}
                 </span>
@@ -380,6 +418,68 @@ export default function CommitteeDetail() {
 
           </div>
         </section>
+
+        {/* ════════════════════════════════════════════
+            VISIBILITY MANAGEMENT CARD
+        ════════════════════════════════════════════ */}
+        {isManagementRole && (
+          <div className="bg-white rounded-3xl border-2 border-[#006972]/12 shadow-sm p-5 sm:p-6 animate-fade-in">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#006972]/10 text-[#006972] flex items-center justify-center shrink-0">
+                  <Icon name={committee.is_public ? 'public' : 'lock'} size={22} />
+                </div>
+                <div>
+                  <h3 className="font-headline text-[16px] font-bold text-deep-navy">
+                    {committee.is_public ? 'Public Marketplace Listing' : 'Private Committee'}
+                  </h3>
+                  <p className="font-body text-[12px] text-on-surface-variant mt-0.5">
+                    {committee.is_public
+                      ? 'Anyone can discover and request to join. CNIC verification is required.'
+                      : 'Only people with the invite code can join.'}
+                  </p>
+                  {committee.public_toggle_requested_by && (
+                    <p className="font-body text-[12px] text-amber-700 mt-1.5 flex items-center gap-1">
+                      <Icon name="schedule" size={14} />
+                      Pending {committee.is_public ? 'private' : 'public'} toggle request
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {committee.public_toggle_requested_by && committee.myRole !== 'organizer' && (
+                  <button
+                    onClick={handleApproveToggle}
+                    disabled={toggleLoading}
+                    className="px-4 py-2 rounded-xl bg-[#006972] hover:bg-[#00575f] text-white font-label text-[12px] font-bold transition-all shadow-sm cursor-pointer border-none flex items-center gap-1"
+                  >
+                    <Icon name="check" size={16} /> Approve Toggle
+                  </button>
+                )}
+                {(!committee.public_toggle_requested_by || committee.myRole === 'organizer') && (
+                  <button
+                    onClick={handlePublicToggle}
+                    disabled={toggleLoading}
+                    className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-deep-navy font-label text-[12px] font-bold transition-all cursor-pointer border border-slate-200 flex items-center gap-1"
+                  >
+                    {toggleLoading ? (
+                      <>
+                        <span className="w-3.5 h-3.5 rounded-full border-2 border-deep-navy border-t-transparent animate-spin" />
+                        Updating…
+                      </>
+                    ) : (
+                      <>
+                        <Icon name={committee.is_public ? 'visibility_off' : 'public'} size={16} />
+                        {committee.is_public ? 'Make Private' : 'Make Public'}
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ════════════════════════════════════════════
             NAVIGATION TABS (Ledger | Members | Requests* | Rotation)
@@ -615,7 +715,22 @@ export default function CommitteeDetail() {
                         className="w-12 h-12 rounded-full object-cover border border-[#006972]/20 bg-white"
                       />
                       <div>
-                        <p className="font-headline text-[15px] font-bold text-deep-navy">{req.full_name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-headline text-[15px] font-bold text-deep-navy">{req.full_name}</p>
+                          {req.cnic_status === 'verified' ? (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-label text-[10px] font-bold flex items-center gap-0.5">
+                              <Icon name="verified" size={12} /> CNIC
+                            </span>
+                          ) : req.cnic_status === 'pending' ? (
+                            <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-label text-[10px] font-bold flex items-center gap-0.5">
+                              <Icon name="schedule" size={12} /> CNIC Pending
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-label text-[10px] font-bold flex items-center gap-0.5">
+                              <Icon name="error" size={12} /> CNIC Unverified
+                            </span>
+                          )}
+                        </div>
                         <p className="font-body text-[12px] text-on-surface-variant">
                           {req.email || req.phone_number} • Trust Score: <strong className="text-emerald-700">{req.trust_score || 850} pts</strong>
                         </p>

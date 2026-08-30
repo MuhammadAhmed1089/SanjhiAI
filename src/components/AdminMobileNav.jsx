@@ -16,6 +16,7 @@ export default function AdminMobileNav() {
   ];
 
   const secondaryItems = [
+    { label: 'CNIC Verification', icon: 'badge', path: '/admin/cnic-verification', color: 'text-amber-600 bg-amber-50' },
     { label: 'Platform Analytics', icon: 'bar_chart', path: '/admin/analytics', color: 'text-emerald-600 bg-emerald-50' },
     { label: 'Broadcast Alerts', icon: 'campaign', path: '/admin/announcements', color: 'text-indigo-600 bg-indigo-50' },
     { label: 'Audit Log & History', icon: 'history', path: '/admin/activity', color: 'text-[#006972] bg-[#006972]/10' },

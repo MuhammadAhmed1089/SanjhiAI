@@ -126,3 +126,22 @@ export function verifyContactOTP(payload) {
 export function getSession() {
   return api.get(`${BASE}/session`);
 }
+
+/**
+ * Submit CNIC front/back images for verification.
+ * @param {{ cnic_number: string, front: File, back: File }} payload
+ */
+export function submitCnic(payload) {
+  const formData = new FormData();
+  formData.append('cnic_number', payload.cnic_number);
+  formData.append('front', payload.front);
+  formData.append('back', payload.back);
+  return api.upload(`${BASE}/cnic/submit`, formData);
+}
+
+/**
+ * Get current CNIC verification status.
+ */
+export function getCnicStatus() {
+  return api.get(`${BASE}/cnic/status`);
+}

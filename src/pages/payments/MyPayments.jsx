@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
+import BottomNav from '../../components/BottomNav';
+import { useNavDrawer } from '../../context/NavDrawerContext';
 import { getMyPayments } from '../../services/paymentService';
 
 function formatMoney(n) {
@@ -30,6 +32,7 @@ function Bone({ className = '' }) {
 
 export default function MyPayments() {
   const navigate = useNavigate();
+  const { openDrawer } = useNavDrawer();
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [history, setHistory] = useState([]);
@@ -114,24 +117,37 @@ export default function MyPayments() {
       <div className="w-full max-w-2xl mx-auto px-3 sm:px-6 py-4 sm:py-8 flex flex-col min-h-[calc(100vh-36px)] gap-5">
 
         {/* Header */}
-        <header className="w-full flex items-center justify-between">
-          <button
-            onClick={() => navigate(-1)}
-            aria-label="Go back"
-            className="w-11 h-11 flex items-center justify-center rounded-full bg-white/60 hover:bg-white/80 text-[#006972] transition-all cursor-pointer active:scale-90 backdrop-blur-xl border border-white/80 shadow-[0_4px_20px_rgba(0,105,114,0.12)]"
-          >
-            <Icon name="arrow_back" size={20} />
-          </button>
-          <h1 className="font-headline text-[20px] sm:text-[23px] font-bold text-deep-navy tracking-tight">
-            Payments Dashboard
-          </h1>
-          <button
-            onClick={() => navigate('/dashboard')}
-            title="Dashboard"
-            className="w-11 h-11 flex items-center justify-center rounded-full bg-white/60 hover:bg-white/80 text-[#006972] transition-all cursor-pointer active:scale-90 backdrop-blur-xl border border-white/80 shadow-sm"
-          >
-            <Icon name="dashboard" size={20} />
-          </button>
+        <header className="w-full flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(-1)}
+              aria-label="Go back"
+              className="w-11 h-11 flex items-center justify-center rounded-full bg-white/60 hover:bg-white/80 text-[#006972] transition-all cursor-pointer active:scale-90 backdrop-blur-xl border border-white/80 shadow-[0_4px_20px_rgba(0,105,114,0.12)]"
+            >
+              <Icon name="arrow_back" size={20} />
+            </button>
+            <h1 className="font-headline text-[20px] sm:text-[23px] font-bold text-deep-navy tracking-tight">
+              Payments Dashboard
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/dashboard')}
+              title="Dashboard"
+              className="w-11 h-11 flex items-center justify-center rounded-full bg-white/60 hover:bg-white/80 text-[#006972] transition-all cursor-pointer active:scale-90 backdrop-blur-xl border border-white/80 shadow-[0_4px_20px_rgba(0,105,114,0.12)]"
+            >
+              <Icon name="home" size={20} />
+            </button>
+            <button
+              onClick={openDrawer}
+              aria-label="Open Menu"
+              title="Open Navigation Drawer"
+              className="md:hidden w-11 h-11 flex items-center justify-center rounded-full bg-white/60 hover:bg-white/80 text-[#006972] transition-all cursor-pointer active:scale-90 backdrop-blur-xl border border-white/80 shadow-[0_4px_20px_rgba(0,105,114,0.12)]"
+            >
+              <Icon name="menu" size={20} />
+            </button>
+          </div>
         </header>
 
         {loading ? (
@@ -477,6 +493,7 @@ export default function MyPayments() {
         )}
 
       </div>
+      <BottomNav />
     </AuthAmbientBackground>
   );
 }

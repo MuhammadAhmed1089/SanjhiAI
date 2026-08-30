@@ -43,12 +43,11 @@ export default function LoginForm() {
     setLoading(true);
 
     try {
-      const response = await sendOTP({ target: targetEmail.trim(), purpose: 'login' });
+      await sendOTP({ target: targetEmail.trim(), purpose: 'login' });
       navigate('/otp', {
         state: {
           target: targetEmail.trim(),
           purpose: 'login',
-          devCode: response?.devCode,
         },
       });
     } catch (err) {

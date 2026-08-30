@@ -1,9 +1,8 @@
-import fs from 'fs';
-import path from 'path';
 import { getSession, refreshTTL, deleteSession, checkRateLimit } from './sessionManager.js';
 import { handleAuthFlow, isAuthState } from './authFlow.js';
 import { runAgent } from './agent.js';
 import { transcribeVoiceNote } from './stt.js';
+import { resolveLidFromDb } from '../utilities/postgresAuthState.js';
 
 const SESSION_EXPIRED_MSG = `⏰ آپ کا سیشن ختم ہو گیا۔
 Your session has expired.
@@ -22,19 +21,15 @@ Your session has been ended.
 _Send any message to start again / دوبارہ شروع کرنے کے لیے کوئی بھی پیغام بھیجیں_`;
 
 const lidCache = new Map();
-const AUTH_DIR = path.resolve('.whatsapp_auth');
 
-function resolveLidToPhone(lidNumber) {
+async function resolveLidToPhone(lidNumber) {
   if (lidCache.has(lidNumber)) return lidCache.get(lidNumber);
 
-  const mappingFile = path.join(AUTH_DIR, `lid-mapping-${lidNumber}_reverse.json`);
   try {
-    if (fs.existsSync(mappingFile)) {
-      const phone = JSON.parse(fs.readFileSync(mappingFile, 'utf-8'));
-      if (phone) {
-        lidCache.set(lidNumber, phone);
-        return phone;
-      }
+    const phone = await resolveLidFromDb(lidNumber);
+    if (phone) {
+      lidCache.set(lidNumber, phone);
+      return phone;
     }
   } catch (err) {
     console.error(`[Bot] LID resolution failed for ${lidNumber}:`, err.message);
@@ -43,12 +38,12 @@ function resolveLidToPhone(lidNumber) {
   return null;
 }
 
-function extractPhone(jid) {
+async function extractPhone(jid) {
   const raw = jid.split(':')[0].split('@')[0];
   const server = jid.split('@')[1];
 
   if (server === 'lid') {
-    const phone = resolveLidToPhone(raw);
+    const phone = await resolveLidToPhone(raw);
     if (phone) return phone.replace(/[^\d]/g, '');
     console.warn(`[Bot] Could not resolve LID JID: ${jid}`);
     return null;
@@ -89,7 +84,7 @@ export async function routeMessage(sock, msg) {
   const msgTimestamp = msg.messageTimestamp;
   if (msgTimestamp && (Date.now() / 1000 - Number(msgTimestamp)) > 30) return;
 
-  const phone = extractPhone(jid);
+  const phone = await extractPhone(jid);
   if (!phone || phone.length < 10) return;
 
   const allowed = await checkRateLimit(phone);

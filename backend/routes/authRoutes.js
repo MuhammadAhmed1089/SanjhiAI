@@ -10,6 +10,8 @@ import {
   getSessionController,
   logoutController,
   uploadProfilePhotoController,
+  submitCnicController,
+  getCnicStatusController,
   getNotificationPrefsController,
   updateNotificationPrefsController,
   sendContactOTPController,
@@ -30,6 +32,19 @@ const upload = multer({
       cb(null, true);
     } else {
       cb(new Error('Only JPEG, PNG, WebP, or GIF images are allowed.'));
+    }
+  },
+});
+
+const uploadCnic = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JPEG, PNG, or WebP images are allowed for CNIC.'));
     }
   },
 });
@@ -58,6 +73,18 @@ router.post('/contact/verify-otp', requireAuth, verifyContactOTPController);
 
 // Profile photo upload
 router.post('/profile/photo', requireAuth, upload.single('photo'), uploadProfilePhotoController);
+
+// CNIC verification
+router.post(
+  '/cnic/submit',
+  requireAuth,
+  uploadCnic.fields([
+    { name: 'front', maxCount: 1 },
+    { name: 'back', maxCount: 1 },
+  ]),
+  submitCnicController
+);
+router.get('/cnic/status', requireAuth, getCnicStatusController);
 
 // Notification preferences
 router.get('/notification-preferences', requireAuth, getNotificationPrefsController);

@@ -9,7 +9,7 @@ export default function OTPVerification() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { target = '', purpose = 'signup', fullName, age, sex, password, devCode } = location.state || {};
+  const { target = '', purpose = 'signup', fullName, age, sex, password } = location.state || {};
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timeLeft, setTimeLeft] = useState(59);
@@ -59,9 +59,9 @@ export default function OTPVerification() {
   const handleResend = async () => {
     try {
       setErrorMessage('');
-      const res = await resendOTP({ target, purpose });
+      await resendOTP({ target, purpose });
       setTimeLeft(59);
-      setResendStatus(res?.devCode ? `Code resent (Dev: ${res.devCode})` : 'New verification code sent!');
+      setResendStatus('New verification code sent!');
     } catch (err) {
       console.error('Resend OTP error:', err);
       setErrorMessage(err.message || 'Failed to resend verification code');
@@ -145,13 +145,6 @@ export default function OTPVerification() {
             <p className="font-body text-[14px] text-on-surface-variant max-w-xs">
               Enter the 6-digit code sent to <span className="font-bold text-deep-navy">{target}</span>
             </p>
-
-            {devCode && (
-              <div className="mt-3 px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-800 text-[12px] font-mono flex items-center gap-1.5">
-                <Icon name="terminal" size={14} className="text-amber-600" />
-                Dev Code: <strong className="text-amber-900 font-bold">{devCode}</strong>
-              </div>
-            )}
 
             {resendStatus && (
               <div className="mt-2 text-emerald-600 text-[13px] font-semibold flex items-center gap-1 animate-fade-in">

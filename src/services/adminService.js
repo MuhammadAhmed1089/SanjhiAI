@@ -179,3 +179,29 @@ export function getAnnouncements() {
 export function createAnnouncement(payload) {
   return api.post(`${BASE}/announcements`, payload);
 }
+
+// ─── CNIC Verification ───────────────────────────────────────
+
+/**
+ * List pending CNIC verification submissions.
+ */
+export function getPendingCnics() {
+  return api.get(`${BASE}/cnic/pending`);
+}
+
+/**
+ * Approve a user's CNIC verification.
+ * @param {string} userId
+ */
+export function approveCnic(userId) {
+  return api.post(`${BASE}/cnic/${userId}/verify`);
+}
+
+/**
+ * Reject a user's CNIC verification submission.
+ * @param {string} userId
+ * @param {{ reason?: string }} payload
+ */
+export function rejectCnic(userId, payload = {}) {
+  return api.post(`${BASE}/cnic/${userId}/reject`, payload);
+}

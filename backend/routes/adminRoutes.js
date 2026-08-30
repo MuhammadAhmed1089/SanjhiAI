@@ -19,6 +19,9 @@ import {
   updatePlatformSettings,
   getAnnouncements,
   createAnnouncement,
+  getPendingCnicsController,
+  verifyCnicController,
+  rejectCnicController,
 } from '../controller/adminController.js';
 import { requireAdmin } from '../utilities/jwt.js';
 
@@ -58,5 +61,10 @@ router.put('/settings', requireAdmin, updatePlatformSettings);
 // Announcements / Broadcasts
 router.get('/announcements', requireAdmin, getAnnouncements);
 router.post('/announcements', requireAdmin, createAnnouncement);
+
+// CNIC Verification
+router.get('/cnic/pending', requireAdmin, getPendingCnicsController);
+router.post('/cnic/:userId/verify', requireAdmin, verifyCnicController);
+router.post('/cnic/:userId/reject', requireAdmin, rejectCnicController);
 
 export default router;
