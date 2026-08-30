@@ -22,7 +22,7 @@ export async function initWhatsAppGateway() {
 
     sock.ev.on('creds.update', saveCreds);
 
-    sock.ev.on('connection.update', (update) => {
+    sock.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
@@ -54,6 +54,13 @@ export async function initWhatsAppGateway() {
         console.log('🚀 Ready to send automatic WhatsApp OTPs!');
         console.log('======================================================\n');
         isConnected = true;
+
+        try {
+          const { registerBotListener } = await import('../bot/index.js');
+          registerBotListener(sock);
+        } catch (botErr) {
+          console.error('⚠️ [Bot] Failed to register bot listener:', botErr.message);
+        }
       }
     });
   } catch (err) {

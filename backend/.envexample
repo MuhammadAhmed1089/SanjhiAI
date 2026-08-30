@@ -5,3 +5,6 @@ DB_USER=postgres
 DB_PASSWORD=yourpassword
 DB_NAME=mydb
 DATABASE_URL=postgresql://postgres:huzaifa7830@db.cgpgsdulzwtxdqgydcvi.supabase.co:5432/postgres
+REDIS_URL=redis://localhost:6379
+BOT_SESSION_TTL_HOURS=24
+BOT_OTP_TIMEOUT_MINUTES=10
