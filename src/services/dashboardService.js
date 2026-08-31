@@ -25,3 +25,12 @@ export function getDashboardOverview() {
 export function getRecentActivities() {
   return api.get('/activities');
 }
+
+/**
+ * Fetch the authenticated user's full trust score breakdown:
+ * component points (base / reliability / completion / verification / penalties),
+ * recent score events, and the disclosed formula. Recomputed live server-side.
+ */
+export function getTrustScoreBreakdown() {
+  return api.get(`${BASE}/trust-score`);
+}

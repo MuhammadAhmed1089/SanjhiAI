@@ -19,6 +19,8 @@ import complaintRoutes from './routes/complaintRoutes.js';
 import { initQueue } from './utilities/complaintAgent/queue.js';
 import { startSweeper } from './utilities/complaintAgent/sweeper.js';
 import { processComplaint } from './utilities/complaintAgent/index.js';
+import { ensureAssistantTables, seedDefaultKbDocs } from './assistant/schema.js';
+import { ensureTrustScoreTables, backfillTrustEvents } from './utilities/trustScore.js';
 
 dotenv.config();
 
@@ -433,6 +435,10 @@ app.listen(PORT, '0.0.0.0', async () => {
   await ensurePublicCommitteeColumns(); // ensures committees table public marketplace columns
   await ensureCnicNotificationTypes(); // ensures 'cnic_verified' + 'cnic_rejected' notification types
   await ensureAdminActionTypeCnic(); // ensures CNIC admin action types
+  await ensureAssistantTables(); // QA assistant tables (KB docs + chat memory)
+  await seedDefaultKbDocs(); // idempotent seed of default knowledge-base docs
+  await ensureTrustScoreTables(); // trust score event log
+  await backfillTrustEvents(); // derive events from historical data (idempotent)
   await initDefaultAdmin(); // ensures default super admin account exists
   initQueue(processComplaint); // initialize complaint agent queue
   startSweeper(); // start periodic stuck-complaint sweeper

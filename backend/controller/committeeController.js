@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { createNotification } from './notificationController.js';
+import { onPaymentConfirmed, onCycleClosed, onCommitteeClosed, onMemberRemoved } from '../utilities/trustScore.js';
 
 /**
  * Resolve the requesting user's role within a committee.
@@ -869,6 +870,11 @@ export async function updateCommitteeStatus(req, res) {
       return res.status(404).json({ error: 'Committee not found.' });
     }
 
+    // Trust Score: completion events for all approved members
+    if (status === 'closed') {
+      onCommitteeClosed(committeeId);
+    }
+
     return res.status(200).json({ message: `Committee status set to ${status}.`, committee: updateRes.rows[0] });
   } catch (error) {
     console.error('Error updating committee status:', error);
@@ -1222,6 +1228,9 @@ export async function confirmPayment(req, res) {
       );
     }
 
+    // Trust Score: record on-time/late payment event (idempotent)
+    onPaymentConfirmed(payment, committeeId);
+
     return res.status(200).json({ message: 'Payment verified!', payment });
   } catch (error) {
     console.error('Error confirming payment:', error);
@@ -1285,6 +1294,9 @@ export async function releasePayout(req, res) {
        RETURNING *`,
       [cycleId]
     );
+
+    // Trust Score: flag any participant who closed the cycle unpaid
+    onCycleClosed(cycleId, committeeId);
 
     // Rotate: assign the next member in payout order to the next collecting cycle
     const nextCycleRes = await query(
@@ -1384,6 +1396,9 @@ export async function removeMember(req, res) {
        RETURNING *`,
       [memberId, committeeId]
     );
+
+    // Trust Score: dropout event only if the member had missed payments
+    onMemberRemoved(member.user_id, committeeId);
 
     return res.status(200).json({
       message: isSelf ? 'You have left the committee.' : `${member.full_name} removed from the committee.`,

@@ -277,7 +277,9 @@ CREATE INDEX idx_payments_user_id ON payments(user_id);
 
 CREATE TABLE trust_scores (
   user_id                       UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-  score                         DECIMAL(5,2) NOT NULL DEFAULT 0,
+  -- Cached output of the Trust Score model (0-1000). New users start at 850.
+  -- Source of truth is the append-only trust_score_events table (below).
+  score                         DECIMAL(5,2) NOT NULL DEFAULT 850,
   on_time_rate                  DECIMAL(5,4) NOT NULL DEFAULT 0,
   completed_committees_count    INT NOT NULL DEFAULT 0,
   last_calculated_at            TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -297,6 +299,29 @@ CREATE TABLE risk_flags (
 );
 
 CREATE INDEX idx_risk_flags_user_id ON risk_flags(user_id);
+
+-- Append-only event log behind the Trust Score model (FR-TRUST-01).
+-- The cached trust_scores.score is a pure function of these events:
+--   Score = clamp(0,1000, 250 + 550·R + 150·C + 50·V + P)
+-- R = decayed on-time quality (90-day half-life, Bayesian prior),
+-- C = completion vs dropout (180-day half-life), V = verification,
+-- P = resolved-complaint penalties (decayed, capped at -400).
+CREATE TABLE trust_score_events (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id        UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  event_type     TEXT NOT NULL CHECK (event_type IN (
+    'payment_on_time','payment_late','payment_missed',
+    'committee_completed','committee_dropout',
+    'complaint_penalty','verification')),
+  value          DECIMAL(4,3) NOT NULL,          -- 0..1 for payment/completion; -1 for penalty
+  half_life_days INT NOT NULL,                   -- decay horizon for this event type
+  reference_id   TEXT NOT NULL,                  -- payment_id / committee_id / 'cycleId:userId'
+  detail         JSONB,                          -- days_late, interval_days, committee_name, ...
+  occurred_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (event_type, reference_id)              -- idempotent recording (safe hook retries)
+);
+
+CREATE INDEX idx_tse_user ON trust_score_events(user_id, occurred_at);
 
 -- ------------------------------------------------------------
 -- NOTIFICATIONS
@@ -367,3 +392,71 @@ CREATE TABLE IF NOT EXISTS whatsapp_auth_state (
 );
 
 CREATE INDEX idx_admin_logs_target ON admin_action_logs(target_type, target_id);
+
+-- ============================================================
+-- SANJHI AI — QA ASSISTANT (knowledge base + chat memory)
+-- ============================================================
+
+-- Curated knowledge documents the assistant answers from.
+-- keywords include Roman Urdu variants so FTS-style matching
+-- works for bilingual queries without a vector store.
+
+-- Immutable wrapper: to_tsvector with a text config is STABLE, and
+-- array_to_string is STABLE too, so neither can appear directly in a
+-- generated column. plpgsql hides the STABLE calls (bodies aren't
+-- re-checked) and isn't inlined like SQL-language functions.
+DROP FUNCTION IF EXISTS sanjhi_kb_tsvector(text, text, text);
+DROP FUNCTION IF EXISTS sanjhi_kb_tsvector(text, text, text[]);
+CREATE FUNCTION sanjhi_kb_tsvector(p_title text, p_content text, p_keywords text[])
+RETURNS tsvector LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE AS $$
+BEGIN
+  RETURN to_tsvector('english', coalesce(p_title,'') || ' ' || coalesce(p_content,'') || ' ' || coalesce(array_to_string(p_keywords,' '),''));
+END
+$$;
+
+CREATE TABLE assistant_kb_docs (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title         TEXT NOT NULL,
+  category      TEXT NOT NULL,          -- committees | payments | trust_score | payouts | complaints | account | general
+  content       TEXT NOT NULL,
+  keywords      TEXT[] NOT NULL DEFAULT '{}',
+  priority      INTEGER NOT NULL DEFAULT 0,  -- manual ranking boost
+  is_active     BOOLEAN NOT NULL DEFAULT TRUE,
+  created_by    UUID REFERENCES users(id),
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  search_vector tsvector GENERATED ALWAYS AS (
+    sanjhi_kb_tsvector(title, content, keywords)
+  ) STORED
+);
+
+CREATE UNIQUE INDEX uq_kb_docs_title ON assistant_kb_docs(title);
+CREATE INDEX idx_kb_search   ON assistant_kb_docs USING GIN (search_vector);
+CREATE INDEX idx_kb_category ON assistant_kb_docs(category) WHERE is_active;
+
+-- Chat threads (multi-conversation memory)
+CREATE TABLE assistant_conversations (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title           TEXT,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_message_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_assistant_conv_user ON assistant_conversations(user_id, last_message_at DESC);
+
+-- Individual chat messages. retrieved_doc_ids = provenance for
+-- citations + analytics (empty array = grounded generation found
+-- nothing = "unanswered"; NULL = canned/non-grounded reply).
+CREATE TABLE assistant_messages (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id   UUID NOT NULL REFERENCES assistant_conversations(id) ON DELETE CASCADE,
+  role              TEXT NOT NULL CHECK (role IN ('user','assistant')),
+  content           TEXT NOT NULL,
+  retrieved_doc_ids UUID[] DEFAULT '{}',
+  feedback          SMALLINT CHECK (feedback IN (1,-1)),
+  latency_ms        INTEGER,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_assistant_msgs_conv ON assistant_messages(conversation_id, created_at);

@@ -4,6 +4,7 @@ import Icon from '../../components/Icon';
 import aiLogo from '../../assets/sanjhi-ai-logo.png';
 import whatsappIcon from '../../assets/whatsapp-icon.svg';
 import chatbotIcon from '../../assets/chatbot-icon.svg';
+import { assistantService } from '../../services';
 
 const WHATSAPP_NUMBER = '923411713517';
 
@@ -31,97 +32,37 @@ const HOW_TO_USE_STEPS = [
   },
 ];
 
-/* ── Suggested Prompt Cards ── */
-const SUGGESTED_PROMPTS = [
-  {
-    icon: 'groups',
-    title: 'Create a Committee',
-    prompt: 'How do I create a new committee savings pool on Sanjhi?',
-    color: 'bg-[#006972]/10 text-[#006972] border-[#006972]/20',
-  },
-  {
-    icon: 'shield_with_heart',
-    title: 'Check Trust Score',
-    prompt: 'How is my Community Trust Score calculated and how can I increase it?',
-    color: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20',
-  },
-  {
-    icon: 'payments',
-    title: 'Payment Methods',
-    prompt: 'What payment methods like JazzCash or Bank transfer are supported for monthly dues?',
-    color: 'bg-amber-500/10 text-amber-800 border-amber-500/20',
-  },
-  {
-    icon: 'event_available',
-    title: 'Payout Turn Schedule',
-    prompt: 'When will I receive my committee payout turn and how are turns assigned?',
-    color: 'bg-purple-500/10 text-purple-700 border-purple-500/20',
-  },
+/* ── Dynamic topic card visuals (topics come from the knowledge base) ── */
+const TOPIC_COLORS = [
+  'bg-[#006972]/10 text-[#006972] border-[#006972]/20',
+  'bg-emerald-500/10 text-emerald-700 border-emerald-500/20',
+  'bg-amber-500/10 text-amber-800 border-amber-500/20',
+  'bg-purple-500/10 text-purple-700 border-purple-500/20',
 ];
 
-/* ── Predefined Frontend Knowledge Base Responses ── */
-const KNOWLEDGE_BASE = [
-  {
-    keywords: ['create', 'committee', 'pool', 'start', 'organize'],
-    response: `To create a committee pool on Sanjhi:
+const CATEGORY_ICONS = {
+  committees: 'groups',
+  payments: 'payments',
+  trust_score: 'shield_with_heart',
+  payouts: 'event_available',
+  complaints: 'report',
+  account: 'person',
+  general: 'lightbulb',
+};
 
-1. Click **Create Committee** on your Dashboard.
-2. Enter a pool name (e.g. *Monthly Family Savings*).
-3. Set the monthly/bi-weekly contribution amount (e.g. PKR 5,000).
-4. Define the capacity (number of members) and interval.
-5. Share your unique **Invite Code** with trusted friends or family!`,
-  },
-  {
-    keywords: ['trust', 'score', 'increase', 'calculate', 'reliability'],
-    response: `Your **Community Trust Score** starts at **850 points**!
+function nowTime() {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
 
-Here is how you can boost your rating:
-• **On-time Payments (+15 pts per cycle)**: Submit your dues before the deadline.
-• **Completed Pools (+50 pts)**: Successfully finish full committee cycles without delays.
-• **Identity Verification (+30 pts)**: Verify your phone number and email address in Profile settings.`,
-  },
-  {
-    keywords: ['payment', 'jazzcash', 'easypaisa', 'bank', 'due', 'pay'],
-    response: `Sanjhi supports multiple payment methods across Pakistan:
-• **JazzCash Mobile Wallet**
-• **EasyPaisa Mobile Wallet**
-• **Direct Bank Transfer (IBAN)**
-
-All payment receipts are verified on our PostgreSQL ledger for 100% transparency!`,
-  },
-  {
-    keywords: ['payout', 'turn', 'schedule', 'receive', 'money'],
-    response: `Payout turns are assigned fairly when a committee starts:
-• **Fixed Order**: Members get assigned turn #1, #2, #3 based on initial setup.
-• **Automatic Reminders**: Sanjhi AI alerts you 3 days before your turn payout is due to be released to your linked account!`,
-  },
-  {
-    keywords: ['complaint', 'dispute', 'fraud', 'issue', 'help', 'support'],
-    response: `If you have an issue or payment dispute:
-• Visit the **Support** section from the bottom navigation bar.
-• Click **File a Complaint** to submit details directly to our admin team.
-• Our AI triage system prioritizes urgent financial queries within 2 hours!`,
-  },
-  {
-    keywords: ['whatsapp', 'chat', 'message', 'contact', 'number'],
-    response: `You can reach our support team directly on **WhatsApp**!
-
-• Tap the green **WhatsApp button** at the bottom-right corner of this screen.
-• Or message us at **+92 341 1713517** for instant assistance.
-• Our team typically responds within minutes during business hours (9 AM – 9 PM PKT).`,
-  },
-];
+function welcomeMessage(text) {
+  return { id: `welcome-${Date.now()}`, sender: 'ai', text, time: nowTime() };
+}
 
 export default function Assistant() {
   const navigate = useNavigate();
 
   const [messages, setMessages] = useState([
-    {
-      id: 'welcome-1',
-      sender: 'ai',
-      text: "Hello! I'm **Sanjhi AI**, your personal savings & committee assistant. How can I help you manage your pools or payments today?",
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    },
+    welcomeMessage("Hello! I'm **Sanjhi AI**, your personal savings & committee assistant. How can I help you manage your pools or payments today?"),
   ]);
 
   const [inputText, setInputText] = useState('');
@@ -129,6 +70,10 @@ export default function Assistant() {
   const [isListening, setIsListening] = useState(false);
   const [speakingMessageId, setSpeakingMessageId] = useState(null);
   const [showGuide, setShowGuide] = useState(false);
+  const [topics, setTopics] = useState([]);
+  const [conversations, setConversations] = useState([]);
+  const [activeConversationId, setActiveConversationId] = useState(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -136,6 +81,20 @@ export default function Assistant() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
+
+  useEffect(() => {
+    assistantService.getTopics()
+      .then((data) => setTopics(data.topics || []))
+      .catch(() => {});
+    refreshConversations();
+  }, []);
+
+  async function refreshConversations() {
+    try {
+      const data = await assistantService.getConversations();
+      setConversations(data.conversations || []);
+    } catch { /* history panel simply stays empty */ }
+  }
 
   useEffect(() => {
     return () => {
@@ -219,57 +178,99 @@ export default function Assistant() {
     window.speechSynthesis.speak(utterance);
   }
 
-  function handleSendMessage(textToSend) {
+  async function handleSendMessage(textToSend) {
     const query = (textToSend || inputText).trim();
-    if (!query) return;
+    if (!query || isTyping) return;
 
     const userMsg = {
       id: `user-${Date.now()}`,
       sender: 'user',
       text: query,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      time: nowTime(),
     };
 
     setMessages((prev) => [...prev, userMsg]);
     setInputText('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      const lowerQuery = query.toLowerCase();
-      let matchedResponse = null;
+    try {
+      const data = await assistantService.sendChatMessage({
+        prompt: query,
+        conversation_id: activeConversationId || undefined,
+      });
 
-      for (const item of KNOWLEDGE_BASE) {
-        if (item.keywords.some((kw) => lowerQuery.includes(kw))) {
-          matchedResponse = item.response;
-          break;
-        }
+      if (!activeConversationId && data.conversation_id) {
+        setActiveConversationId(data.conversation_id);
       }
 
-      if (!matchedResponse) {
-        matchedResponse = `I understand you are asking about "${query}".\n\nSanjhi AI is designed to help you manage your committee pools, track contributions, calculate trust scores, and escalate complaints. You can also explore our predefined topics above or contact support if you need further help!`;
-      }
-
-      const aiMsg = {
-        id: `ai-${Date.now()}`,
-        sender: 'ai',
-        text: matchedResponse,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-
-      setMessages((prev) => [...prev, aiMsg]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: data.message_id || `ai-${Date.now()}`,
+          sender: 'ai',
+          text: data.reply,
+          time: nowTime(),
+          sources: data.sources || [],
+          feedback: null,
+        },
+      ]);
+      refreshConversations();
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `ai-err-${Date.now()}`,
+          sender: 'ai',
+          text:
+            err?.status === 429
+              ? 'Slow down! Please wait a moment before sending more messages.'
+              : 'Sorry, something went wrong. Please try again, or reach out on WhatsApp.',
+          time: nowTime(),
+          sources: [],
+        },
+      ]);
+    } finally {
       setIsTyping(false);
-    }, 1100);
+    }
   }
 
-  function handleClearChat() {
-    setMessages([
-      {
-        id: 'welcome-1',
-        sender: 'ai',
-        text: "Chat cleared! How can **Sanjhi AI** assist you now?",
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      },
-    ]);
+  function handleNewChat() {
+    setActiveConversationId(null);
+    setShowHistory(false);
+    setMessages([welcomeMessage('Chat cleared! How can **Sanjhi AI** assist you now?')]);
+  }
+
+  async function handleSelectConversation(conv) {
+    try {
+      const data = await assistantService.getConversationMessages(conv.id);
+      setActiveConversationId(conv.id);
+      setShowHistory(false);
+      setMessages(
+        (data.messages || []).map((m) => ({
+          id: m.id,
+          sender: m.role === 'user' ? 'user' : 'ai',
+          text: m.content,
+          time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          sources: m.sources || [],
+          feedback: m.role === 'assistant' ? m.feedback ?? null : undefined,
+        }))
+      );
+    } catch { /* keep current view on failure */ }
+  }
+
+  async function handleDeleteConversation(convId) {
+    try {
+      await assistantService.deleteConversation(convId);
+      if (convId === activeConversationId) handleNewChat();
+      refreshConversations();
+    } catch { /* ignore */ }
+  }
+
+  async function handleFeedback(msgId, value) {
+    setMessages((prev) => prev.map((m) => (m.id === msgId ? { ...m, feedback: value } : m)));
+    try {
+      await assistantService.sendFeedback(msgId, value);
+    } catch { /* optimistic UI already applied */ }
   }
 
   function openWhatsApp() {
@@ -340,6 +341,15 @@ export default function Assistant() {
 
           <div className="flex items-center gap-2 shrink-0">
             <button
+              onClick={() => setShowHistory((prev) => !prev)}
+              className={`p-2.5 rounded-full transition-all active:scale-95 cursor-pointer border-none ${
+                showHistory ? 'bg-[#006972] text-white' : 'bg-[#006972]/10 hover:bg-[#006972]/20 text-[#006972]'
+              }`}
+              title="Chat history"
+            >
+              <Icon name="forum" size={20} />
+            </button>
+            <button
               onClick={() => setShowGuide((prev) => !prev)}
               className="p-2.5 rounded-full bg-[#006972]/10 hover:bg-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer border-none"
               title="How to use Sanjhi AI"
@@ -354,11 +364,11 @@ export default function Assistant() {
               <img src={whatsappIcon} alt="WhatsApp" className="w-5 h-5" />
             </button>
             <button
-              onClick={handleClearChat}
+              onClick={handleNewChat}
               className="p-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-deep-navy/70 transition-all active:scale-95 cursor-pointer border-none"
-              title="Clear Chat History"
+              title="New Chat"
             >
-              <Icon name="delete_sweep" size={20} />
+              <Icon name="add_comment" size={20} />
             </button>
           </div>
         </div>
@@ -423,6 +433,71 @@ export default function Assistant() {
       {/* ══════════════════════════════════════════════════ */}
       {/*  CHAT MESSAGES CONTAINER                          */}
       {/* ══════════════════════════════════════════════════ */}
+      {showHistory && (
+        <section className="relative z-30 max-w-4xl w-full mx-auto px-4 sm:px-6 pt-4 animate-fade-in">
+          <div className="bg-white rounded-3xl border-2 border-[#006972]/15 p-5 sm:p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-headline text-[18px] font-bold text-deep-navy flex items-center gap-2">
+                <Icon name="forum" size={22} className="text-[#006972]" />
+                Chat History
+              </h2>
+              <button
+                onClick={() => setShowHistory(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-deep-navy/60 transition-colors cursor-pointer border-none"
+              >
+                <Icon name="close" size={18} />
+              </button>
+            </div>
+
+            <button
+              onClick={handleNewChat}
+              className="w-full mb-4 px-4 py-2.5 rounded-2xl bg-[#006972] hover:bg-[#00575f] text-white font-label text-[13px] font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer border-none shadow-sm active:scale-[0.99]"
+            >
+              <Icon name="add" size={18} />
+              Start a New Chat
+            </button>
+
+            {conversations.length === 0 ? (
+              <p className="font-body text-[13px] text-on-surface-variant text-center py-4">
+                No conversations yet — ask me anything to get started!
+              </p>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                {conversations.map((conv) => (
+                  <div
+                    key={conv.id}
+                    className={`flex items-center gap-2 p-3 rounded-2xl border transition-colors ${
+                      conv.id === activeConversationId
+                        ? 'border-[#006972] bg-[#006972]/5'
+                        : 'border-[#006972]/10 bg-white hover:bg-slate-50'
+                    }`}
+                  >
+                    <button
+                      onClick={() => handleSelectConversation(conv)}
+                      className="flex-1 text-left bg-transparent border-none cursor-pointer min-w-0 p-0"
+                    >
+                      <p className="font-headline text-[13px] font-bold text-deep-navy truncate">
+                        {conv.title || 'Untitled chat'}
+                      </p>
+                      <p className="font-label text-[10px] text-on-surface-variant">
+                        {new Date(conv.last_message_at).toLocaleString()}
+                      </p>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteConversation(conv.id)}
+                      className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer border-none bg-transparent shrink-0"
+                      title="Delete chat"
+                    >
+                      <Icon name="delete" size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6 relative z-10 pb-36">
 
         {/* SUGGESTED PROMPTS HERO CARDS (Shown on initial state) */}
@@ -444,18 +519,18 @@ export default function Assistant() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-              {SUGGESTED_PROMPTS.map((item, idx) => (
+              {topics.map((topic, idx) => (
                 <button
-                  key={idx}
-                  onClick={() => handleSendMessage(item.prompt)}
-                  className={`p-4 rounded-2xl text-left border transition-all duration-200 hover:-translate-y-1 hover:shadow-md cursor-pointer flex items-start gap-3 bg-white/90 backdrop-blur-md ${item.color}`}
+                  key={topic.id}
+                  onClick={() => handleSendMessage(topic.title)}
+                  className={`p-4 rounded-2xl text-left border transition-all duration-200 hover:-translate-y-1 hover:shadow-md cursor-pointer flex items-start gap-3 bg-white/90 backdrop-blur-md ${TOPIC_COLORS[idx % TOPIC_COLORS.length]}`}
                 >
                   <div className="p-2 rounded-xl bg-white shadow-sm shrink-0">
-                    <Icon name={item.icon} size={20} />
+                    <Icon name={CATEGORY_ICONS[topic.category] || 'lightbulb'} size={20} />
                   </div>
                   <div>
-                    <h3 className="font-headline text-[14px] font-bold text-deep-navy mb-0.5">{item.title}</h3>
-                    <p className="font-body text-[12px] text-on-surface-variant line-clamp-2">{item.prompt}</p>
+                    <h3 className="font-headline text-[14px] font-bold text-deep-navy mb-0.5">{topic.title}</h3>
+                    <p className="font-body text-[12px] text-on-surface-variant line-clamp-2">Tap to ask Sanjhi AI about this topic</p>
                   </div>
                 </button>
               ))}
@@ -509,6 +584,51 @@ export default function Assistant() {
                 <div className="font-body text-[14px] leading-relaxed whitespace-pre-line">
                   {msg.text}
                 </div>
+
+                {isAI && msg.sources?.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-2 border-t border-[#006972]/10">
+                    <span className="font-label text-[10px] font-bold text-on-surface-variant/70 w-full">Sources</span>
+                    {msg.sources.map((src, i) => (
+                      <span
+                        key={src.id || i}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#006972]/8 text-[#006972] font-label text-[10px] font-bold"
+                      >
+                        <Icon name="menu_book" size={12} />
+                        {src.title}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {isAI && 'feedback' in msg && (
+                  <div className="flex items-center gap-1 pt-1">
+                    <span className="font-label text-[10px] text-on-surface-variant/70 mr-1">Was this helpful?</span>
+                    <button
+                      type="button"
+                      onClick={() => handleFeedback(msg.id, 1)}
+                      className={`p-1 rounded-lg transition-colors cursor-pointer border-none ${
+                        msg.feedback === 1
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-[#006972]/8 hover:bg-[#006972]/15 text-[#006972]'
+                      }`}
+                      title="Helpful"
+                    >
+                      <Icon name="thumb_up" size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleFeedback(msg.id, -1)}
+                      className={`p-1 rounded-lg transition-colors cursor-pointer border-none ${
+                        msg.feedback === -1
+                          ? 'bg-rose-500 text-white'
+                          : 'bg-[#006972]/8 hover:bg-[#006972]/15 text-[#006972]'
+                      }`}
+                      title="Not helpful"
+                    >
+                      <Icon name="thumb_down" size={14} />
+                    </button>
+                  </div>
+                )}
 
                 <div className={`text-[10px] font-label text-right font-medium ${isAI ? 'text-on-surface-variant/70' : 'text-white/70'}`}>
                   {msg.time}

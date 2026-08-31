@@ -205,3 +205,44 @@ export function approveCnic(userId) {
 export function rejectCnic(userId, payload = {}) {
   return api.post(`${BASE}/cnic/${userId}/reject`, payload);
 }
+
+// ─── QA Assistant Knowledge Base ─────────────────────────────
+
+/**
+ * List all assistant knowledge-base documents.
+ */
+export function getKbDocs() {
+  return api.get(`${BASE}/kb-docs`);
+}
+
+/**
+ * Create a knowledge-base document.
+ * @param {{ title: string, category: string, content: string, keywords?: string[], priority?: number }} payload
+ */
+export function createKbDoc(payload) {
+  return api.post(`${BASE}/kb-docs`, payload);
+}
+
+/**
+ * Update a knowledge-base document (partial).
+ * @param {string} docId
+ * @param {object} payload
+ */
+export function updateKbDoc(docId, payload) {
+  return api.patch(`${BASE}/kb-docs/${docId}`, payload);
+}
+
+/**
+ * Delete a knowledge-base document.
+ * @param {string} docId
+ */
+export function deleteKbDoc(docId) {
+  return api.delete(`${BASE}/kb-docs/${docId}`);
+}
+
+/**
+ * Assistant analytics: unanswered queries, feedback totals, top docs.
+ */
+export function getKbAnalytics() {
+  return api.get(`${BASE}/kb-docs/analytics`);
+}

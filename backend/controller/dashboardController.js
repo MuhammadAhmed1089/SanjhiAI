@@ -1,4 +1,5 @@
 import { query } from '../config/db.js';
+import { computeScore } from '../utilities/trustScore.js';
 
 /**
  * GET /api/dashboard
@@ -40,7 +41,7 @@ export async function getDashboardOverviewController(req, res) {
         }
       : {
           score: 850,
-          onTimeRate: 94,
+          onTimeRate: 90, // model prior (Bayesian-smoothed, no history yet)
           completedCommittees: 0,
         };
 
@@ -165,5 +166,70 @@ export async function getDashboardOverviewController(req, res) {
   } catch (error) {
     console.error('Error in getDashboardOverviewController:', error);
     return res.status(500).json({ error: 'Failed to fetch dashboard data.' });
+  }
+}
+
+/* ── Trust Score explainability ── */
+
+const TRUST_EVENT_LABELS = {
+  payment_on_time: (d) => `On-time payment${d?.committee_name ? ` — ${d.committee_name}` : ''}`,
+  payment_late: (d) => `Late payment${d?.days_late ? ` (${d.days_late} day${d.days_late > 1 ? 's' : ''} late)` : ''}${d?.committee_name ? ` — ${d.committee_name}` : ''}`,
+  payment_missed: (d) => `Missed payment${d?.committee_name ? ` — ${d.committee_name}` : ''}`,
+  committee_completed: (d) => `Committee completed${d?.committee_name ? ` — ${d.committee_name}` : ''}`,
+  committee_dropout: (d) => `Dropped out${d?.committee_name ? ` — ${d.committee_name}` : ''}`,
+  complaint_penalty: () => 'Resolved dispute penalty',
+  verification: () => 'Identity verified',
+};
+
+/**
+ * GET /api/dashboard/trust-score
+ * Full breakdown of the user's Community Trust Score: component points,
+ * decayed rates, and the most recent events that moved the score.
+ * Recomputes live from the event log and refreshes the cached row.
+ */
+export async function getTrustScoreBreakdown(req, res) {
+  try {
+    const userId = req.user?.userId;
+
+    const eventsRes = await query(
+      `SELECT event_type, value, half_life_days, detail, occurred_at
+       FROM trust_score_events WHERE user_id = $1 ORDER BY occurred_at DESC`,
+      [userId]
+    );
+
+    const userRes = await query(`SELECT email, cnic_status FROM users WHERE id = $1`, [userId]);
+    const u = userRes.rows[0] || {};
+
+    const result = computeScore(eventsRes.rows, {
+      emailVerified: !!u.email,
+      cnicVerified: u.cnic_status === 'verified',
+    });
+
+    const completedCount = eventsRes.rows.filter((e) => e.event_type === 'committee_completed').length;
+    await query(
+      `INSERT INTO trust_scores (user_id, score, on_time_rate, completed_committees_count, last_calculated_at)
+       VALUES ($1, $2, $3, $4, now())
+       ON CONFLICT (user_id) DO UPDATE SET
+         score = EXCLUDED.score, on_time_rate = EXCLUDED.on_time_rate,
+         completed_committees_count = EXCLUDED.completed_committees_count, last_calculated_at = now()`,
+      [userId, result.score, result.reliabilityRate, completedCount]
+    );
+
+    const recentEvents = eventsRes.rows.slice(0, 10).map((e) => ({
+      type: e.event_type,
+      label: (TRUST_EVENT_LABELS[e.event_type] || (() => e.event_type))(e.detail),
+      value: Number(e.value),
+      occurredAt: e.occurred_at,
+    }));
+
+    return res.status(200).json({
+      score: result.score,
+      components: result.components,
+      recentEvents,
+      formula: 'score = 250 + 550×reliability + 150×completion + 50×verification − dispute penalties (time-decayed)',
+    });
+  } catch (error) {
+    console.error('Error computing trust score breakdown:', error);
+    return res.status(500).json({ error: 'Failed to compute trust score.' });
   }
 }

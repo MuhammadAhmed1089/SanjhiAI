@@ -22,6 +22,7 @@ import {
   getPendingCnicsController,
   verifyCnicController,
   rejectCnicController,
+  recomputeTrustScores,
 } from '../controller/adminController.js';
 import { requireAdmin } from '../utilities/jwt.js';
 
@@ -66,5 +67,8 @@ router.post('/announcements', requireAdmin, createAnnouncement);
 router.get('/cnic/pending', requireAdmin, getPendingCnicsController);
 router.post('/cnic/:userId/verify', requireAdmin, verifyCnicController);
 router.post('/cnic/:userId/reject', requireAdmin, rejectCnicController);
+
+// Trust Score
+router.post('/trust-score/recompute', requireAdmin, recomputeTrustScores);
 
 export default router;
