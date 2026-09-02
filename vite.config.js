@@ -35,4 +35,23 @@ export default defineConfig({
       'dotenv',
     ],
   },
+  build: {
+    // Reduce chunk size for faster mobile loads
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        // Manual chunks: split vendor libs from app code
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'router': ['react-router-dom'],
+        },
+      },
+    },
+    // Minification — esbuild is fastest
+    minify: 'esbuild',
+    // Enable CSS code splitting per-page
+    cssCodeSplit: true,
+    // Use modern targets for smaller output
+    target: 'es2020',
+  },
 })

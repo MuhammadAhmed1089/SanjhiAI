@@ -819,7 +819,6 @@ export async function rejectCnicController(req, res) {
   }
 }
 
-<<<<<<< HEAD
 /**
  * GET /api/admin/notifications
  * Global notification audit feed across all users (for Admin Portal).
@@ -838,7 +837,9 @@ export async function getGlobalNotificationsController(req, res) {
   } catch (error) {
     console.error('Error fetching global admin notifications:', error);
     return res.status(500).json({ error: 'Failed to fetch notifications stream.' });
-=======
+  }
+}
+
 // ─── 9. TRUST SCORE ────────────────────────────────────────────
 
 /**
@@ -874,6 +875,5 @@ export async function recomputeTrustScores(req, res) {
   } catch (error) {
     console.error('Error recomputing trust scores:', error);
     return res.status(500).json({ error: 'Failed to recompute trust scores.' });
->>>>>>> 5cd287b9f25bfe484e63c4da527c3824d8c851a0
   }
 }

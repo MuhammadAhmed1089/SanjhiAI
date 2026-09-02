@@ -1,9 +1,6 @@
 import { query } from '../config/db.js';
-<<<<<<< HEAD
 import { getCache, setCache } from '../config/redis.js';
-=======
 import { computeScore } from '../utilities/trustScore.js';
->>>>>>> 5cd287b9f25bfe484e63c4da527c3824d8c851a0
 
 /**
  * GET /api/dashboard

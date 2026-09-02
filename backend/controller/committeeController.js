@@ -4,11 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { createNotification } from './notificationController.js';
-<<<<<<< HEAD
 import { getCache, setCache, delCachePattern } from '../config/redis.js';
-=======
 import { onPaymentConfirmed, onCycleClosed, onCommitteeClosed, onMemberRemoved } from '../utilities/trustScore.js';
->>>>>>> 5cd287b9f25bfe484e63c4da527c3824d8c851a0
 
 /**
  * Resolve the requesting user's role within a committee.

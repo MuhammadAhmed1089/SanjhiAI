@@ -87,6 +87,24 @@ body {
   color: var(--color-on-surface);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Smooth native-like scroll on mobile */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/* ── GPU Compositing Hints — scroll containers ── */
+.scroll-container,
+[class*="overflow-y"],
+[class*="overflow-auto"],
+[class*="overflow-scroll"] {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  will-change: scroll-position;
+}
+
+/* Deactivate pointer events on background decorations during scroll */
+.pointer-events-none {
+  pointer-events: none;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -182,6 +200,20 @@ h1, h2, h3, h4, h5, h6 {
     0 8px 40px rgba(13, 27, 42, 0.10),
     0 2px 12px rgba(0, 105, 114, 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  /* GPU: promote to own layer so scrolling doesn't repaint */
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* ── Mobile: reduce expensive blur to prevent jank ── */
+@media (max-width: 768px) {
+  .glass-card {
+    backdrop-filter: blur(8px) saturate(160%);
+    -webkit-backdrop-filter: blur(8px) saturate(160%);
+  }
+  .field-input {
+    backdrop-filter: blur(2px);
+  }
 }
 
 .gradient-border-card {
@@ -208,6 +240,9 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 50%;
   filter: blur(100px);
   pointer-events: none;
+  /* GPU: own compositing layer to avoid repaints */
+  will-change: transform;
+  transform: translateZ(0);
 }
 .blob-1 {
   width: 480px;
@@ -234,17 +269,41 @@ h1, h2, h3, h4, h5, h6 {
   animation: blob-float 12s ease-in-out infinite 2s;
 }
 @keyframes blob-float {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(20px, -30px) scale(1.05); }
-  66% { transform: translate(-15px, 15px) scale(0.95); }
+  0%, 100% { transform: translate(0, 0) scale(1) translateZ(0); }
+  33% { transform: translate(20px, -30px) scale(1.05) translateZ(0); }
+  66% { transform: translate(-15px, 15px) scale(0.95) translateZ(0); }
+}
+
+/* ── Mobile: DISABLE expensive blobs (filter:blur(100px) causes severe GPU lag) ── */
+@media (max-width: 768px) {
+  .blob {
+    display: none !important;
+  }
 }
 
 /* ── Dashboard Ambient Animations ── */
 
+/* GPU compositing hint for all animated elements */
+.animate-float-y,
+.animate-float-y-slow,
+.animate-float-y-fast,
+.animate-rotate-slow,
+.animate-rotate-slow-rev,
+.animate-glow-ring,
+.animate-shimmer,
+.animate-ticker,
+.animate-ping-slow,
+.animate-border-breathe,
+.animate-score-glow,
+.particle {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
 /* Gentle vertical float */
 @keyframes float-y {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-12px); }
+  0%, 100% { transform: translateY(0px) translateZ(0); }
+  50% { transform: translateY(-12px) translateZ(0); }
 }
 .animate-float-y { animation: float-y 4s ease-in-out infinite; }
 .animate-float-y-slow { animation: float-y 7s ease-in-out infinite; }
@@ -252,8 +311,8 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Slow 360 rotation */
 @keyframes rotate-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from { transform: rotate(0deg) translateZ(0); }
+  to { transform: rotate(360deg) translateZ(0); }
 }
 .animate-rotate-slow { animation: rotate-slow 18s linear infinite; }
 .animate-rotate-slow-rev { animation: rotate-slow 24s linear infinite reverse; }
@@ -278,17 +337,17 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Horizontal ticker scroll */
 @keyframes ticker-scroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% { transform: translateX(0) translateZ(0); }
+  100% { transform: translateX(-50%) translateZ(0); }
 }
 .animate-ticker { animation: ticker-scroll 28s linear infinite; }
 .animate-ticker:hover { animation-play-state: paused; }
 
 /* Drifting particles */
 @keyframes drift-up {
-  0% { transform: translateY(0) translateX(0) scale(1); opacity: 0.6; }
-  50% { transform: translateY(-30px) translateX(10px) scale(1.1); opacity: 1; }
-  100% { transform: translateY(-60px) translateX(-5px) scale(0.8); opacity: 0; }
+  0% { transform: translateY(0) translateX(0) scale(1) translateZ(0); opacity: 0.6; }
+  50% { transform: translateY(-30px) translateX(10px) scale(1.1) translateZ(0); opacity: 1; }
+  100% { transform: translateY(-60px) translateX(-5px) scale(0.8) translateZ(0); opacity: 0; }
 }
 .particle { animation: drift-up ease-in-out infinite; }
 
@@ -308,10 +367,26 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Ping wave — large slow expand */
 @keyframes ping-slow {
-  0% { transform: scale(1); opacity: 0.5; }
-  100% { transform: scale(2.2); opacity: 0; }
+  0% { transform: scale(1) translateZ(0); opacity: 0.5; }
+  100% { transform: scale(2.2) translateZ(0); opacity: 0; }
 }
 .animate-ping-slow { animation: ping-slow 2.5s ease-out infinite; }
+
+/* ── Mobile: reduce non-critical animations for performance ── */
+@media (max-width: 768px) {
+  .animate-float-y,
+  .animate-float-y-slow,
+  .animate-float-y-fast,
+  .animate-rotate-slow,
+  .animate-rotate-slow-rev,
+  .animate-score-glow,
+  .animate-border-breathe {
+    animation: none;
+  }
+  .particle {
+    display: none;
+  }
+}
 
 
 /* Fade-up entrance for the glass card */
