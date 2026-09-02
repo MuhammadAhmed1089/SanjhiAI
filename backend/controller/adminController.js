@@ -1,6 +1,7 @@
 import { query } from '../config/db.js';
 import { getCache, setCache } from '../config/redis.js';
 import { getQueue } from '../utilities/complaintAgent/queue.js';
+import { onComplaintResolved, onCnicVerified, recomputeUser } from '../utilities/trustScore.js';
 
 /**
  * Ensure administrative helper tables exist in PostgreSQL
@@ -35,7 +36,7 @@ async function initAdminTables() {
         id INT PRIMARY KEY DEFAULT 1,
         maintenance_mode BOOLEAN DEFAULT FALSE,
         auto_verify_cnic BOOLEAN DEFAULT TRUE,
-        min_trust_score_for_organizer INT DEFAULT 70,
+        min_trust_score_for_organizer INT DEFAULT 700,
         late_payment_penalty_points INT DEFAULT 5,
         payout_release_grace_hours INT DEFAULT 24,
         support_phone VARCHAR(50) DEFAULT '0300-1234567',
@@ -47,7 +48,7 @@ async function initAdminTables() {
     // Insert default settings if table is empty
     await query(`
       INSERT INTO platform_settings (id, maintenance_mode, auto_verify_cnic, min_trust_score_for_organizer, late_payment_penalty_points, payout_release_grace_hours)
-      VALUES (1, false, true, 70, 5, 24)
+      VALUES (1, false, true, 700, 5, 24)
       ON CONFLICT (id) DO NOTHING;
     `);
   } catch (err) {
@@ -142,7 +143,7 @@ export async function getUsers(req, res) {
     const { search, is_suspended, has_reports } = req.query;
     let sql = `
       SELECT u.id, u.full_name, u.email, u.phone_number, u.is_suspended, u.created_at,
-        COALESCE(ts.score, 85) AS trust_score,
+        COALESCE(ts.score, 850) AS trust_score,
         u.cnic_status,
         u.cnic_number,
         u.cnic_submitted_at,
@@ -183,7 +184,7 @@ export async function getUser(req, res) {
   try {
     const { userId } = req.params;
     const result = await query(
-      `SELECT u.*, COALESCE(ts.score, 85) AS trust_score
+      `SELECT u.*, COALESCE(ts.score, 850) AS trust_score
        FROM users u
        LEFT JOIN trust_scores ts ON ts.user_id = u.id
        WHERE u.id = $1`,
@@ -288,7 +289,7 @@ export async function getCommittee(req, res) {
 
     // Members list
     const memRes = await query(
-      `SELECT m.*, u.full_name, u.email, u.phone_number, COALESCE(ts.score, 85) AS trust_score
+      `SELECT m.*, u.full_name, u.email, u.phone_number, COALESCE(ts.score, 850) AS trust_score
        FROM members m
        JOIN users u ON u.id = m.user_id
        LEFT JOIN trust_scores ts ON ts.user_id = u.id
@@ -416,6 +417,9 @@ export async function resolveComplaint(req, res) {
     }
 
     await logAdminAction(adminId, 'RESOLVE_COMPLAINT', 'complaint', complaintId, notes || 'Dispute resolved by staff');
+
+    // Trust Score: penalty applies only to resolved fraud/payment disputes
+    onComplaintResolved(complaintId);
 
     return res.status(200).json({ message: 'Dispute marked as resolved.' });
   } catch (error) {
@@ -595,7 +599,7 @@ export async function getPlatformSettings(req, res) {
       settings: {
         maintenance_mode: false,
         auto_verify_cnic: true,
-        min_trust_score_for_organizer: 70,
+        min_trust_score_for_organizer: 700,
         late_payment_penalty_points: 5,
         payout_release_grace_hours: 24,
         support_phone: '0300-1234567',
@@ -762,6 +766,9 @@ export async function verifyCnicController(req, res) {
 
     await logAdminAction(adminId, 'VERIFY_CNIC', 'user', userId, 'CNIC approved by admin');
 
+    // Trust Score: CNIC verification component (+40% of verification weight)
+    onCnicVerified(userId);
+
     return res.status(200).json({ message: 'CNIC verified successfully.' });
   } catch (error) {
     console.error('Error verifying CNIC:', error);
@@ -812,6 +819,7 @@ export async function rejectCnicController(req, res) {
   }
 }
 
+<<<<<<< HEAD
 /**
  * GET /api/admin/notifications
  * Global notification audit feed across all users (for Admin Portal).
@@ -830,5 +838,42 @@ export async function getGlobalNotificationsController(req, res) {
   } catch (error) {
     console.error('Error fetching global admin notifications:', error);
     return res.status(500).json({ error: 'Failed to fetch notifications stream.' });
+=======
+// ─── 9. TRUST SCORE ────────────────────────────────────────────
+
+/**
+ * POST /api/admin/trust-score/recompute
+ * Body: { userId? } — with userId recomputes one user, otherwise all users.
+ * Replays the append-only trust_score_events log through the model.
+ */
+export async function recomputeTrustScores(req, res) {
+  try {
+    const adminId = req.user?.userId;
+    const { userId } = req.body || {};
+
+    if (userId) {
+      const result = await recomputeUser(userId);
+      await logAdminAction(adminId, 'RECOMPUTE_TRUST_SCORE', 'user', userId, `score=${result.score}`);
+      return res.status(200).json({
+        message: 'Trust score recomputed.',
+        userId,
+        score: result.score,
+        components: result.components,
+      });
+    }
+
+    const usersRes = await query(`SELECT id FROM users ORDER BY created_at ASC`);
+    let recomputed = 0;
+    for (const row of usersRes.rows) {
+      await recomputeUser(row.id);
+      recomputed++;
+    }
+
+    await logAdminAction(adminId, 'RECOMPUTE_TRUST_SCORE', 'system', 'all', `${recomputed} users recomputed`);
+    return res.status(200).json({ message: `Recomputed trust scores for ${recomputed} users.`, recomputed });
+  } catch (error) {
+    console.error('Error recomputing trust scores:', error);
+    return res.status(500).json({ error: 'Failed to recompute trust scores.' });
+>>>>>>> 5cd287b9f25bfe484e63c4da527c3824d8c851a0
   }
 }

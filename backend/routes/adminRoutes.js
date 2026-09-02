@@ -22,7 +22,11 @@ import {
   getPendingCnicsController,
   verifyCnicController,
   rejectCnicController,
+<<<<<<< HEAD
   getGlobalNotificationsController,
+=======
+  recomputeTrustScores,
+>>>>>>> 5cd287b9f25bfe484e63c4da527c3824d8c851a0
 } from '../controller/adminController.js';
 import { requireAdmin } from '../utilities/jwt.js';
 
@@ -68,7 +72,12 @@ router.get('/cnic/pending', requireAdmin, getPendingCnicsController);
 router.post('/cnic/:userId/verify', requireAdmin, verifyCnicController);
 router.post('/cnic/:userId/reject', requireAdmin, rejectCnicController);
 
+<<<<<<< HEAD
 // Notifications Audit Feed
 router.get('/notifications', requireAdmin, getGlobalNotificationsController);
+=======
+// Trust Score
+router.post('/trust-score/recompute', requireAdmin, recomputeTrustScores);
+>>>>>>> 5cd287b9f25bfe484e63c4da527c3824d8c851a0
 
 export default router;

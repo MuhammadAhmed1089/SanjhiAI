@@ -75,6 +75,14 @@ function resolvePhotoUrl(url) {
   return `${BACKEND_URL}${url}`;
 }
 
+/* ── Trust score tier (0–1000 model) ── */
+function scoreTier(score) {
+  if (score >= 900) return { badge: 'Top Tier Participant', tagline: 'Outstanding record — you qualify for the highest-tier pools!' };
+  if (score >= 750) return { badge: 'Trusted Member', tagline: 'Strong record. Keep paying on time to reach the top tier.' };
+  if (score >= 600) return { badge: 'Building Trust', tagline: 'Pay on time and verify your CNIC to grow your score.' };
+  return { badge: 'Needs Attention', tagline: 'Missed payments lowered your score. On-time payments restore it.' };
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -89,6 +97,10 @@ export default function Dashboard() {
   const [ripples, setRipples] = useState({});
 
   const [targetScore, setTargetScore] = useState(0);
+  const [onTimeRate, setOnTimeRate] = useState(90); // model prior for new users
+  const [showTrustBreakdown, setShowTrustBreakdown] = useState(false);
+  const [breakdown, setBreakdown] = useState(null);
+  const [breakdownLoading, setBreakdownLoading] = useState(false);
   const [targetTotal, setTargetTotal] = useState(0);
   const [targetPayout, setTargetPayout] = useState(0);
   const [nextPayoutInfo, setNextPayoutInfo] = useState(null);
@@ -99,6 +111,23 @@ export default function Dashboard() {
   const [loadingBackend, setLoadingBackend] = useState(true);
 
   const trustScore = useCountUp(targetScore, 1600, !loadingBackend);
+  
+    async function openTrustBreakdown() {
+      setShowTrustBreakdown(true);
+      setBreakdownLoading(true);
+      try {
+        const data = await dashboardService.getTrustScoreBreakdown();
+        setBreakdown(data);
+        if (typeof data?.score === 'number') setTargetScore(data.score);
+        if (typeof data?.components?.reliability?.rate === 'number') {
+          setOnTimeRate(Math.round(data.components.reliability.rate * 100));
+        }
+      } catch (err) {
+        console.error('Failed to load trust score breakdown:', err);
+      } finally {
+        setBreakdownLoading(false);
+      }
+    }
   const totalAmt = useCountUp(targetTotal, 1900, !loadingBackend);
   const nextPayoutAmt = useCountUp(targetPayout, 1700, !loadingBackend);
 
@@ -138,6 +167,10 @@ export default function Dashboard() {
           setTargetScore(data.trustScore.score);
         } else {
           setTargetScore(850); // default starting trust score
+        }
+
+        if (typeof data?.trustScore?.onTimeRate === 'number') {
+          setOnTimeRate(data.trustScore.onTimeRate);
         }
 
         if (data?.financialSummary?.totalContributed !== undefined) {
@@ -339,8 +372,10 @@ export default function Dashboard() {
         {/* ── TRUST SCORE + METRICS ── */}
         <section ref={heroRef} className={`grid grid-cols-1 lg:grid-cols-12 gap-5 transition-all duration-700 ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
 
-          {/* Trust Score Card */}
-          <div className="lg:col-span-8 bg-[#006972] text-white rounded-3xl p-6 sm:p-8 relative overflow-hidden flex flex-col justify-between shadow-xl shadow-[#006972]/25 group cursor-default animate-border-breathe border-2 border-transparent min-h-[220px]">
+          {/* Trust Score Card — tap for the full component breakdown */}
+          <div onClick={openTrustBreakdown} role="button" tabIndex={0} title="Tap to see your score breakdown"
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openTrustBreakdown(); }}
+            className="lg:col-span-8 bg-[#006972] text-white rounded-3xl p-6 sm:p-8 relative overflow-hidden flex flex-col justify-between shadow-xl shadow-[#006972]/25 group cursor-pointer animate-border-breathe border-2 border-transparent min-h-[220px]">
             <div className="absolute inset-0 opacity-15 pointer-events-none"
               style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.9) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
 
@@ -363,7 +398,7 @@ export default function Dashboard() {
                   <h2 className="font-label text-[11px] uppercase tracking-widest font-bold text-white/85">Community Trust Score</h2>
                 </div>
                 <span className="px-3 py-1 rounded-full bg-white/20 text-white text-[11px] font-label font-bold border border-white/30 flex items-center gap-1">
-                  <Icon name="verified" size={14} /> Top Tier Participant
+                  <Icon name="verified" size={14} /> {scoreTier(targetScore).badge}
                 </span>
               </div>
 
@@ -376,22 +411,25 @@ export default function Dashboard() {
                   </span>
                 )}
                 <span className="text-[14px] font-body text-white/85 max-w-[220px] leading-snug">
-                  Your payments are verified on-time. You qualify for high-tier pools!
+                  {scoreTier(targetScore).tagline}
                 </span>
               </div>
             </div>
 
             <div className="mt-6 pt-4 border-t border-white/20 relative z-10">
               <div className="flex justify-between text-[12px] font-label text-white/90 mb-2 font-medium">
-                <span>{trustScore.toLocaleString()} / 900</span>
-                <span className="font-bold">94% Reliability Rate</span>
+                <span>{trustScore.toLocaleString()} / 1000</span>
+                <span className="font-bold">{onTimeRate}% Reliability Rate</span>
               </div>
               <div className="w-full h-3 bg-black/25 rounded-full overflow-hidden p-0.5 border border-white/25">
                 <div className="h-full rounded-full transition-all duration-[1700ms] ease-out relative overflow-hidden"
-                  style={{ width: heroInView ? '94%' : '0%', background: 'linear-gradient(90deg, #fcd34d, #6ee7b7, #ffffff)' }}>
+                  style={{ width: heroInView ? `${Math.min(100, Math.max(0, targetScore / 10))}%` : '0%', background: 'linear-gradient(90deg, #fcd34d, #6ee7b7, #ffffff)' }}>
                   <div className="absolute inset-0 animate-shimmer" />
                 </div>
               </div>
+              <p className="mt-2.5 text-[11px] font-label font-bold text-white/70 flex items-center gap-1 group-hover:text-white transition-colors">
+                <Icon name="analytics" size={14} /> Tap to see the full breakdown — reliability, completion, verification & penalties
+              </p>
             </div>
           </div>
 
@@ -641,6 +679,15 @@ export default function Dashboard() {
       {/* ══════════════════════════════════════════════════ */}
       <BottomNav />
 
+      {showTrustBreakdown && (
+        <TrustBreakdownModal
+          loading={breakdownLoading}
+          data={breakdown}
+          score={typeof breakdown?.score === 'number' ? breakdown.score : targetScore}
+          onClose={() => setShowTrustBreakdown(false)}
+        />
+      )}
+
       {/* ══════════════════════════════════════════════════ */}
       {/*  FLOATING WHATSAPP BUTTON                         */}
       {/* ══════════════════════════════════════════════════ */}
@@ -701,6 +748,132 @@ function CommitteeCard({ onClick, iconName, iconBg, title, subtitle, badge, badg
         {typeof footerRight === 'string' ? (
           <span className="text-[#006972] font-bold flex items-center gap-0.5 group-hover:underline">{footerRight} <Icon name="chevron_right" size={16} /></span>
         ) : footerRight}
+      </div>
+    </div>
+  );
+}
+
+/* ── Trust Score Breakdown Modal ── */
+const TRUST_EVENT_STYLES = {
+  payment_on_time: { icon: 'check_circle', cls: 'bg-emerald-50 text-emerald-600' },
+  payment_late: { icon: 'schedule', cls: 'bg-amber-50 text-amber-600' },
+  payment_missed: { icon: 'cancel', cls: 'bg-red-50 text-red-600' },
+  committee_completed: { icon: 'task_alt', cls: 'bg-emerald-50 text-emerald-600' },
+  committee_dropout: { icon: 'exit_to_app', cls: 'bg-red-50 text-red-600' },
+  complaint_penalty: { icon: 'gavel', cls: 'bg-red-50 text-red-600' },
+  verification: { icon: 'verified_user', cls: 'bg-[#006972]/10 text-[#006972]' },
+};
+
+function TrustBreakdownModal({ loading, data, score, onClose }) {
+  const c = data?.components;
+  const bars = c
+    ? [
+        { key: 'base', icon: 'flag', label: 'Base score', points: c.base, max: 250, note: 'Every verified user starts here', bar: 'bg-deep-navy' },
+        { key: 'rel', icon: 'schedule', label: 'Payment reliability', points: c.reliability.points, max: c.reliability.max, note: `${Math.round(c.reliability.rate * 100)}% on-time quality • 90-day decay`, bar: 'bg-[#006972]' },
+        { key: 'comp', icon: 'task_alt', label: 'Committee completion', points: c.completion.points, max: c.completion.max, note: 'Finish the pools you join • 180-day decay', bar: 'bg-emerald-600' },
+        { key: 'ver', icon: 'verified_user', label: 'Identity verification', points: c.verification.points, max: c.verification.max, note: 'Phone + email + CNIC', bar: 'bg-amber-500' },
+      ]
+    : [];
+  const penaltyPoints = c?.penalties?.points || 0;
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-label="Trust score breakdown">
+      <div className="absolute inset-0 bg-deep-navy/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[86vh] overflow-y-auto">
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-[#006972] text-white px-6 py-5 rounded-t-3xl flex items-start justify-between">
+          <div>
+            <p className="font-label text-[11px] uppercase tracking-widest font-bold text-white/80 flex items-center gap-1.5">
+              <Icon name="shield_with_heart" size={16} /> Community Trust Score
+            </p>
+            <p className="font-headline text-[42px] font-extrabold leading-none mt-1 tabular-nums">
+              {Math.round(score).toLocaleString()}<span className="text-[16px] font-bold text-white/70"> / 1000</span>
+            </p>
+          </div>
+          <button onClick={onClose} aria-label="Close"
+            className="p-2 rounded-xl bg-white/15 hover:bg-white/25 transition-colors cursor-pointer">
+            <Icon name="close" size={20} />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {loading ? (
+            <div className="space-y-3 py-4">
+              <Bone className="w-full h-12 rounded-2xl" />
+              <Bone className="w-full h-12 rounded-2xl" />
+              <Bone className="w-2/3 h-12 rounded-2xl" />
+            </div>
+          ) : !data ? (
+            <p className="text-center text-on-surface-variant font-body text-[14px] py-6">
+              Could not load the breakdown right now. Please try again.
+            </p>
+          ) : (
+            <>
+              {/* Component bars */}
+              <div className="space-y-4">
+                {bars.map((b) => (
+                  <div key={b.key}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-label text-[12px] font-bold text-deep-navy flex items-center gap-1.5">
+                        <Icon name={b.icon} size={16} className="text-[#006972]" /> {b.label}
+                      </span>
+                      <span className="font-label text-[12px] font-bold text-deep-navy tabular-nums">
+                        {b.points}<span className="text-on-surface-variant font-semibold"> / {b.max}</span>
+                      </span>
+                    </div>
+                    <div className="w-full h-2.5 bg-deep-navy/8 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${b.bar} transition-all duration-700`}
+                        style={{ width: `${Math.min(100, (b.points / b.max) * 100)}%` }} />
+                    </div>
+                    <p className="font-body text-[11px] text-on-surface-variant mt-1">{b.note}</p>
+                  </div>
+                ))}
+
+                {penaltyPoints < 0 && (
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-red-50 border border-red-100">
+                    <span className="font-label text-[12px] font-bold text-red-700 flex items-center gap-1.5">
+                      <Icon name="gavel" size={16} /> Dispute penalties
+                    </span>
+                    <span className="font-label text-[13px] font-extrabold text-red-700 tabular-nums">{penaltyPoints} pts</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Recent score events */}
+              {data.recentEvents?.length > 0 && (
+                <div>
+                  <h3 className="font-label text-[11px] uppercase tracking-widest font-bold text-on-surface-variant mb-2.5">What moved your score</h3>
+                  <div className="space-y-2">
+                    {data.recentEvents.map((e, i) => {
+                      const st = TRUST_EVENT_STYLES[e.type] || { icon: 'info', cls: 'bg-deep-navy/5 text-deep-navy' };
+                      return (
+                        <div key={i} className="flex items-center gap-3 p-3 rounded-2xl bg-[#fbfaee] border border-deep-navy/5">
+                          <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${st.cls}`}>
+                            <Icon name={st.icon} size={16} />
+                          </span>
+                          <span className="flex-1 min-w-0 font-body text-[13px] text-deep-navy truncate">{e.label}</span>
+                          <span className="font-label text-[11px] text-on-surface-variant shrink-0">
+                            {e.occurredAt ? new Date(e.occurredAt).toLocaleDateString() : ''}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Disclosed formula */}
+              {data.formula && (
+                <div className="p-4 rounded-2xl bg-[#006972]/5 border border-[#006972]/15">
+                  <p className="font-label text-[10px] uppercase tracking-widest font-bold text-[#006972] mb-1 flex items-center gap-1">
+                    <Icon name="calculate" size={14} /> Disclosed formula
+                  </p>
+                  <p className="font-body text-[12px] text-deep-navy/80 leading-relaxed">{data.formula}</p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
