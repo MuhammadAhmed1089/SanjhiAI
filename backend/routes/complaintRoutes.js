@@ -4,11 +4,14 @@
 
 import { Router } from 'express';
 import { requireAuth } from '../utilities/jwt.js';
-import { fileComplaint, getMyComplaints, getComplaintById } from '../controller/complaintController.js';
+import { fileComplaint, getMyComplaints, getComplaintById, searchReportableUsers } from '../controller/complaintController.js';
 
 const router = Router();
 
-// POST /api/complaints — File a new complaint (triggers AI investigation)
+// GET /api/complaints/search-users — Search reportable users by name/phone/email
+router.get('/search-users', requireAuth, searchReportableUsers);
+
+// POST /api/complaints — File a new complaint or report (triggers AI investigation)
 router.post('/', requireAuth, fileComplaint);
 
 // GET /api/complaints/my — Get user's own complaints

@@ -5,6 +5,7 @@ import Icon from '../../components/Icon';
 import BottomNav from '../../components/BottomNav';
 import { useNavDrawer } from '../../context/NavDrawerContext';
 import { getMyPayments } from '../../services/paymentService';
+import AddToCalendarModal from '../../components/AddToCalendarModal';
 
 function formatMoney(n) {
   return `Rs. ${Number(n || 0).toLocaleString('en-PK')}`;
@@ -42,6 +43,9 @@ export default function MyPayments() {
   const [activeCommitteeTab, setActiveCommitteeTab] = useState('ALL');
   const [showFutureCycles, setShowFutureCycles] = useState(false);
   const [historyFilter, setHistoryFilter] = useState('all');
+
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [calendarTarget, setCalendarTarget] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -334,18 +338,32 @@ export default function MyPayments() {
                         </div>
                       </div>
 
-                      {/* Pay Now Button */}
-                      <button
-                        onClick={() => navigate(`/payments/pay/${latestActiveDue.committee_id}/${latestActiveDue.cycle_id}`)}
-                        className={`w-full py-3.5 rounded-2xl font-label text-[14px] font-bold flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 cursor-pointer border-none ${
-                          overdue
-                            ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-200'
-                            : 'bg-gradient-to-r from-[#006972] to-[#007a82] hover:from-[#00575f] hover:to-[#006972] text-white shadow-[#006972]/25'
-                        }`}
-                      >
-                        <Icon name="payment" size={18} />
-                        Pay Now — {formatMoney(latestActiveDue.contribution_amount)}
-                      </button>
+                      {/* Action Buttons: Pay Now + Add to Calendar */}
+                      <div className="flex flex-col sm:flex-row items-center gap-2.5">
+                        <button
+                          onClick={() => navigate(`/payments/pay/${latestActiveDue.committee_id}/${latestActiveDue.cycle_id}`)}
+                          className={`flex-1 w-full py-3.5 rounded-2xl font-label text-[14px] font-bold flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 cursor-pointer border-none ${
+                            overdue
+                              ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-200'
+                              : 'bg-gradient-to-r from-[#006972] to-[#007a82] hover:from-[#00575f] hover:to-[#006972] text-white shadow-[#006972]/25'
+                          }`}
+                        >
+                          <Icon name="payment" size={18} />
+                          Pay Now — {formatMoney(latestActiveDue.contribution_amount)}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCalendarTarget(latestActiveDue);
+                            setShowCalendarModal(true);
+                          }}
+                          className="w-full sm:w-auto px-4 py-3.5 rounded-2xl bg-teal-50 hover:bg-teal-100 border border-teal-200 text-[#006972] font-label text-[13px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shrink-0"
+                          title="Add to Google / Apple Calendar"
+                        >
+                          <Icon name="calendar_month" size={18} />
+                          <span>Sync Calendar</span>
+                        </button>
+                      </div>
                     </div>
                   );
                 })()
@@ -493,6 +511,18 @@ export default function MyPayments() {
         )}
 
       </div>
+      {/* Add to Calendar Modal */}
+      {calendarTarget && (
+        <AddToCalendarModal
+          isOpen={showCalendarModal}
+          onClose={() => setShowCalendarModal(false)}
+          committeeName={calendarTarget.committee_name}
+          amount={calendarTarget.contribution_amount}
+          startDate={calendarTarget.due_date}
+        />
+      )}
+
+      {/* ── MOBILE BOTTOM NAV ── */}
       <BottomNav />
     </AuthAmbientBackground>
   );

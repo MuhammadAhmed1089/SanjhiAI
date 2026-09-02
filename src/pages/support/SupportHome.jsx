@@ -61,6 +61,25 @@ export default function SupportHome() {
               </div>
             </button>
 
+            {/* Report a User */}
+            <button
+              onClick={() => navigate('/support/file-complaint?mode=user_report')}
+              className="w-full bg-white border border-[#006972]/15 rounded-2xl p-5 text-left hover:border-rose-400/60 hover:shadow-[0_8px_24px_rgba(220,38,38,0.08)] transition-all cursor-pointer active:scale-[0.98] group"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-200/60 shadow-sm group-hover:bg-rose-600 group-hover:text-white transition-all">
+                    <Icon name="flag" size={22} />
+                  </div>
+                  <div>
+                    <h3 className="font-headline text-[15px] font-bold text-deep-navy">Report a User</h3>
+                    <p className="font-body text-[12px] text-on-surface-variant mt-0.5">Report fraud, harassment, or suspicious behaviour. Admin will review.</p>
+                  </div>
+                </div>
+                <Icon name="arrow_forward" size={18} className="text-on-surface-variant/40 group-hover:text-rose-600 transition-colors shrink-0" />
+              </div>
+            </button>
+
             {/* My Complaints */}
             <button
               onClick={() => navigate('/support/complaints')}

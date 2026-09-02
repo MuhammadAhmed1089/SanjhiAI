@@ -5,6 +5,8 @@ import logo from '../../assets/screen.png';
 import { getCommitteeById, requestPublicToggle, approvePublicToggle } from '../../services/committeeService';
 import { getCyclePayments, confirmPayment } from '../../services/paymentService';
 import { memberService } from '../../services';
+import ReportUserModal from '../../components/ReportUserModal';
+import AddToCalendarModal from '../../components/AddToCalendarModal';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace('/api', '')
@@ -35,6 +37,27 @@ export default function CommitteeDetail() {
   const [paymentToVerify, setPaymentToVerify] = useState(null); // { member, payment }
   const [verifying, setVerifying] = useState(false);
   const [toggleLoading, setToggleLoading] = useState(false);
+
+  // Report User State
+  const [reportTargetUser, setReportTargetUser] = useState(null);
+  const [showReportModal, setShowReportModal] = useState(false);
+
+  // Add to Calendar State
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
+
+  const currentUserId = (() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('sanjhi_user') || '{}');
+      return u?.id || u?.userId;
+    } catch {
+      return null;
+    }
+  })();
+
+  function openReportModal(target) {
+    setReportTargetUser(target);
+    setShowReportModal(true);
+  }
 
   // Committee State
   const [committee, setCommittee] = useState({
@@ -324,6 +347,22 @@ export default function CommitteeDetail() {
             >
               <Icon name="person_add" size={16} />
               <span className="hidden sm:inline">Invite</span>
+            </button>
+
+            <button
+              onClick={() => setShowCalendarModal(true)}
+              className="p-2.5 rounded-full bg-teal-50 hover:bg-teal-100 border border-teal-200 text-[#006972] transition-all active:scale-95 cursor-pointer"
+              title="Add Payment Schedule to Google / Apple Calendar"
+            >
+              <Icon name="calendar_month" size={18} />
+            </button>
+
+            <button
+              onClick={() => openReportModal({ id: committee.created_by || committee.organizer_id, name: committee.organizer_name || 'Committee Organizer' })}
+              className="p-2.5 rounded-full bg-slate-100 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-500 hover:text-rose-600 transition-all active:scale-95 cursor-pointer"
+              title="Report Organizer or Pool Issue"
+            >
+              <Icon name="flag" size={18} />
             </button>
 
             <button
@@ -631,6 +670,18 @@ export default function CommitteeDetail() {
                           Upcoming
                         </span>
                       )}
+
+                      {(member.user_id || member.id) !== currentUserId && (
+                        <button
+                          type="button"
+                          onClick={() => openReportModal(member)}
+                          className="w-8 h-8 rounded-full bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 flex items-center justify-center transition-all cursor-pointer shrink-0"
+                          title={`Report ${member.name || member.full_name} to admin`}
+                          aria-label={`Report ${member.name || member.full_name}`}
+                        >
+                          <Icon name="flag" size={15} />
+                        </button>
+                      )}
                     </div>
 
                   </div>
@@ -660,29 +711,46 @@ export default function CommitteeDetail() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {members.map((member) => (
-                <div key={member.id} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={member.photo ? resolvePhotoUrl(member.photo) : '/avatar.svg'}
-                      alt={member.name}
-                      className="w-10 h-10 rounded-full object-cover border border-[#006972]/20"
-                    />
-                    <div>
-                      <p className="font-headline text-[14px] font-bold text-deep-navy">{member.name || member.full_name}</p>
-                      <p className="font-body text-[12px] text-on-surface-variant">{member.phone || member.phone_number}</p>
+              {members.map((member) => {
+                const memberUserId = member.user_id || member.id;
+                const isSelf = memberUserId === currentUserId;
+                return (
+                  <div key={member.id} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <img
+                        src={member.photo ? resolvePhotoUrl(member.photo) : '/avatar.svg'}
+                        alt={member.name}
+                        className="w-10 h-10 rounded-full object-cover border border-[#006972]/20 shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <p className="font-headline text-[14px] font-bold text-deep-navy truncate">{member.name || member.full_name}</p>
+                        <p className="font-body text-[12px] text-on-surface-variant truncate">{member.phone || member.phone_number}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="text-right">
+                        <span className="font-label text-[11px] font-bold text-[#006972] bg-[#006972]/10 px-2.5 py-0.5 rounded-full block mb-1">
+                          Turn #{member.turn || member.payout_turn_order || 1}
+                        </span>
+                        <span className="font-label text-[10px] text-emerald-700 font-semibold">
+                          Trust: {member.score || member.trust_score || 850} pts
+                        </span>
+                      </div>
+                      {!isSelf && (
+                        <button
+                          type="button"
+                          onClick={() => openReportModal(member)}
+                          className="w-8 h-8 rounded-full bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 flex items-center justify-center transition-all cursor-pointer"
+                          title={`Report ${member.name || member.full_name} to admin`}
+                          aria-label={`Report ${member.name || member.full_name}`}
+                        >
+                          <Icon name="flag" size={15} />
+                        </button>
+                      )}
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <span className="font-label text-[11px] font-bold text-[#006972] bg-[#006972]/10 px-2.5 py-0.5 rounded-full block mb-1">
-                      Turn #{member.turn || member.payout_turn_order || 1}
-                    </span>
-                    <span className="font-label text-[10px] text-emerald-700 font-semibold">
-                      Trust: {member.score || member.trust_score || 850} pts
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -1028,6 +1096,24 @@ export default function CommitteeDetail() {
           </div>
         </div>
       )}
+
+      {/* ── REPORT USER MODAL ── */}
+      <ReportUserModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        targetUser={reportTargetUser}
+        committeeId={id}
+        committeeName={committee.name}
+        onSuccess={() => showToast('Report filed with platform administrators.')}
+      />
+
+      <AddToCalendarModal
+        isOpen={showCalendarModal}
+        onClose={() => setShowCalendarModal(false)}
+        committeeName={committee.name}
+        amount={committee.contribution_amount}
+        startDate={selectedCycle?.due_date || committee.created_at}
+      />
 
       {/* ── MOBILE BOTTOM NAV ── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-[#006972]/15 px-1 py-2 flex justify-around items-center safe-area-inset-bottom shadow-[0_-4px_20px_rgba(0,105,114,0.10)]">

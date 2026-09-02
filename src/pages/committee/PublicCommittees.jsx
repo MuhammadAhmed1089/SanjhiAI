@@ -4,6 +4,7 @@ import BottomNav from '../../components/BottomNav';
 import Button from '../../components/Button';
 import Icon from '../../components/Icon';
 import CnicVerificationModal from '../../components/CnicVerificationModal';
+import ReportUserModal from '../../components/ReportUserModal';
 import { useNavDrawer } from '../../context/NavDrawerContext';
 import { getPublicCommittees, joinByCode } from '../../services/committeeService';
 import { getCnicStatus } from '../../services/authService';
@@ -86,6 +87,7 @@ export default function PublicCommittees() {
   const [copiedId, setCopiedId] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userProfile, setUserProfile] = useState(null);
+  const [reportTarget, setReportTarget] = useState(null); // { id, name } of user to report
 
   useEffect(() => {
     loadCommittees();
@@ -829,9 +831,24 @@ export default function PublicCommittees() {
                   </p>
                 </div>
               </div>
-              <span className="px-3 py-1 rounded-full text-xs font-label font-bold bg-[#006972]/10 text-[#006972]">
-                Public Pool
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full text-xs font-label font-bold bg-[#006972]/10 text-[#006972]">
+                  Public Pool
+                </span>
+                {selectedCommittee.organizer_id && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setReportTarget({ id: selectedCommittee.organizer_id, name: selectedCommittee.organizer_name || 'Organizer' });
+                    }}
+                    title="Report organizer"
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-rose-50 hover:bg-rose-100 text-rose-500 border border-rose-200/60 transition-colors cursor-pointer"
+                  >
+                    <Icon name="flag" size={15} />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Description */}
@@ -923,6 +940,14 @@ export default function PublicCommittees() {
           loadCommittees();
         }}
       />
+
+      {reportTarget && (
+        <ReportUserModal
+          isOpen={true}
+          targetUser={reportTarget}
+          onClose={() => setReportTarget(null)}
+        />
+      )}
     </div>
   );
 }

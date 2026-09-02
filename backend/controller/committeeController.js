@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { createNotification } from './notificationController.js';
+import { getCache, setCache, delCachePattern } from '../config/redis.js';
 
 /**
  * Resolve the requesting user's role within a committee.
@@ -1220,6 +1221,34 @@ export async function confirmPayment(req, res) {
         `Your payment for Cycle ${cycle_number} of "${committee_name}" has been verified by the organizer ✓`,
         committeeId
       );
+
+      // Check if all members have paid for this cycle
+      const unpaidCheck = await query(
+        `SELECT COUNT(*)::int AS unpaid_count
+         FROM members m
+         WHERE m.committee_id = $1 AND m.status = 'approved'
+           AND NOT EXISTS (
+             SELECT 1 FROM payments p
+             WHERE p.cycle_id = $2 AND p.user_id = m.user_id AND p.status = 'paid'
+           )`,
+        [committeeId, cycleId]
+      );
+
+      if (parseInt(unpaidCheck.rows[0].unpaid_count, 10) === 0) {
+        const allMembersRes = await query(
+          `SELECT user_id FROM members WHERE committee_id = $1 AND status = 'approved'`,
+          [committeeId]
+        );
+        for (const mRow of allMembersRes.rows) {
+          await createNotification(
+            mRow.user_id,
+            'cycle_completed',
+            'in_app',
+            `🎉 All members have paid for Cycle ${cycle_number} of "${committee_name}"! Payout is ready to be released.`,
+            committeeId
+          );
+        }
+      }
     }
 
     return res.status(200).json({ message: 'Payment verified!', payment });
@@ -1421,6 +1450,12 @@ export async function getPublicCommittees(req, res) {
     }
 
     const { category, search } = req.query;
+    const cacheKey = `sanjhi:cache:public_committees:${userId}:${category || 'all'}:${search || 'none'}`;
+    const cached = await getCache(cacheKey);
+    if (cached) {
+      return res.status(200).json(cached);
+    }
+
     const params = [userId];
     let sql = `
       SELECT c.*,
@@ -1454,7 +1489,12 @@ export async function getPublicCommittees(req, res) {
     sql += ` ORDER BY c.created_at DESC LIMIT 100`;
 
     const result = await query(sql, params);
-    return res.status(200).json({ committees: result.rows });
+    const responsePayload = { committees: result.rows };
+
+    // Cache for 60 seconds
+    await setCache(cacheKey, responsePayload, 60);
+
+    return res.status(200).json(responsePayload);
   } catch (error) {
     console.error('Error fetching public committees:', error);
     return res.status(500).json({ error: 'Failed to fetch public committees.' });
@@ -1494,6 +1534,10 @@ export async function requestPublicToggle(req, res) {
          RETURNING *`,
         [newValue, committeeId]
       );
+
+      // Invalidate marketplace cache
+      delCachePattern('sanjhi:cache:public_committees:*').catch(() => {});
+
       return res.status(200).json({
         message: `Committee is now ${newValue ? 'public' : 'private'}.`,
         committee: result.rows[0],

@@ -10,7 +10,7 @@ import api from '../api';
 const COMPLAINTS = '/complaints';
 
 /**
- * File a new complaint.
+ * File a new complaint or report.
  * @param {{
  *   committee_id?: string,
  *   accused_user_id?: string,
@@ -21,6 +21,29 @@ const COMPLAINTS = '/complaints';
  */
 export function fileComplaint(payload) {
   return api.post(COMPLAINTS, payload);
+}
+
+/**
+ * Report any user on the platform.
+ * Alias with clear intent.
+ */
+export function reportUser({ accused_user_id, category, description, committee_id, evidence_url }) {
+  return api.post(COMPLAINTS, {
+    accused_user_id,
+    category,
+    description,
+    committee_id: committee_id || null,
+    evidence_url: evidence_url || null,
+  });
+}
+
+/**
+ * Search users by name, phone number, or email to file a report.
+ * @param {string} query
+ */
+export function searchReportableUsers(query) {
+  const qs = new URLSearchParams({ q: query }).toString();
+  return api.get(`${COMPLAINTS}/search-users?${qs}`);
 }
 
 /**

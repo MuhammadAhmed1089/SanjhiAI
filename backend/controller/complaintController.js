@@ -30,6 +30,17 @@ export async function fileComplaint(req, res) {
       return res.status(400).json({ error: 'Category and description are required.' });
     }
 
+    if (accused_user_id && accused_user_id === userId) {
+      return res.status(400).json({ error: 'You cannot report yourself.' });
+    }
+
+    if (accused_user_id) {
+      const accCheck = await query(`SELECT id, full_name FROM users WHERE id = $1`, [accused_user_id]);
+      if (accCheck.rows.length === 0) {
+        return res.status(404).json({ error: 'Reported user not found.' });
+      }
+    }
+
     if (description.length > MAX_DESCRIPTION_LENGTH) {
       return res.status(400).json({
         error: `Description must be ${MAX_DESCRIPTION_LENGTH} characters or less. Current length: ${description.length}`,
@@ -138,5 +149,39 @@ export async function getComplaintById(req, res) {
   } catch (err) {
     console.error('Error fetching complaint:', err);
     return res.status(500).json({ error: 'Failed to fetch complaint.' });
+  }
+}
+
+/**
+ * GET /api/complaints/search-users
+ * Search users by name, email, or phone number to report.
+ */
+export async function searchReportableUsers(req, res) {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required.' });
+    }
+
+    const { q } = req.query;
+    if (!q || q.trim().length < 2) {
+      return res.status(200).json({ users: [] });
+    }
+
+    const term = `%${q.trim().toLowerCase()}%`;
+    const result = await query(
+      `SELECT id, full_name, email, phone_number, profile_photo_url
+       FROM users
+       WHERE id != $1
+         AND (LOWER(full_name) LIKE $2 OR LOWER(email) LIKE $2 OR phone_number LIKE $2)
+       ORDER BY full_name ASC
+       LIMIT 20`,
+      [userId, term]
+    );
+
+    return res.status(200).json({ users: result.rows });
+  } catch (err) {
+    console.error('Error searching reportable users:', err);
+    return res.status(500).json({ error: 'Failed to search users.' });
   }
 }

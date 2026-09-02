@@ -7,6 +7,7 @@ import fs from 'fs';
 import { testConnection, query } from './config/db.js';
 import { requireAuth } from './utilities/jwt.js';
 import { initWhatsAppGateway } from './utilities/whatsappGateway.js';
+import { initReminderScheduler } from './services/reminderScheduler.js';
 import authRoutes from './routes/authRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import committeeRoutes from './routes/committeeRoutes.js';
@@ -337,15 +338,18 @@ async function ensurePublicCommitteeColumns() {
       console.log('\u2705 [Schema] Added public marketplace index to committees.');
     }
   } catch (err) {
-    console.warn('\u26a0\ufe0f [Schema] Public marketplace index check failed:', err.message);
+    console.warn(`\u26a0\ufe0f [Schema] Public marketplace index check failed:`, err.message);
   }
 }
 
 /**
- * Ensures notification_type enum includes CNIC-related values.
+ * Ensures notification_type enum includes all required values.
  */
-async function ensureCnicNotificationTypes() {
-  const newValues = ['cnic_verified', 'cnic_rejected', 'public_toggle_request', 'public_toggle_approved'];
+async function ensureNotificationTypes() {
+  const newValues = [
+    'cnic_verified', 'cnic_rejected', 'public_toggle_request', 'public_toggle_approved',
+    'cycle_completed', 'payment_submitted',
+  ];
   for (const val of newValues) {
     try {
       const check = await query(
@@ -354,10 +358,10 @@ async function ensureCnicNotificationTypes() {
       );
       if (check.rows.length === 0) {
         await query(`ALTER TYPE notification_type ADD VALUE '${val}'`);
-        console.log(`\u2705 [Schema] Added '${val}' to notification_type enum.`);
+        console.log(`✅ [Schema] Added '${val}' to notification_type enum.`);
       }
     } catch (err) {
-      console.warn(`\u26a0\ufe0f [Schema] notification_type enum check for '${val}' failed:`, err.message);
+      console.warn(`⚠️ [Schema] notification_type enum check for '${val}' failed:`, err.message);
     }
   }
 }
@@ -417,10 +421,49 @@ app.get('/api/uploads/cnic/:filename', requireAuth, async (req, res) => {
 });
 
 
-// Health check
+// Health check endpoints
 app.get('/', (req, res) => {
-  res.json({ message: 'Server is running', status: 'OK' });
+  res.json({ message: 'Sanjhi AI Backend is active', status: 'OK', uptime: process.uptime() });
 });
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString(), uptime: process.uptime() });
+});
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+/**
+ * Render Keep-Alive Self-Pinger.
+ * Pings the server every 10 minutes to prevent Render free tier from going to sleep.
+ * Automatically detects process.env.RENDER_EXTERNAL_URL or process.env.APP_URL.
+ */
+function initKeepAlive() {
+  const url = process.env.RENDER_EXTERNAL_URL || process.env.APP_URL;
+  if (!url) {
+    console.log('ℹ️ [KeepAlive] Local environment detected (no RENDER_EXTERNAL_URL set). KeepAlive pinger idle.');
+    return;
+  }
+
+  const pingUrl = `${url.replace(/\/$/, '')}/api/health`;
+  const PING_INTERVAL = 10 * 60 * 1000; // 10 minutes (Render sleeps at 15 mins)
+
+  console.log(`🚀 [KeepAlive] Initialized self-pinger targeting: ${pingUrl} (every 10m)`);
+
+  setInterval(async () => {
+    try {
+      const response = await fetch(pingUrl);
+      if (response.ok) {
+        console.log(`💓 [KeepAlive] Ping successful at ${new Date().toLocaleTimeString('en-PK')}`);
+      } else {
+        console.warn(`⚠️ [KeepAlive] Ping returned status ${response.status}`);
+      }
+    } catch (err) {
+      console.warn('⚠️ [KeepAlive] Ping error:', err.message);
+    }
+  }, PING_INTERVAL);
+}
 
 app.listen(PORT, '0.0.0.0', async () => {
   console.log(`Server listening on port ${PORT}`);
@@ -431,10 +474,12 @@ app.listen(PORT, '0.0.0.0', async () => {
   await ensureAdminActionLogsCompat(); // ensures admin_action_logs supports AI agent actions
   await ensureCnicColumns(); // ensures users table CNIC verification columns
   await ensurePublicCommitteeColumns(); // ensures committees table public marketplace columns
-  await ensureCnicNotificationTypes(); // ensures 'cnic_verified' + 'cnic_rejected' notification types
+  await ensureNotificationTypes(); // ensures all notification_type enum values exist
   await ensureAdminActionTypeCnic(); // ensures CNIC admin action types
   await initDefaultAdmin(); // ensures default super admin account exists
   initQueue(processComplaint); // initialize complaint agent queue
   startSweeper(); // start periodic stuck-complaint sweeper
   initWhatsAppGateway();  // Initializes WhatsApp Web Socket Gateway
+  initReminderScheduler(); // Initializes Multi-channel payment reminder scheduler
+  initKeepAlive(); // Keeps Render instance awake 24/7
 });

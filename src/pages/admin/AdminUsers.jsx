@@ -69,6 +69,7 @@ export default function AdminUsers() {
     if (activeFilter === 'SUSPENDED') return u.is_suspended;
     if (activeFilter === 'CNIC_PENDING') return u.cnic_status === 'pending';
     if (activeFilter === 'CNIC_VERIFIED') return u.cnic_status === 'verified';
+    if (activeFilter === 'REPORTED') return (u.reports_count || 0) > 0;
 
     // Search query
     if (searchQuery.trim()) {
@@ -114,6 +115,7 @@ export default function AdminUsers() {
     { label: 'Users', icon: 'group', path: '/admin/users' },
     { label: 'Committees', icon: 'groups', path: '/admin/committees' },
     { label: 'Disputes', icon: 'gavel', path: '/admin/disputes' },
+    { label: 'CNIC Verification', icon: 'badge', path: '/admin/cnic-verification' },
     { label: 'Broadcasts', icon: 'campaign', path: '/admin/announcements' },
     { label: 'Audit Log', icon: 'history', path: '/admin/activity' },
     { label: 'Settings', icon: 'settings', path: '/admin/settings' },
@@ -216,6 +218,7 @@ export default function AdminUsers() {
               { id: 'ALL', label: 'All Users', count: users.length, icon: 'group' },
               { id: 'ACTIVE', label: 'Active Users', count: users.filter((u) => !u.is_suspended).length, icon: 'check_circle' },
               { id: 'SUSPENDED', label: 'Suspended', count: users.filter((u) => u.is_suspended).length, icon: 'block' },
+              { id: 'REPORTED', label: 'Reported Users', count: users.filter((u) => (u.reports_count || 0) > 0).length, icon: 'flag' },
               { id: 'CNIC_PENDING', label: 'CNIC Pending', count: users.filter((u) => u.cnic_status === 'pending').length, icon: 'schedule' },
               { id: 'CNIC_VERIFIED', label: 'CNIC Verified', count: users.filter((u) => u.cnic_status === 'verified').length, icon: 'verified' },
             ].map((tab) => (
@@ -339,6 +342,11 @@ export default function AdminUsers() {
                             <span className="px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-label text-[11px] font-bold flex items-center gap-1">
                               <Icon name="groups" size={13} /> {u.committees_count || 0} Pools
                             </span>
+                            {(u.reports_count || 0) > 0 && (
+                              <span className="px-3 py-1 rounded-xl bg-rose-50 text-rose-700 font-label text-[11px] font-bold border border-rose-100 flex items-center gap-1">
+                                <Icon name="flag" size={13} /> {u.reports_count} Reports
+                              </span>
+                            )}
                           </div>
 
                           <button
@@ -417,6 +425,14 @@ export default function AdminUsers() {
                   selectedUser.cnic_status === 'rejected' ? 'text-rose-700' : 'text-slate-600'
                 }`}>
                   {selectedUser.cnic_status || 'Unverified'}
+                </p>
+              </div>
+              <div>
+                <p className="font-label text-[9px] uppercase font-bold text-on-surface-variant">Reports Filed Against</p>
+                <p className={`font-body text-[13px] font-semibold ${
+                  (selectedUser.reports_count || 0) > 0 ? 'text-rose-700' : 'text-slate-600'
+                }`}>
+                  {selectedUser.reports_count || 0} report{selectedUser.reports_count !== 1 ? 's' : ''}
                 </p>
               </div>
               {selectedUser.cnic_number && (

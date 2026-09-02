@@ -12,6 +12,7 @@ import {
   uploadProfilePhotoController,
   submitCnicController,
   getCnicStatusController,
+  scanCnicOcrController,
   getNotificationPrefsController,
   updateNotificationPrefsController,
   sendContactOTPController,
@@ -75,6 +76,7 @@ router.post('/contact/verify-otp', requireAuth, verifyContactOTPController);
 router.post('/profile/photo', requireAuth, upload.single('photo'), uploadProfilePhotoController);
 
 // CNIC verification
+router.post('/cnic/scan-ocr', requireAuth, upload.single('image'), scanCnicOcrController);
 router.post(
   '/cnic/submit',
   requireAuth,

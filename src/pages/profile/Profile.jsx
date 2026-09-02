@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Icon from '../../components/Icon';
 import BottomNav from '../../components/BottomNav';
+import CnicVerificationModal from '../../components/CnicVerificationModal';
 import { useNavDrawer } from '../../context/NavDrawerContext';
 import logo from '../../assets/screen.png';
 import aiLogo from '../../assets/sanjhi-ai-logo.png';
@@ -14,6 +15,7 @@ import {
   logout,
   sendContactOTP,
   verifyContactOTP,
+  getCnicStatus,
 } from '../../services/authService';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL
@@ -93,6 +95,9 @@ export default function Profile() {
   const [verifyingOTP, setVerifyingOTP] = useState(false);
   const [modalError, setModalError] = useState('');
 
+  const [showCnicModal, setShowCnicModal] = useState(false);
+  const [cnicData, setCnicData] = useState(null);
+
   const [notifPrefs, setNotifPrefs] = useState({
     push_enabled: true,
     sms_enabled: true,
@@ -131,6 +136,10 @@ export default function Profile() {
           const prefs = await getNotificationPrefs();
           if (prefs) setNotifPrefs(prefs);
         } catch (_) {}
+        try {
+          const cnicRes = await getCnicStatus();
+          setCnicData(cnicRes?.cnic || cnicRes);
+        } catch (_) {}
       } catch (err) {
         setErrorMessage('Could not load profile. Please try again.');
       } finally {
@@ -139,6 +148,15 @@ export default function Profile() {
     }
     loadProfile();
   }, []);
+
+  async function reloadCnic() {
+    try {
+      const cnicRes = await getCnicStatus();
+      setCnicData(cnicRes?.cnic || cnicRes);
+      const profileData = await getProfile();
+      setUser(profileData);
+    } catch (_) {}
+  }
 
   function showToast(msg, type = 'success') {
     setToastMessage(msg);
@@ -553,6 +571,67 @@ export default function Profile() {
                   )}
                 </div>
 
+                {/* CNIC Identity Verification row */}
+                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-teal-50/70 to-slate-50 border border-[#006972]/15 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-[#006972]/10 text-[#006972] flex items-center justify-center shrink-0">
+                        <Icon name="badge" size={18} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-label text-[10px] font-bold uppercase text-on-surface-variant tracking-wider">CNIC Identity</p>
+                        {loading ? <Bone className="w-32 h-4 rounded-lg mt-0.5" /> : (
+                          <p className="font-headline text-[13px] font-bold text-deep-navy truncate">
+                            {cnicData?.cnic_number || user?.cnic_number || <span className="text-on-surface-variant font-normal text-[12px]">Not added</span>}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {cnicData?.cnic_status === 'verified' || user?.cnic_status === 'verified' ? (
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-full flex items-center gap-1">
+                          <Icon name="verified" size={12} /> Verified
+                        </span>
+                      ) : cnicData?.cnic_status === 'pending' || user?.cnic_status === 'pending' ? (
+                        <span className="text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2.5 py-1 rounded-full flex items-center gap-1">
+                          <Icon name="schedule" size={12} /> Pending Review
+                        </span>
+                      ) : cnicData?.cnic_status === 'rejected' || user?.cnic_status === 'rejected' ? (
+                        <span className="text-[10px] font-bold text-rose-700 bg-rose-100 border border-rose-300 px-2.5 py-1 rounded-full flex items-center gap-1">
+                          <Icon name="error" size={12} /> Rejected
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-full flex items-center gap-1">
+                          <Icon name="help" size={12} /> Unverified
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {cnicData?.cnic_rejection_reason && (
+                    <div className="p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[11px] font-body flex items-start gap-1">
+                      <Icon name="info" size={14} className="shrink-0 mt-0.5" />
+                      <span><strong>Reason:</strong> {cnicData.cnic_rejection_reason}</span>
+                    </div>
+                  )}
+
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowCnicModal(true)}
+                      className="w-full py-2 px-3 rounded-xl bg-[#006972] hover:bg-[#00575f] text-white font-label text-[12px] font-bold transition-all cursor-pointer border-none shadow-sm flex items-center justify-center gap-1.5"
+                    >
+                      <Icon name="badge" size={15} />
+                      {cnicData?.cnic_status === 'verified' || user?.cnic_status === 'verified'
+                        ? 'View / Update CNIC Details'
+                        : cnicData?.cnic_status === 'pending' || user?.cnic_status === 'pending'
+                        ? 'Update / Resubmit CNIC'
+                        : 'Submit CNIC for Verification'}
+                    </button>
+                  </div>
+                </div>
+
                 {/* Member since */}
                 <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100">
                   <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-700 flex items-center justify-center shrink-0">
@@ -953,6 +1032,16 @@ export default function Profile() {
           </div>
         </div>
       )}
+
+      {/* CNIC Verification Modal */}
+      <CnicVerificationModal
+        isOpen={showCnicModal}
+        onClose={() => setShowCnicModal(false)}
+        onVerified={() => {
+          showToast('CNIC submitted for verification! ✓');
+          reloadCnic();
+        }}
+      />
 
       {/* ── MOBILE BOTTOM NAV ── */}
       <BottomNav />

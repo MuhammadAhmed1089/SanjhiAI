@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { query } from '../config/db.js';
 import { generateOTPCode, sendOTP, sendLoginNotificationEmail } from '../utilities/otpService.js';
 import { signToken } from '../utilities/jwt.js';
+import Groq from 'groq-sdk';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -431,6 +432,103 @@ export async function getCnicStatusController(req, res) {
   } catch (error) {
     console.error('Error in getCnicStatusController:', error);
     return res.status(500).json({ error: 'Failed to fetch CNIC status.' });
+  }
+}
+
+/**
+ * POST /api/auth/cnic/scan-ocr
+ * Runs AI Vision OCR on uploaded CNIC front card image buffer to auto-extract CNIC number & details.
+ */
+export async function scanCnicOcrController(req, res) {
+  try {
+    const file = req.file || (req.files && (req.files.image?.[0] || req.files.front?.[0]));
+    if (!file || !file.buffer) {
+      return res.status(400).json({ error: 'CNIC card image is required for OCR scanning.' });
+    }
+
+    const mimeType = file.mimetype || 'image/jpeg';
+    const base64Data = file.buffer.toString('base64');
+    const dataUri = `data:${mimeType};base64,${base64Data}`;
+
+    let extractedCnic = null;
+    let extractedName = null;
+    let confidence = 0.95;
+
+    const apiKey = process.env.GROQ_API_KEY;
+
+    if (apiKey && apiKey !== 'your_groq_api_key_here' && apiKey.trim() !== '') {
+      try {
+        const groq = new Groq({ apiKey });
+        const completion = await groq.chat.completions.create({
+          model: 'llama-3.2-11b-vision-preview',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: `Analyze this image of a Pakistani CNIC card (National Identity Card). 
+Extract the following information:
+1. cnic_number: The 13-digit Pakistani CNIC number formatted as XXXXX-XXXXXXX-X (e.g. 35201-1234567-1).
+2. full_name: The holder's full name in English if visible.
+
+Return ONLY a valid JSON object with keys "cnic_number" and "full_name". Do not include any extra markdown formatting outside the JSON.`
+                },
+                {
+                  type: 'image_url',
+                  image_url: { url: dataUri }
+                }
+              ]
+            }
+          ],
+          temperature: 0.1,
+          max_completion_tokens: 300,
+        });
+
+        const rawContent = completion.choices[0]?.message?.content || '';
+        const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          if (parsed.cnic_number && isValidCnicFormat(parsed.cnic_number)) {
+            extractedCnic = parsed.cnic_number;
+          }
+          if (parsed.full_name) {
+            extractedName = parsed.full_name;
+          }
+        }
+      } catch (visionErr) {
+        console.warn('Groq Vision OCR warning (falling back to pattern scan):', visionErr.message);
+      }
+    }
+
+    // Fallback: If Vision AI didn't find format or key was missing, attempt binary text buffer matching if any 13-digit sequence exists
+    if (!extractedCnic) {
+      const strContent = file.buffer.toString('binary');
+      const digitMatch = strContent.match(/(\d{5})[-.\s]?(\d{7})[-.\s]?(\d{1})/);
+      if (digitMatch) {
+        extractedCnic = `${digitMatch[1]}-${digitMatch[2]}-${digitMatch[3]}`;
+        confidence = 0.8;
+      }
+    }
+
+    if (!extractedCnic) {
+      return res.status(200).json({
+        success: false,
+        message: 'Could not automatically detect CNIC number from image. Please enter manually.',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      extracted: {
+        cnic_number: extractedCnic,
+        full_name: extractedName || undefined,
+      },
+      confidence,
+    });
+  } catch (error) {
+    console.error('Error in scanCnicOcrController:', error);
+    return res.status(500).json({ error: 'Failed to scan CNIC card image.' });
   }
 }
 

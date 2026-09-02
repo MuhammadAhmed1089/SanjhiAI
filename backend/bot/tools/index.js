@@ -3,6 +3,7 @@ import { listMyCommittees, getCommitteeDetail, createCommittee, joinCommitteeByC
 import { getMyPayments, submitMyPayment } from './payments.js';
 import { fileComplaint, getMyComplaints } from './complaints.js';
 import { getNotifications } from './notifications.js';
+import { getCalendarReminderLink } from './calendar.js';
 import { deleteSession } from '../sessionManager.js';
 
 export const TOOL_DEFINITIONS = [
@@ -127,6 +128,20 @@ export const TOOL_DEFINITIONS = [
   {
     type: 'function',
     function: {
+      name: 'get_calendar_reminder_link',
+      description: 'Get a 1-click Google Calendar reminder link for committee payment due dates.',
+      parameters: {
+        type: 'object',
+        properties: {
+          committee_id: { type: 'string', description: 'Optional committee UUID' },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'logout',
       description: 'Log out the user from the WhatsApp bot session.',
       parameters: { type: 'object', properties: {}, required: [] },
@@ -177,6 +192,9 @@ export async function executeTool(toolName, args, session, phone) {
 
     case 'get_notifications':
       return getNotifications(jwt);
+
+    case 'get_calendar_reminder_link':
+      return getCalendarReminderLink(jwt, args.committee_id);
 
     case 'logout':
       await deleteSession(phone);

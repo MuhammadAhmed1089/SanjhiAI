@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { getCnicStatus, submitCnic } from '../services/authService';
+import { getCnicStatus, submitCnic, scanCnicOcr } from '../services/authService';
 import Button from './Button';
 import Icon from './Icon';
 
@@ -23,6 +23,8 @@ export default function CnicVerificationModal({ isOpen, onClose, onVerified }) {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState('');
+  const [scanningOcr, setScanningOcr] = useState(false);
+  const [ocrExtracted, setOcrExtracted] = useState(false);
   const frontInputRef = useRef(null);
   const backInputRef = useRef(null);
 
@@ -38,6 +40,28 @@ export default function CnicVerificationModal({ isOpen, onClose, onVerified }) {
       .catch(() => setStatus('unverified'))
       .finally(() => setFetching(false));
   }, [isOpen]);
+
+  const handleFrontChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFrontFile(file);
+    setFrontPreview(URL.createObjectURL(file));
+
+    // Run AI Vision OCR scanning
+    try {
+      setScanningOcr(true);
+      setOcrExtracted(false);
+      const res = await scanCnicOcr(file);
+      if (res?.success && res.extracted?.cnic_number) {
+        setCnicNumber(formatCnic(res.extracted.cnic_number));
+        setOcrExtracted(true);
+      }
+    } catch (err) {
+      console.warn('AI OCR scan notice:', err);
+    } finally {
+      setScanningOcr(false);
+    }
+  };
 
   const handleFileChange = (setter, previewSetter) => (e) => {
     const file = e.target.files?.[0];
@@ -77,7 +101,11 @@ export default function CnicVerificationModal({ isOpen, onClose, onVerified }) {
     }
   };
 
+  const [showForm, setShowForm] = useState(false);
+
   if (!isOpen) return null;
+
+  const isFormVisible = showForm || status !== 'verified';
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -147,19 +175,34 @@ export default function CnicVerificationModal({ isOpen, onClose, onVerified }) {
               </div>
             </div>
 
-            {status !== 'verified' && (
+            {isFormVisible && (
               <div className="space-y-5">
                 <div>
-                  <label className="block text-sm font-label font-semibold text-deep-navy mb-2">
-                    CNIC Number
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-label font-semibold text-deep-navy">
+                      CNIC Number
+                    </label>
+                    {scanningOcr && (
+                      <span className="text-[11px] font-label font-bold text-[#006972] flex items-center gap-1 animate-pulse">
+                        <Icon name="auto_awesome" size={13} /> AI Scanning Card...
+                      </span>
+                    )}
+                    {ocrExtracted && !scanningOcr && (
+                      <span className="text-[11px] font-label font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                        <Icon name="check_circle" size={12} /> Auto-detected from Card
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="text"
                     value={cnicNumber}
-                    onChange={(e) => setCnicNumber(formatCnic(e.target.value))}
+                    onChange={(e) => {
+                      setCnicNumber(formatCnic(e.target.value));
+                      setOcrExtracted(false);
+                    }}
                     placeholder="35201-1234567-1"
                     maxLength={15}
-                    className="w-full px-4 py-3 rounded-2xl border border-deep-navy/15 bg-white text-deep-navy placeholder:text-deep-navy/40 focus:outline-none focus:ring-2 focus:ring-teal-emerald/30"
+                    className="w-full px-4 py-3 rounded-2xl border border-deep-navy/15 bg-white text-deep-navy placeholder:text-deep-navy/40 focus:outline-none focus:ring-2 focus:ring-teal-emerald/30 font-mono"
                   />
                 </div>
 
@@ -178,7 +221,7 @@ export default function CnicVerificationModal({ isOpen, onClose, onVerified }) {
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
                       className="hidden"
-                      onChange={handleFileChange(setFrontFile, setFrontPreview)}
+                      onChange={handleFrontChange}
                     />
                     {frontPreview ? (
                       <img
@@ -238,23 +281,46 @@ export default function CnicVerificationModal({ isOpen, onClose, onVerified }) {
                   disabled={loading}
                   icon={loading ? 'progress_activity' : 'check_circle'}
                 >
-                  {loading ? 'Submitting…' : status === 'pending' ? 'Resubmit CNIC' : 'Submit for Verification'}
+                  {loading ? 'Submitting…' : status === 'pending' ? 'Resubmit CNIC' : status === 'verified' ? 'Update CNIC Submission' : 'Submit for Verification'}
                 </Button>
+                {status === 'verified' && (
+                  <button
+                    type="button"
+                    onClick={() => setShowForm(false)}
+                    className="w-full py-2.5 text-xs font-label font-bold text-deep-navy/60 hover:text-deep-navy transition-colors text-center cursor-pointer border-none bg-transparent"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
               </div>
             )}
 
-            {status === 'verified' && (
+            {!isFormVisible && status === 'verified' && (
               <div className="text-center py-6">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-success/15 flex items-center justify-center">
-                  <Icon name="verified" size={32} className="text-success" />
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-100 flex items-center justify-center">
+                  <Icon name="verified" size={32} className="text-emerald-600" />
                 </div>
-                <p className="text-deep-navy font-label font-semibold">Your CNIC is verified!</p>
-                <p className="text-sm text-deep-navy/70 mt-1">
-                  You can now join public committees.
+                <p className="text-deep-navy font-label font-bold text-lg">Your CNIC is Verified!</p>
+                {cnicNumber && (
+                  <p className="text-sm font-mono text-[#006972] font-semibold mt-1 bg-[#006972]/10 py-1 px-3 rounded-full inline-block">
+                    CNIC: {cnicNumber}
+                  </p>
+                )}
+                <p className="text-xs text-deep-navy/70 mt-2">
+                  Your identity is fully verified on Sanjhi. You can join and create public ROSCA committees.
                 </p>
-                <Button fullWidth onClick={onClose} className="mt-6">
-                  Continue
-                </Button>
+                <div className="mt-6 space-y-2">
+                  <Button fullWidth onClick={() => setShowForm(true)} variant="secondary">
+                    Update CNIC Details
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="w-full py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-label text-sm font-bold transition-colors cursor-pointer border-none"
+                  >
+                    Done
+                  </button>
+                </div>
               </div>
             )}
           </>

@@ -185,3 +185,26 @@ export async function sendLoginNotificationEmail(email, userName) {
   }
 }
 
+/**
+ * Send general HTML email notification via Nodemailer
+ */
+export async function sendGeneralEmail(to, subject, html) {
+  try {
+    if (!process.env.SMTP_USER || !to || !to.includes('@')) {
+      return { success: false, error: 'SMTP not configured or invalid recipient.' };
+    }
+
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || '"Sanjhi AI" <no-reply@sanjhi.ai>',
+      to,
+      subject,
+      html,
+    });
+    console.log(`✅ [EMAIL SENT] Sent notification email to ${to}`);
+    return { success: true };
+  } catch (err) {
+    console.error(`❌ [EMAIL SEND FAILED]:`, err.message);
+    return { success: false, error: err.message };
+  }
+}
+

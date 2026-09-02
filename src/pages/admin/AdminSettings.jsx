@@ -78,6 +78,7 @@ export default function AdminSettings() {
     { label: 'Users', icon: 'group', path: '/admin/users' },
     { label: 'Committees', icon: 'groups', path: '/admin/committees' },
     { label: 'Disputes', icon: 'gavel', path: '/admin/disputes' },
+    { label: 'CNIC Verification', icon: 'badge', path: '/admin/cnic-verification' },
     { label: 'Broadcasts', icon: 'campaign', path: '/admin/announcements' },
     { label: 'Audit Log', icon: 'history', path: '/admin/activity' },
     { label: 'Settings', icon: 'settings', path: '/admin/settings' },

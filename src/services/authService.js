@@ -140,6 +140,16 @@ export function submitCnic(payload) {
 }
 
 /**
+ * Run AI OCR on CNIC image to extract CNIC number & details.
+ * @param {File} imageFile
+ */
+export function scanCnicOcr(imageFile) {
+  const formData = new FormData();
+  formData.append('image', imageFile);
+  return api.upload(`${BASE}/cnic/scan-ocr`, formData);
+}
+
+/**
  * Get current CNIC verification status.
  */
 export function getCnicStatus() {

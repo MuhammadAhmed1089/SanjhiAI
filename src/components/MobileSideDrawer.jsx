@@ -276,6 +276,13 @@ export default function MobileSideDrawer() {
                     currentPath={location.pathname}
                     onClick={() => handleNavigate('/support/complaints')}
                   />
+                  <DrawerLink
+                    icon="flag"
+                    label="Report a User"
+                    path="/support/file-complaint"
+                    currentPath={location.pathname}
+                    onClick={() => handleNavigate('/support/file-complaint?mode=user_report')}
+                  />
                   <button
                     onClick={() => {
                       closeDrawer();

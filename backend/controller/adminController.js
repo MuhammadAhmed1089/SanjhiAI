@@ -1,4 +1,5 @@
 import { query } from '../config/db.js';
+import { getCache, setCache } from '../config/redis.js';
 import { getQueue } from '../utilities/complaintAgent/queue.js';
 
 /**
@@ -138,7 +139,7 @@ export async function getOverview(req, res) {
 
 export async function getUsers(req, res) {
   try {
-    const { search, is_suspended } = req.query;
+    const { search, is_suspended, has_reports } = req.query;
     let sql = `
       SELECT u.id, u.full_name, u.email, u.phone_number, u.is_suspended, u.created_at,
         COALESCE(ts.score, 85) AS trust_score,
@@ -146,7 +147,8 @@ export async function getUsers(req, res) {
         u.cnic_number,
         u.cnic_submitted_at,
         u.cnic_verified_at,
-        (SELECT COUNT(*)::int FROM members m WHERE m.user_id = u.id) AS committees_count
+        (SELECT COUNT(*)::int FROM members m WHERE m.user_id = u.id) AS committees_count,
+        (SELECT COUNT(*)::int FROM complaints cmp WHERE cmp.accused_user_id = u.id) AS reports_count
       FROM users u
       LEFT JOIN trust_scores ts ON ts.user_id = u.id
       WHERE 1=1
@@ -161,6 +163,10 @@ export async function getUsers(req, res) {
     if (is_suspended !== undefined) {
       params.push(is_suspended === 'true');
       sql += ` AND u.is_suspended = $${params.length}`;
+    }
+
+    if (has_reports === 'true') {
+      sql += ` AND (SELECT COUNT(*)::int FROM complaints cmp WHERE cmp.accused_user_id = u.id) > 0`;
     }
 
     sql += ` ORDER BY u.created_at DESC LIMIT 100`;
@@ -345,13 +351,20 @@ export async function unfreezeCommittee(req, res) {
 
 export async function getComplaints(req, res) {
   try {
-    const { search, status } = req.query;
+    const { search, status, type } = req.query;
     let sql = `
       SELECT cmp.*,
         u.full_name AS complainant_name,
+        u.email AS complainant_email,
+        u.phone_number AS complainant_phone,
+        acc.full_name AS accused_name,
+        acc.email AS accused_email,
+        acc.phone_number AS accused_phone,
+        acc.is_suspended AS accused_is_suspended,
         c.name AS committee_name
       FROM complaints cmp
       LEFT JOIN users u ON u.id = cmp.filed_by
+      LEFT JOIN users acc ON acc.id = cmp.accused_user_id
       LEFT JOIN committees c ON c.id = cmp.committee_id
       WHERE 1=1
     `;
@@ -359,7 +372,7 @@ export async function getComplaints(req, res) {
 
     if (search) {
       params.push(`%${search.toLowerCase()}%`);
-      sql += ` AND (LOWER(cmp.description) LIKE $${params.length} OR LOWER(u.full_name) LIKE $${params.length} OR LOWER(c.name) LIKE $${params.length})`;
+      sql += ` AND (LOWER(cmp.description) LIKE $${params.length} OR LOWER(u.full_name) LIKE $${params.length} OR LOWER(COALESCE(acc.full_name, '')) LIKE $${params.length} OR LOWER(c.name) LIKE $${params.length})`;
     }
 
     if (status) {
@@ -367,7 +380,13 @@ export async function getComplaints(req, res) {
       sql += ` AND cmp.status = $${params.length}`;
     }
 
-    sql += ` ORDER BY cmp.created_at DESC LIMIT 50`;
+    if (type === 'user_report') {
+      sql += ` AND cmp.accused_user_id IS NOT NULL`;
+    } else if (type === 'pool_dispute') {
+      sql += ` AND cmp.committee_id IS NOT NULL`;
+    }
+
+    sql += ` ORDER BY cmp.created_at DESC LIMIT 100`;
 
     try {
       const result = await query(sql, params);
@@ -507,6 +526,12 @@ export async function getActivityLogs(req, res) {
 export async function getAnalytics(req, res) {
   try {
     const { range } = req.query; // 7d, 30d, 90d, 1y
+    const cacheKey = `sanjhi:cache:admin_analytics:${range || 'all'}`;
+    const cached = await getCache(cacheKey);
+    if (cached) {
+      return res.status(200).json(cached);
+    }
+
     let totalVolume = 0;
     let activeUsers = 0;
     let avgDuration = 0;
@@ -534,14 +559,19 @@ export async function getAnalytics(req, res) {
       // ignore
     }
 
-    return res.status(200).json({
+    const payload = {
       total_volume_pkr: totalVolume,
       monthly_payout_volume: Math.round(totalVolume * 0.4),
       active_users_count: activeUsers,
       onboarding_conversion_rate: activeUsers > 0 ? 88.5 : 0,
       on_time_payment_rate: onTimeRate,
       average_pool_duration_months: avgDuration || 6,
-    });
+    };
+
+    // Cache analytics for 60 seconds
+    await setCache(cacheKey, payload, 60);
+
+    return res.status(200).json(payload);
   } catch (error) {
     console.error('Error fetching analytics:', error);
     return res.status(500).json({ error: 'Failed to fetch platform analytics.' });
@@ -722,8 +752,8 @@ export async function verifyCnicController(req, res) {
 
     try {
       await query(
-        `INSERT INTO notifications (user_id, type, title, body, data, is_read, created_at)
-         VALUES ($1, 'cnic_verified', 'CNIC Verified', 'Your CNIC verification has been approved.', '{}', false, NOW())`,
+        `INSERT INTO notifications (user_id, type, channel, content, created_at)
+         VALUES ($1, 'cnic_verified', 'in_app', 'Your CNIC verification has been approved. ✓', NOW())`,
         [userId]
       );
     } catch (notifErr) {
@@ -765,9 +795,9 @@ export async function rejectCnicController(req, res) {
 
     try {
       await query(
-        `INSERT INTO notifications (user_id, type, title, body, data, is_read, created_at)
-         VALUES ($1, 'cnic_rejected', 'CNIC Rejected', 'Your CNIC verification was rejected. Please resubmit a clear photo of your CNIC.', $2, false, NOW())`,
-        [userId, JSON.stringify({ reason: reason || 'Submission rejected by admin' })]
+        `INSERT INTO notifications (user_id, type, channel, content, created_at)
+         VALUES ($1, 'cnic_rejected', 'in_app', $2, NOW())`,
+        [userId, `Your CNIC verification was rejected: ${reason || 'Submission rejected by admin'}. Please resubmit a clear photo of your CNIC.`]
       );
     } catch (notifErr) {
       console.warn('CNIC rejected notification warning:', notifErr.message);
@@ -779,5 +809,26 @@ export async function rejectCnicController(req, res) {
   } catch (error) {
     console.error('Error rejecting CNIC:', error);
     return res.status(500).json({ error: 'Failed to reject CNIC submission.' });
+  }
+}
+
+/**
+ * GET /api/admin/notifications
+ * Global notification audit feed across all users (for Admin Portal).
+ */
+export async function getGlobalNotificationsController(req, res) {
+  try {
+    const result = await query(
+      `SELECT n.*, u.full_name AS user_name, u.email AS user_email, c.name AS committee_name
+       FROM notifications n
+       JOIN users u ON u.id = n.user_id
+       LEFT JOIN committees c ON c.id = n.related_committee_id
+       ORDER BY n.created_at DESC
+       LIMIT 100`
+    );
+    return res.status(200).json({ notifications: result.rows });
+  } catch (error) {
+    console.error('Error fetching global admin notifications:', error);
+    return res.status(500).json({ error: 'Failed to fetch notifications stream.' });
   }
 }

@@ -1,4 +1,5 @@
 import { query } from '../config/db.js';
+import { getCache, setCache } from '../config/redis.js';
 
 /**
  * GET /api/dashboard
@@ -11,6 +12,12 @@ export async function getDashboardOverviewController(req, res) {
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized. User ID not found in token.' });
+    }
+
+    const cacheKey = `sanjhi:cache:dashboard:${userId}`;
+    const cached = await getCache(cacheKey);
+    if (cached) {
+      return res.status(200).json(cached);
     }
 
     // 1. Fetch user profile
@@ -145,7 +152,7 @@ export async function getDashboardOverviewController(req, res) {
     }));
 
     // Return aggregated payload
-    return res.status(200).json({
+    const responsePayload = {
       user: {
         id: user.id,
         fullName: user.full_name,
@@ -161,7 +168,12 @@ export async function getDashboardOverviewController(req, res) {
       },
       committees,
       recentNotifications: notifications,
-    });
+    };
+
+    // Cache user dashboard for 20 seconds
+    await setCache(cacheKey, responsePayload, 20);
+
+    return res.status(200).json(responsePayload);
   } catch (error) {
     console.error('Error in getDashboardOverviewController:', error);
     return res.status(500).json({ error: 'Failed to fetch dashboard data.' });

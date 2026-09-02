@@ -4,6 +4,7 @@ import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
 import AdminMobileNav from '../../components/AdminMobileNav';
 import { getComplaints, resolveComplaint, dismissComplaint, reinvestigateComplaint } from '../../services/adminService';
+import { suspendUser } from '../../services/adminService';
 import { logout } from '../../services/authService';
 
 const GLASS_CARD = 'bg-white/70 backdrop-blur-2xl border border-white/90 shadow-[0_12px_40px_rgba(0,105,114,0.08)]';
@@ -65,6 +66,7 @@ export default function AdminDisputes() {
 
   /* Filter Complaints */
   const filteredComplaints = complaints.filter((c) => {
+    if (activeTab === 'USER_REPORTS') return !!c.accused_user_id;
     if (activeTab === 'OPEN') return c.status === 'open' || c.status === 'pending' || c.status === 'in_review' || c.status === 'needs_human_review';
     if (activeTab === 'RESOLVED') return c.status === 'resolved' || c.status === 'ai_resolved';
     if (activeTab === 'DISMISSED') return c.status === 'dismissed';
@@ -74,6 +76,7 @@ export default function AdminDisputes() {
       return (
         (c.complainant_name || '').toLowerCase().includes(q) ||
         (c.committee_name || '').toLowerCase().includes(q) ||
+        (c.accused_name || '').toLowerCase().includes(q) ||
         (c.description || '').toLowerCase().includes(q) ||
         (c.id || '').toLowerCase().includes(q)
       );
@@ -120,6 +123,7 @@ export default function AdminDisputes() {
     { label: 'Users', icon: 'group', path: '/admin/users' },
     { label: 'Committees', icon: 'groups', path: '/admin/committees' },
     { label: 'Disputes', icon: 'gavel', path: '/admin/disputes' },
+    { label: 'CNIC Verification', icon: 'badge', path: '/admin/cnic-verification' },
     { label: 'Broadcasts', icon: 'campaign', path: '/admin/announcements' },
     { label: 'Audit Log', icon: 'history', path: '/admin/activity' },
     { label: 'Settings', icon: 'settings', path: '/admin/settings' },
@@ -220,6 +224,7 @@ export default function AdminDisputes() {
           <section className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
             {[
               { id: 'ALL', label: 'All Complaints', count: complaints.length, icon: 'gavel' },
+              { id: 'USER_REPORTS', label: 'User Reports', count: complaints.filter((c) => c.accused_user_id).length, icon: 'flag' },
               { id: 'OPEN', label: 'Open Triage', count: complaints.filter((c) => c.status !== 'resolved' && c.status !== 'dismissed').length, icon: 'pending_actions' },
               { id: 'RESOLVED', label: 'Resolved', count: complaints.filter((c) => c.status === 'resolved').length, icon: 'check_circle' },
               { id: 'DISMISSED', label: 'Dismissed', count: complaints.filter((c) => c.status === 'dismissed').length, icon: 'cancel' },
@@ -290,6 +295,13 @@ export default function AdminDisputes() {
                             {c.id || '—'}
                           </span>
 
+                          {/* User Report Badge */}
+                          {c.accused_user_id && (
+                            <span className="px-2.5 py-0.5 rounded-full font-label text-[10px] font-bold uppercase bg-rose-100 text-rose-800 border border-rose-200 flex items-center gap-1">
+                              <Icon name="flag" size={10} /> User Report
+                            </span>
+                          )}
+
                           <span className={`px-2.5 py-0.5 rounded-full font-label text-[10px] font-bold uppercase tracking-wider border ${
                             c.priority === 'URGENT'
                               ? 'bg-rose-100 text-rose-800 border-rose-200'
@@ -325,7 +337,11 @@ export default function AdminDisputes() {
 
                         <div>
                           <h3 className="font-headline text-[16px] font-bold text-deep-navy">
-                            {c.complainant_name || 'Unknown'} — <span className="text-[#006972] font-semibold">{c.committee_name || 'Unknown Pool'}</span>
+                            {c.complainant_name || 'Unknown'}
+                            {c.accused_name && (
+                              <span className="text-rose-700 font-semibold"> → {c.accused_name}</span>
+                            )}
+                            {!c.accused_name && <span className="text-[#006972] font-semibold"> — {c.committee_name || 'Unknown Pool'}</span>}
                           </h3>
                           <p className="font-body text-[13px] text-on-surface-variant mt-1 line-clamp-2">
                             {c.description || 'No description provided.'}
@@ -512,6 +528,57 @@ export default function AdminDisputes() {
                 >
                   <Icon name="play_arrow" size={16} /> Run AI Investigation
                 </button>
+              </div>
+            )}
+
+            {/* Accused User Card (for User Reports) */}
+            {selectedDispute.accused_user_id && (
+              <div className="p-4 rounded-2xl bg-rose-50/70 border border-rose-200/80 space-y-3">
+                <p className="font-label text-[10px] uppercase font-bold text-rose-700 flex items-center gap-1.5">
+                  <Icon name="flag" size={13} /> Reported User
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-rose-600 text-white flex items-center justify-center font-bold font-headline text-[16px] shrink-0">
+                    {(selectedDispute.accused_name || '?').charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-label text-[14px] font-bold text-deep-navy">{selectedDispute.accused_name || 'Unknown User'}</p>
+                    {selectedDispute.accused_email && (
+                      <p className="font-body text-[12px] text-on-surface-variant">{selectedDispute.accused_email}</p>
+                    )}
+                    {selectedDispute.accused_phone && (
+                      <p className="font-body text-[12px] text-on-surface-variant">{selectedDispute.accused_phone}</p>
+                    )}
+                  </div>
+                  <span className={`px-2.5 py-1 rounded-full font-label text-[10px] font-bold uppercase border ${
+                    selectedDispute.accused_is_suspended
+                      ? 'bg-rose-100 text-rose-800 border-rose-200'
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  }`}>
+                    {selectedDispute.accused_is_suspended ? 'Suspended' : 'Active'}
+                  </span>
+                </div>
+                {!selectedDispute.accused_is_suspended && (
+                  <button
+                    onClick={async () => {
+                      if (!window.confirm(`Suspend ${selectedDispute.accused_name}?`)) return;
+                      setProcessingAction(true);
+                      try {
+                        await suspendUser(selectedDispute.accused_user_id, { notes: `Suspended via dispute #${selectedDispute.id}` });
+                        showToast(`${selectedDispute.accused_name} has been suspended.`);
+                        setSelectedDispute((prev) => ({ ...prev, accused_is_suspended: true }));
+                      } catch (err) {
+                        showToast(err.message || 'Failed to suspend user.');
+                      } finally {
+                        setProcessingAction(false);
+                      }
+                    }}
+                    disabled={processingAction}
+                    className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-label text-[12px] font-bold transition-all cursor-pointer border-none flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    <Icon name="block" size={16} /> Suspend Accused User
+                  </button>
+                )}
               </div>
             )}
 

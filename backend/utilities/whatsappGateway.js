@@ -25,6 +25,11 @@ function cleanupOldAuthFolder() {
 }
 
 export async function initWhatsAppGateway() {
+  if (process.env.ENABLE_WHATSAPP_GATEWAY === 'false') {
+    console.log('ℹ️ [WHATSAPP GATEWAY] Disabled locally via ENABLE_WHATSAPP_GATEWAY=false (Cloud server is handling WhatsApp).');
+    return;
+  }
+
   try {
     cleanupOldAuthFolder();
     const { state, saveCreds } = await usePostgresAuthState();
@@ -66,15 +71,20 @@ export async function initWhatsAppGateway() {
         const statusCode = error?.output?.statusCode;
         const errorMsg = error?.message || error?.data?.error || 'unknown';
         const isLoggedOut = statusCode === DisconnectReason.loggedOut;
+        const isReplacedConflict = statusCode === 440 || String(errorMsg).includes('conflict');
         isConnected = false;
 
         if (isLoggedOut) {
           console.log('🚪 [WHATSAPP GATEWAY] Session logged out. Will request new QR code...');
+          setTimeout(initWhatsAppGateway, 5000);
+        } else if (isReplacedConflict) {
+          console.warn('⚠️ [WHATSAPP GATEWAY] Another instance (e.g. Railway or Local) is actively connected. Backing off to prevent session fighting...');
+          // Delay reconnect by 60 seconds so the primary instance maintains connection
+          setTimeout(initWhatsAppGateway, 60000);
         } else {
-          console.log(`⚠️ [WHATSAPP GATEWAY] Disconnected (code: ${statusCode}, reason: ${errorMsg}). Reconnecting...`);
+          console.log(`⚠️ [WHATSAPP GATEWAY] Disconnected (code: ${statusCode}, reason: ${errorMsg}). Reconnecting in 5s...`);
+          setTimeout(initWhatsAppGateway, 5000);
         }
-
-        setTimeout(initWhatsAppGateway, 5000);
       } else if (connection === 'open') {
         const rawId = sock?.user?.id || '';
         const phone = rawId.split(':')[0] || rawId.split('@')[0] || 'Unknown';
@@ -114,21 +124,25 @@ export function getWhatsAppStatus() {
 }
 
 export async function sendWhatsAppWebOTP(phone, code) {
+  const message = `Your Sanjhi verification code is: *${code}*\n\nValid for 10 minutes. Do not share this code with anyone.`;
+  return sendWhatsAppMessage(phone, message);
+}
+
+export async function sendWhatsAppMessage(phone, text) {
   if (!sock || !isConnected) {
-    console.error(`[WHATSAPP GATEWAY OFFLINE] WhatsApp not connected. Cannot send OTP to ${phone}.`);
+    console.warn(`[WHATSAPP GATEWAY OFFLINE] WhatsApp not connected. Cannot send message to ${phone}.`);
     return { success: false, channel: 'whatsapp', error: 'WhatsApp gateway is not connected.' };
   }
 
   try {
     const formattedPhone = phone.replace(/[^\d]/g, '');
     const jid = `${formattedPhone}@s.whatsapp.net`;
-    const message = `Your Sanjhi verification code is: *${code}*\n\nValid for 10 minutes. Do not share this code with anyone.`;
 
-    await sock.sendMessage(jid, { text: message });
-    console.log(`✅ [WHATSAPP OTP SENT] Successfully sent code ${code} to ${phone} via WhatsApp Gateway!`);
+    await sock.sendMessage(jid, { text });
+    console.log(`✅ [WHATSAPP MESSAGE SENT] Successfully sent notification to ${phone} via WhatsApp Gateway!`);
     return { success: true, channel: 'whatsapp' };
   } catch (error) {
-    console.error(`❌ [WHATSAPP OTP ERROR]:`, error.message);
+    console.error(`❌ [WHATSAPP MESSAGE ERROR]:`, error.message);
     return { success: false, channel: 'whatsapp', error: error.message };
   }
 }
