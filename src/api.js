@@ -1,6 +1,12 @@
 /**
  * api.js — Centralized HTTP client for the Sanjhi frontend.
  *
+ * Features:
+ *  - Auto-attaches Bearer token from localStorage
+ *  - 15-second AbortController timeout per request
+ *  - Request deduplication: same GET endpoint won't fire twice simultaneously
+ *  - Humanized network errors: "Failed to fetch" → "Server is down"
+ *
  * Usage:
  *   import api from './api';
  *   const data = await api.get('/committees');
@@ -8,6 +14,12 @@
  */
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+/** Timeout for every request (ms) */
+const REQUEST_TIMEOUT_MS = 15_000;
+
+/** In-flight GET request deduplication map: endpoint → Promise */
+const inFlight = new Map();
 
 /**
  * Retrieves the stored auth token (JWT) from localStorage.
@@ -31,6 +43,21 @@ export function clearToken() {
 }
 
 /**
+ * Checks whether an error is a network-level failure
+ * (server unreachable, no internet, CORS pre-flight blocked, etc.)
+ */
+function isNetworkError(err) {
+  return (
+    err instanceof TypeError &&
+    (err.message === 'Failed to fetch' ||
+      err.message.includes('NetworkError') ||
+      err.message.includes('ERR_CONNECTION') ||
+      err.message.includes('net::') ||
+      err.message === 'Load failed')
+  );
+}
+
+/**
  * Core request function — every HTTP method funnels through here.
  *
  * @param {string} endpoint  Path relative to BASE_URL, e.g. '/auth/otp'
@@ -38,7 +65,14 @@ export function clearToken() {
  * @returns {Promise<any>}   Parsed JSON response
  */
 async function request(endpoint, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
   const token = getToken();
+
+  // --- Request deduplication for GET requests ---
+  const dedupeKey = method === 'GET' ? `GET:${endpoint}` : null;
+  if (dedupeKey && inFlight.has(dedupeKey)) {
+    return inFlight.get(dedupeKey);
+  }
 
   const headers = {
     'Content-Type': 'application/json',
@@ -58,22 +92,54 @@ async function request(endpoint, options = {}) {
     delete config.headers['Content-Type'];
   }
 
-  const response = await fetch(`${BASE_URL}${endpoint}`, config);
+  // --- AbortController timeout ---
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  config.signal = controller.signal;
 
-  // Handle 204 No Content
-  if (response.status === 204) return null;
+  const promise = (async () => {
+    try {
+      const response = await fetch(`${BASE_URL}${endpoint}`, config);
 
-  const data = await response.json().catch(() => null);
+      // Handle 204 No Content
+      if (response.status === 204) return null;
 
-  if (!response.ok) {
-    // Build a consistent error shape
-    const error = new Error(data?.message || data?.error || `Request failed (${response.status})`);
-    error.status = response.status;
-    error.data = data;
-    throw error;
-  }
+      const data = await response.json().catch(() => null);
 
-  return data;
+      if (!response.ok) {
+        // Build a consistent error shape
+        const error = new Error(data?.message || data?.error || `Request failed (${response.status})`);
+        error.status = response.status;
+        error.data = data;
+        throw error;
+      }
+
+      return data;
+    } catch (err) {
+      // Timeout (AbortError)
+      if (err.name === 'AbortError') {
+        const timeoutError = new Error('Request timed out. Please check your connection and try again.');
+        timeoutError.isNetworkError = true;
+        throw timeoutError;
+      }
+      // Network-level failure — humanize the message
+      if (isNetworkError(err)) {
+        const networkError = new Error('Server is down. Please try again later.');
+        networkError.isNetworkError = true;
+        throw networkError;
+      }
+      // Re-throw API-level errors (4xx / 5xx) unchanged
+      throw err;
+    } finally {
+      clearTimeout(timeoutId);
+      if (dedupeKey) inFlight.delete(dedupeKey);
+    }
+  })();
+
+  // Register in-flight for GET deduplication
+  if (dedupeKey) inFlight.set(dedupeKey, promise);
+
+  return promise;
 }
 
 /** Convenience wrappers */

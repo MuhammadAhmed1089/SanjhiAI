@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Icon from '../../components/Icon';
 import logo from '../../assets/screen.png';
+import { useNavDrawer } from '../../context/NavDrawerContext';
 import { getCommitteeById, requestPublicToggle, approvePublicToggle } from '../../services/committeeService';
 import { getCyclePayments, confirmPayment } from '../../services/paymentService';
 import { memberService } from '../../services';
@@ -21,6 +22,7 @@ function resolvePhotoUrl(url) {
 export default function CommitteeDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { openDrawer } = useNavDrawer();
 
   const [activeTab, setActiveTab] = useState('ledger'); // 'ledger' | 'members' | 'requests' | 'progress'
   const [selectedCycleId, setSelectedCycleId] = useState(null);
@@ -371,6 +373,16 @@ export default function CommitteeDetail() {
               title="Committee Settings"
             >
               <Icon name="settings" size={20} />
+            </button>
+
+            {/* Mobile Menu Drawer Toggle */}
+            <button
+              onClick={openDrawer}
+              className="md:hidden p-2.5 rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer"
+              aria-label="Open Navigation Menu"
+              title="Open Menu"
+            >
+              <Icon name="menu" size={20} />
             </button>
           </div>
         </div>

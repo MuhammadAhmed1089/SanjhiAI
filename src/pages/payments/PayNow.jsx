@@ -218,7 +218,7 @@ export default function PayNow() {
 
   return (
     <AuthAmbientBackground showTicker={false}>
-      <div className="w-full max-w-2xl mx-auto px-3 sm:px-6 py-4 sm:py-8 flex flex-col min-h-[calc(100vh-36px)] gap-5">
+      <div className="w-full max-w-2xl mx-auto px-3 sm:px-6 py-4 sm:py-8 flex flex-col min-h-[calc(100vh-36px)] gap-5 pb-28 md:pb-12">
 
         {/* Header */}
         <header className="w-full flex items-center justify-between">

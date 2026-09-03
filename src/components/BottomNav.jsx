@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { NavLink } from 'react-router-dom';
 import Icon from './Icon';
 import { useNavDrawer } from '../context/NavDrawerContext';
@@ -10,17 +11,18 @@ const navItems = [
   { to: '/assistant', icon: 'smart_toy', label: 'AI Bot', isAi: true },
 ];
 
-export default function BottomNav() {
+function BottomNav() {
   const { openDrawer, isDrawerOpen } = useNavDrawer();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 w-full z-40 bg-white/95 backdrop-blur-xl border-t border-[#006972]/15 shadow-[0_-8px_30px_rgba(0,105,114,0.12)] px-2 pb-5 pt-2 flex justify-around items-center select-none">
+    <nav className="md:hidden fixed bottom-0 left-0 w-full z-40 bg-white/95 backdrop-blur-sm border-t border-[#006972]/15 shadow-[0_-8px_30px_rgba(0,105,114,0.12)] px-2 pb-5 pt-2 flex justify-around items-center select-none">
       {navItems.map((item) => (
         <NavLink
           key={item.to}
           to={item.to}
+          end={item.to === '/dashboard'}
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center transition-all active:scale-90 duration-200 py-1 px-3 rounded-2xl ${
+            `flex flex-col items-center justify-center duration-150 py-1 px-3 rounded-2xl no-scale-active ${
               isActive
                 ? 'bg-[#006972] text-white shadow-md shadow-[#006972]/25'
                 : 'text-gray-500 hover:text-[#006972]'
@@ -57,7 +59,7 @@ export default function BottomNav() {
       <button
         onClick={openDrawer}
         aria-label="Open More Menu"
-        className={`flex flex-col items-center justify-center transition-all active:scale-90 duration-200 py-1 px-3 rounded-2xl cursor-pointer ${
+        className={`flex flex-col items-center justify-center duration-150 py-1 px-3 rounded-2xl cursor-pointer no-scale-active ${
           isDrawerOpen
             ? 'bg-[#006972] text-white shadow-md shadow-[#006972]/25'
             : 'text-gray-500 hover:text-[#006972]'
@@ -73,3 +75,6 @@ export default function BottomNav() {
     </nav>
   );
 }
+
+// Memoize: BottomNav never needs to re-render unless drawer state changes
+export default memo(BottomNav);

@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sanjhi</title>
+    <title>Sanjhi — Community Savings</title>
+
     <!-- Preconnect for faster DNS + TLS -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -30,9 +31,233 @@
     <noscript>
       <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=swap" rel="stylesheet" />
     </noscript>
+
+    <style>
+      /* ── Sanjhi Splash Screen — rendered before React ── */
+      #splash-root {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(145deg, #0D1B2A 0%, #00383d 60%, #004f56 100%);
+        transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+        user-select: none;
+      }
+      #splash-root.hiding {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #splash-root.hidden {
+        display: none;
+      }
+
+      /* Ambient bg blobs */
+      #splash-root::before {
+        content: '';
+        position: absolute;
+        width: 480px; height: 480px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(0, 105, 114, 0.35), transparent 65%);
+        top: -150px; left: -120px;
+        animation: splash-blob 8s ease-in-out infinite;
+      }
+      #splash-root::after {
+        content: '';
+        position: absolute;
+        width: 380px; height: 380px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(212, 175, 55, 0.20), transparent 65%);
+        bottom: -100px; right: -80px;
+        animation: splash-blob 10s ease-in-out infinite reverse;
+      }
+      @keyframes splash-blob {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(20px, -25px) scale(1.06); }
+      }
+
+      /* Dot grid overlay */
+      .splash-dots {
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
+        background-size: 28px 28px;
+        pointer-events: none;
+      }
+
+      /* Logo container */
+      .splash-logo-wrap {
+        position: relative;
+        width: 130px; height: 130px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 28px;
+        animation: splash-logo-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+      @keyframes splash-logo-in {
+        from { opacity: 0; transform: scale(0.7) translateY(20px); }
+        to   { opacity: 1; transform: scale(1) translateY(0); }
+      }
+
+      /* Pulsing ring behind logo */
+      .splash-ring {
+        position: absolute;
+        inset: -14px;
+        border-radius: 50%;
+        border: 2px solid rgba(0, 180, 195, 0.5);
+        animation: splash-ring-pulse 2.2s ease-in-out infinite;
+      }
+      .splash-ring-outer {
+        position: absolute;
+        inset: -26px;
+        border-radius: 50%;
+        border: 1px solid rgba(0, 180, 195, 0.2);
+        animation: splash-ring-pulse 2.2s ease-in-out infinite 0.4s;
+      }
+      @keyframes splash-ring-pulse {
+        0%, 100% { transform: scale(1); opacity: 0.6; }
+        50% { transform: scale(1.05); opacity: 1; }
+      }
+
+      /* Logo bg circle */
+      .splash-logo-bg {
+        width: 130px; height: 130px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(12px);
+        border: 1.5px solid rgba(255,255,255,0.18);
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+      }
+
+      /* Logo image — white filtered */
+      .splash-logo-img {
+        width: 88px; height: 88px;
+        object-fit: contain;
+        filter: brightness(0) invert(1) drop-shadow(0 4px 12px rgba(0,0,0,0.3));
+      }
+
+      /* Brand text */
+      .splash-brand {
+        text-align: center;
+        animation: splash-text-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+      }
+      @keyframes splash-text-in {
+        from { opacity: 0; transform: translateY(12px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .splash-name {
+        font-family: 'Noto Nastaliq Urdu', 'Plus Jakarta Sans', sans-serif;
+        font-size: 38px;
+        font-weight: 700;
+        color: #ffffff;
+        letter-spacing: 0.01em;
+        line-height: 1.2;
+        text-shadow: 0 2px 20px rgba(0,105,114,0.5);
+      }
+      .splash-tagline {
+        font-family: 'Be Vietnam Pro', sans-serif;
+        font-size: 12px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.55);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin-top: 6px;
+      }
+
+      /* Progress bar */
+      .splash-progress-track {
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 3px;
+        background: rgba(255,255,255,0.08);
+        overflow: hidden;
+      }
+      .splash-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #006972, #00b4c2, #006972);
+        background-size: 200% 100%;
+        animation: splash-progress 1.8s cubic-bezier(0.4, 0, 0.2, 1) both,
+                   splash-progress-shimmer 1.2s linear infinite;
+      }
+      @keyframes splash-progress {
+        from { width: 0%; }
+        to   { width: 100%; }
+      }
+      @keyframes splash-progress-shimmer {
+        0%   { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+
+      /* AI badge */
+      .splash-ai-badge {
+        margin-top: 18px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 14px;
+        border-radius: 99px;
+        background: rgba(0, 105, 114, 0.25);
+        border: 1px solid rgba(0, 180, 195, 0.3);
+        font-family: 'Be Vietnam Pro', sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        color: rgba(255,255,255,0.7);
+        letter-spacing: 0.08em;
+        animation: splash-text-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+      }
+      .splash-ai-dot {
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: #00d4e0;
+        animation: splash-ai-dot-pulse 1.5s ease-in-out infinite;
+      }
+      @keyframes splash-ai-dot-pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(0.7); }
+      }
+    </style>
   </head>
   <body>
+    <!-- ── Sanjhi Splash Screen — shows instantly, dismissed by React ── -->
+    <div id="splash-root" role="status" aria-label="Loading Sanjhi">
+      <div class="splash-dots"></div>
+
+      <div class="splash-logo-wrap">
+        <div class="splash-ring"></div>
+        <div class="splash-ring-outer"></div>
+        <div class="splash-logo-bg">
+          <img
+            class="splash-logo-img"
+            src="/src/assets/screen.png"
+            alt="Sanjhi"
+            loading="eager"
+            decoding="sync"
+          />
+        </div>
+      </div>
+
+      <div class="splash-brand">
+        <div class="splash-name">سانجھی</div>
+        <div class="splash-tagline">Community Savings · Powered by AI</div>
+      </div>
+
+      <div class="splash-ai-badge">
+        <span class="splash-ai-dot"></span>
+        Sanjhi AI Active
+      </div>
+
+      <div class="splash-progress-track">
+        <div class="splash-progress-bar"></div>
+      </div>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
+

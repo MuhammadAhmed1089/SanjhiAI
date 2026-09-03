@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Icon from '../../components/Icon';
 import BottomNav from '../../components/BottomNav';
@@ -150,6 +150,29 @@ export default function Dashboard() {
           return;
         }
 
+        // ── Stale-while-revalidate: show cached data instantly ──
+        const CACHE_KEY = 'sanjhi_dashboard_cache';
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          try {
+            const cachedData = JSON.parse(cached);
+            // Hydrate UI immediately from cache
+            if (cachedData?.user?.fullName) {
+              setUserName(cachedData.user.fullName);
+              setUserEmail(cachedData.user.email || '');
+            }
+            if (cachedData?.user?.photoUrl) {
+              setUserPhoto(resolvePhotoUrl(cachedData.user.photoUrl));
+            }
+            if (cachedData?.trustScore?.score) setTargetScore(cachedData.trustScore.score);
+            if (cachedData?.financialSummary?.totalContributed !== undefined) {
+              setTargetTotal(cachedData.financialSummary.totalContributed);
+            }
+            if (cachedData?.committees) setDbCommittees(cachedData.committees);
+            setLoadingBackend(false); // Don't show skeleton if we have cache
+          } catch (_) {}
+        }
+
         const data = await dashboardService.getDashboardOverview();
 
         if (data?.user?.fullName) {
@@ -186,22 +209,30 @@ export default function Dashboard() {
           setDbCommittees(data.committees);
         }
 
+        // Cache the fresh data for next visit (stale-while-revalidate)
         try {
-          const activityData = await dashboardService.getRecentActivities();
-          if (activityData?.activities && Array.isArray(activityData.activities)) {
-            setRecentActivities(activityData.activities);
-          }
-          
-          const notificationData = await notificationService.getNotifications();
-          if (notificationData?.notifications && Array.isArray(notificationData.notifications)) {
-            setRecentNotifications(notificationData.notifications.slice(0, 5));
-          }
+          localStorage.setItem('sanjhi_dashboard_cache', JSON.stringify(data));
+        } catch (_) {}
 
-          const countData = await notificationService.getUnreadCount();
-          setUnreadCount(countData.count || 0);
-        } catch (actErr) {
-          console.error('Failed to load activity/notification data:', actErr);
-        }
+        // ── Defer secondary data (notifications, activity) after primary renders ──
+        setTimeout(async () => {
+          try {
+            const activityData = await dashboardService.getRecentActivities();
+            if (activityData?.activities && Array.isArray(activityData.activities)) {
+              setRecentActivities(activityData.activities);
+            }
+
+            const notificationData = await notificationService.getNotifications();
+            if (notificationData?.notifications && Array.isArray(notificationData.notifications)) {
+              setRecentNotifications(notificationData.notifications.slice(0, 5));
+            }
+
+            const countData = await notificationService.getUnreadCount();
+            setUnreadCount(countData.count || 0);
+          } catch (actErr) {
+            console.error('Failed to load activity/notification data:', actErr);
+          }
+        }, 0);
       } catch (err) {
         console.log('Backend connection notice:', err.message);
       } finally {
@@ -222,13 +253,13 @@ export default function Dashboard() {
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi! I need help with my Sanjhi account.')}`, '_blank');
   }
 
-  const navTabs = [
+  const navTabs = useMemo(() => [
     { label: 'Home', icon: 'dashboard', path: '/dashboard' },
     { label: 'Pools', icon: 'groups', path: '/pools' },
     { label: 'Payments', icon: 'account_balance_wallet', path: '/payments' },
     { label: 'Support', icon: 'support_agent', path: '/support' },
     { label: 'Profile', icon: 'person', path: '/profile' },
-  ];
+  ], []);
 
   return (
     <div className="min-h-screen bg-white text-deep-navy font-body antialiased relative overflow-x-hidden pb-28 md:pb-12">
@@ -298,10 +329,10 @@ export default function Dashboard() {
               </span>
             </button>
 
-            <div>
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <span className="text-[12px] font-label font-medium text-on-surface-variant">Welcome back,</span>
-                <span className="text-[10px] font-label px-2 py-0.5 rounded-full bg-[#006972]/10 text-[#006972] font-bold uppercase tracking-wider">
+                <span className="text-[10px] font-label px-2 py-0.5 rounded-full bg-[#006972]/10 text-[#006972] font-bold uppercase tracking-wider hidden sm:inline-block">
                   Verified ✓
                 </span>
               </div>
@@ -310,7 +341,7 @@ export default function Dashboard() {
               {loadingBackend && !userName ? (
                 <Bone className="w-36 h-6 rounded-full mt-1" />
               ) : (
-                <h1 className="font-headline text-[20px] sm:text-[24px] font-bold text-[#006972] tracking-tight leading-tight">
+                <h1 className="font-headline text-[18px] sm:text-[24px] font-bold text-[#006972] tracking-tight leading-tight truncate">
                   {userName || 'User'}
                 </h1>
               )}

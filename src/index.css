@@ -90,6 +90,20 @@ body {
   /* Smooth native-like scroll on mobile */
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
+  /* Prevent layout shift & paint during scroll */
+  contain: style;
+}
+
+/* ── Global tap highlight removal for a native feel ── */
+* {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Ensure buttons and interactive elements have specific transitions (NOT 'all') */
+button, a, [role="button"] {
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease,
+              box-shadow 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
 }
 
 /* ── GPU Compositing Hints — scroll containers ── */
@@ -100,6 +114,23 @@ body {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   will-change: scroll-position;
+}
+
+/* ── GPU layer utilities ── */
+.gpu-layer {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Fast active state for ALL buttons */
+button:active, [role="button"]:active {
+  transform: scale(0.97);
+}
+
+/* No active scale for elements that define their own */
+.no-scale-active:active {
+  transform: none;
 }
 
 /* Deactivate pointer events on background decorations during scroll */
@@ -208,11 +239,18 @@ h1, h2, h3, h4, h5, h6 {
 /* ── Mobile: reduce expensive blur to prevent jank ── */
 @media (max-width: 768px) {
   .glass-card {
-    backdrop-filter: blur(8px) saturate(160%);
-    -webkit-backdrop-filter: blur(8px) saturate(160%);
+    backdrop-filter: blur(4px) saturate(140%);
+    -webkit-backdrop-filter: blur(4px) saturate(140%);
   }
   .field-input {
-    backdrop-filter: blur(2px);
+    backdrop-filter: none;
+  }
+  /* Reduce ALL backdrop-blur classes on mobile for smooth scrolling */
+  [class*="backdrop-blur-xl"],
+  [class*="backdrop-blur-2xl"],
+  [class*="backdrop-blur-md"] {
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
   }
 }
 
@@ -380,40 +418,76 @@ h1, h2, h3, h4, h5, h6 {
   .animate-rotate-slow,
   .animate-rotate-slow-rev,
   .animate-score-glow,
-  .animate-border-breathe {
-    animation: none;
+  .animate-border-breathe,
+  .animate-glow-ring {
+    animation: none !important;
   }
   .particle {
     display: none;
+  }
+  /* Reduce ping animations on mobile */
+  .animate-ping-slow {
+    animation-duration: 3s;
+  }
+}
+
+/* ── Reduced-motion support ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
 
 /* Fade-up entrance for the glass card */
 .animate-fade-up {
-  animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: fade-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
 }
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(24px) scale(0.98); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: translateY(18px) scale(0.98) translateZ(0); }
+  to   { opacity: 1; transform: translateY(0) scale(1) translateZ(0); }
 }
 
 /* Slide-down for dropdowns */
 .animate-slide-down {
-  animation: slide-down 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: slide-down 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
 }
 @keyframes slide-down {
-  from { opacity: 0; transform: translateY(-8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(-8px) translateZ(0); }
+  to   { opacity: 1; transform: translateY(0) translateZ(0); }
 }
 
 /* Quick fade-in for small elements */
 .animate-fade-in {
-  animation: fade-in 0.2s ease-out both;
+  animation: fade-in 0.18s ease-out both;
 }
 @keyframes fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+
+/* ── Page Transition ── */
+.page-enter {
+  animation: page-slide-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+@keyframes page-slide-in {
+  from { opacity: 0; transform: translateY(8px) translateZ(0); }
+  to   { opacity: 1; transform: translateY(0) translateZ(0); }
+}
+
+/* Slide right for drawer */
+.animate-slide-right {
+  animation: slide-right 0.32s cubic-bezier(0.32, 0.72, 0, 1) both;
+  will-change: transform;
+}
+@keyframes slide-right {
+  from { transform: translateX(-100%) translateZ(0); }
+  to   { transform: translateX(0) translateZ(0); }
 }
 
 /* ── Welcome page helpers ── */

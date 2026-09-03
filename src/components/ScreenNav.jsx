@@ -60,7 +60,7 @@ export default function ScreenNav() {
   };
 
   return (
-    <div className="fixed bottom-24 right-4 z-[9999] md:bottom-8 md:right-8">
+    <div className="fixed bottom-20 right-3.5 z-[9999] md:bottom-8 md:right-8">
       {/* Panel */}
       {open && (
         <div className="absolute bottom-16 right-0 w-64 max-h-[70vh] overflow-y-auto bg-white rounded-2xl shadow-2xl border border-gray-200 p-2 mb-2">

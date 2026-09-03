@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import PageTransition from './components/PageTransition';
 
 // Auth pages
 import Welcome from './pages/auth/Welcome';
@@ -206,7 +207,8 @@ export default function App() {
     <NavDrawerProvider>
       <MobileSideDrawer />
       <Suspense fallback={<PageLoader />}>
-        <Routes>
+        <PageTransition>
+          <Routes>
           {/* Auth Flow */}
           <Route path="/" element={<Welcome />} />
           <Route path="/signup" element={<SignUp />} />
@@ -283,6 +285,7 @@ export default function App() {
           <Route path="/loading" element={<Loading />} />
           <Route path="/empty" element={<EmptyStates />} />
         </Routes>
+        </PageTransition>
       </Suspense>
     </NavDrawerProvider>
   );

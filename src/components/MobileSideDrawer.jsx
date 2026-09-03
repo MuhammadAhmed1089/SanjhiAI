@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useNavDrawer } from '../context/NavDrawerContext';
 import Icon from './Icon';
@@ -28,7 +28,7 @@ export default function MobileSideDrawer() {
     }
   }, [isDrawerOpen]);
 
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       const stored = localStorage.getItem('sanjhi_user');
       if (stored) {
@@ -44,12 +44,12 @@ export default function MobileSideDrawer() {
         setUnreadCount(countData.unreadCount);
       }
     } catch (_) {}
-  }
+  }, []);
 
-  function handleNavigate(path) {
+  const handleNavigate = useCallback((path) => {
     navigate(path);
     closeDrawer();
-  }
+  }, [navigate, closeDrawer]);
 
   function openWhatsApp() {
     const message = encodeURIComponent('Hello! I need assistance with Sanjhi Committees.');
@@ -80,7 +80,7 @@ export default function MobileSideDrawer() {
           aria-hidden="true"
         />
 
-        {/* Slide-out Drawer Panel */}
+        {/* Slide-out Drawer Panel — spring curve for native feel */}
         <div className="relative w-full max-w-[320px] sm:max-w-[360px] bg-white h-full shadow-2xl flex flex-col justify-between z-10 animate-slide-right overflow-y-auto font-body text-[#101F20]">
           
           {/* Top Section */}
@@ -247,10 +247,10 @@ export default function MobileSideDrawer() {
                 </div>
               </div>
 
-              {/* Group 3: Support & Verification */}
+              {/* Group 3: Support & Complaints */}
               <div>
                 <p className="text-[11px] font-label font-bold text-gray-400 uppercase tracking-wider px-3 mb-1.5">
-                  Support & Safety
+                  Support & Complaints
                 </p>
                 <div className="space-y-0.5">
                   <DrawerLink
@@ -270,6 +270,13 @@ export default function MobileSideDrawer() {
                     onClick={() => handleNavigate('/support')}
                   />
                   <DrawerLink
+                    icon="edit_note"
+                    label="File a Complaint"
+                    path="/support/file-complaint"
+                    currentPath={location.pathname}
+                    onClick={() => handleNavigate('/support/file-complaint')}
+                  />
+                  <DrawerLink
                     icon="feedback"
                     label="My Complaints"
                     path="/support/complaints"
@@ -280,7 +287,7 @@ export default function MobileSideDrawer() {
                     icon="flag"
                     label="Report a User"
                     path="/support/file-complaint"
-                    currentPath={location.pathname}
+                    currentPath={location.pathname + location.search}
                     onClick={() => handleNavigate('/support/file-complaint?mode=user_report')}
                   />
                   <button

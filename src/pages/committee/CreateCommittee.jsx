@@ -136,7 +136,7 @@ export default function CreateCommittee() {
 
   return (
     <AuthAmbientBackground showTicker={true}>
-      <div className="w-full max-w-2xl mx-auto px-3 sm:px-6 py-4 sm:py-8 flex flex-col items-center justify-center min-h-[calc(100vh-36px)]">
+      <div className="w-full max-w-2xl mx-auto px-3 sm:px-6 py-4 sm:py-8 flex flex-col items-center justify-center min-h-[calc(100vh-36px)] pb-28 md:pb-12">
         
         {/* Main Glass Card matching User Dashboard */}
         <main className="max-w-2xl w-full bg-white rounded-2xl border border-[#006972]/15 shadow-[0_4px_20px_rgba(0,0,0,0.05)] overflow-hidden p-6 sm:p-10 animate-fade-up relative z-10">
