@@ -15,57 +15,59 @@ export default function Loading() {
             backgroundSize: '28px 28px',
           }}
         />
-        <div className="absolute w-[520px] h-[520px] rounded-full bg-[#006972]/6 blur-3xl top-[-120px] left-[-120px] animate-float-y-slow" />
-        <div className="absolute w-[380px] h-[380px] rounded-full bg-amber-400/6 blur-3xl bottom-[-80px] right-[-80px]" />
+        <div className="absolute w-[480px] h-[480px] rounded-full bg-[#006972]/8 blur-3xl top-[-120px] left-[-120px] animate-float-y-slow" />
+        <div className="absolute w-[400px] h-[400px] rounded-full bg-[#d4af37]/9 blur-3xl bottom-[-80px] right-[-80px]" />
         <img
           src={logo}
           alt=""
           aria-hidden="true"
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] opacity-[0.035] select-none pointer-events-none"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] max-w-[80vw] opacity-[0.035] select-none pointer-events-none"
           style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(85%) saturate(1450%) hue-rotate(152deg)' }}
         />
       </div>
 
       {/* ── Central Glass Card ── */}
-      <div className="relative z-10 flex flex-col items-center text-center p-8 sm:p-10 rounded-3xl bg-white/85 backdrop-blur-xl border border-[#006972]/15 shadow-[0_24px_60px_-15px_rgba(0,105,114,0.14)] animate-fade-in max-w-[360px] w-full">
-        {/* Logo Container with Glowing Ring */}
-        <div className="relative w-24 h-24 flex items-center justify-center mb-6">
-          <div className="absolute -inset-2 rounded-3xl border-2 border-[#006972]/20 border-t-[#006972] animate-spin" />
-          <div className="w-20 h-20 rounded-2xl bg-white p-3 shadow-md border border-[#006972]/15 flex items-center justify-center">
+      <div className="relative z-10 flex flex-col items-center justify-center text-center p-[44px_36px_38px] rounded-[32px] bg-white/88 backdrop-blur-[18px] border-[1.5px] border-[#006972]/16 shadow-[0_24px_64px_-15px_rgba(0,105,114,0.14),0_4px_16px_rgba(0,0,0,0.03)] animate-fade-in max-w-[92vw] w-[390px] min-h-[470px]">
+        {/* Logo Container with Pulsing Ring */}
+        <div className="relative w-24 h-24 flex items-center justify-center mb-6 shrink-0">
+          <div className="absolute -inset-1.5 rounded-[2rem] border-2 border-[#006972]/22 animate-pulse" />
+          <div className="absolute -inset-3.5 rounded-[2.25rem] border-[1.5px] border-[#006972]/10" />
+          <div className="w-[88px] h-[88px] rounded-[1.75rem] bg-white p-3 shadow-[0_12px_32px_rgba(0,105,114,0.15),0_2px_6px_rgba(0,0,0,0.04)] border-2 border-[#006972]/16 flex items-center justify-center">
             <img src={logo} alt="Sanjhi Logo" className="w-full h-full object-contain" />
           </div>
         </div>
 
-        {/* Text Details with clear, generous line spacing */}
-        <div className="flex flex-col items-center gap-1.5 mb-6">
-          <h1 className="font-headline font-extrabold text-[#006972] text-[26px] tracking-tight">Sanjhi</h1>
-          <p className="font-urdu text-[22px] text-deep-navy font-bold leading-relaxed">سانجھی</p>
-          <span className="font-label text-[11px] uppercase tracking-widest font-bold text-[#006972]/70 mt-1">
+        {/* Brand Text Details with generous line spacing */}
+        <div className="flex flex-col items-center gap-2.5 mb-7">
+          <h1 className="font-headline text-[28px] font-extrabold text-[#006972] tracking-tight leading-[1.25] mb-0.5">Sanjhi</h1>
+          <p className="font-urdu text-[25px] text-deep-navy font-bold leading-[1.7] mb-0.5">سانجھی</p>
+          <span className="font-label text-[11px] uppercase tracking-[0.16em] font-bold text-[#006972]/80 mt-1">
             Community Savings · Trusted Pools
           </span>
         </div>
 
-        {/* Centered Progress Bar */}
-        <div className="w-full max-w-[200px] h-2 rounded-full bg-[#006972]/10 overflow-hidden border border-[#006972]/10 mb-3.5">
-          <div
-            className="h-full rounded-full animate-shimmer"
-            style={{
-              width: '100%',
-              background: 'linear-gradient(90deg, #006972, #10b981, #d4af37, #006972)',
-              backgroundSize: '200% 100%',
-            }}
-          />
+        {/* Progress Section */}
+        <div className="w-full flex flex-col items-center gap-3.5">
+          <div className="w-full max-w-[230px] h-[6px] rounded-full bg-[#006972]/12 overflow-hidden border border-[#006972]/10">
+            <div
+              className="h-full rounded-full animate-shimmer"
+              style={{
+                width: '100%',
+                background: 'linear-gradient(90deg, #006972, #10b981, #d4af37, #006972)',
+                backgroundSize: '250% 100%',
+              }}
+            />
+          </div>
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#006972]/7 border border-[#006972]/14 font-label text-[11px] font-semibold text-[#006972]">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Loading experience...</span>
+          </div>
         </div>
-
-        <span className="font-body text-[12px] text-on-surface-variant font-medium flex items-center gap-2 animate-pulse">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping-slow" />
-          Loading experience...
-        </span>
 
         {/* Home fallback button */}
         <button
           onClick={() => navigate('/dashboard')}
-          className="mt-6 text-[11px] font-label font-bold text-[#006972]/60 hover:text-[#006972] transition-colors"
+          className="mt-5 text-[11px] font-label font-bold text-[#006972]/60 hover:text-[#006972] transition-colors cursor-pointer border-none bg-transparent"
         >
           Taking too long? Go to Dashboard →
         </button>

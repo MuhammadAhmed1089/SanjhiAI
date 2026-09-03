@@ -4,33 +4,38 @@ import { sendWhatsAppWebOTP } from './whatsappGateway.js';
 // Initialize Nodemailer Transporter with intelligent service detection and strict timeouts
 function createMailTransporter() {
   const user = (process.env.SMTP_USER || '').trim();
-  // Strip any accidental spaces from Google App Password (e.g. 'tqam zmfr hfmz bcro' -> 'tqamzmfrhfmzbcro')
   const pass = (process.env.SMTP_PASS || '').replace(/\s+/g, '').trim();
   const host = (process.env.SMTP_HOST || '').trim();
+  const port = parseInt(process.env.SMTP_PORT || '465', 10);
   const isGmail = host.includes('gmail') || user.includes('@gmail.com');
 
   if (isGmail && user && pass) {
+    // Port 465 with Direct SSL is required on Railway/cloud hosts (port 587 STARTTLS is blocked)
     return nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: { user, pass },
-      pool: true,
-      maxConnections: 3,
-      connectionTimeout: 5000,
-      greetingTimeout: 5000,
-      socketTimeout: 6000,
+      tls: {
+        rejectUnauthorized: false,
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     });
   }
 
   return nodemailer.createTransport({
     host: host || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587', 10),
-    secure: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465',
+    port: port,
+    secure: port === 465 || process.env.SMTP_SECURE === 'true',
     auth: { user, pass },
-    pool: true,
-    maxConnections: 3,
-    connectionTimeout: 5000,
-    greetingTimeout: 5000,
-    socketTimeout: 6000,
+    tls: {
+      rejectUnauthorized: false,
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   });
 }
 
