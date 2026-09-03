@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Icon from '../../components/Icon';
-import BottomNav from '../../components/BottomNav';
 import { useNavDrawer } from '../../context/NavDrawerContext';
 import logo from '../../assets/screen.png';
 import aiLogo from '../../assets/sanjhi-ai-logo.png';
@@ -705,10 +704,6 @@ export default function Dashboard() {
 
       </main>
 
-      {/* ══════════════════════════════════════════════════ */}
-      {/*  MOBILE BOTTOM NAV BAR                           */}
-      {/* ══════════════════════════════════════════════════ */}
-      <BottomNav />
 
       {showTrustBreakdown && (
         <TrustBreakdownModal

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { notificationService } from '../../services';
 import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
-import BottomNav from '../../components/BottomNav';
 import logo from '../../assets/screen.png';
 
 /**
@@ -311,8 +310,6 @@ export default function Notifications() {
           )}
         </main>
 
-        {/* ── MOBILE BOTTOM NAV ── */}
-        <BottomNav />
 
       </div>
     </AuthAmbientBackground>

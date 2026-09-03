@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
-import BottomNav from '../../components/BottomNav';
 import { fileComplaint, reportUser, searchReportableUsers } from '../../services/supportService';
 import { getMyCommittees } from '../../services/committeeService';
 
@@ -453,7 +452,6 @@ export default function FileComplaint() {
         </main>
       </div>
 
-      <BottomNav />
     </AuthAmbientBackground>
   );
 }

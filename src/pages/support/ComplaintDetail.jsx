@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
-import BottomNav from '../../components/BottomNav';
 import { getComplaint } from '../../services/supportService';
 
 /* ── Skeleton Bone ── */
@@ -161,7 +160,6 @@ export default function ComplaintDetail() {
         </main>
       </div>
 
-      <BottomNav />
     </AuthAmbientBackground>
   );
 }

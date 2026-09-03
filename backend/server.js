@@ -424,10 +424,6 @@ app.get('/api/uploads/cnic/:filename', requireAuth, async (req, res) => {
 
 
 // Health check endpoints
-app.get('/', (req, res) => {
-  res.json({ message: 'Sanjhi AI Backend is active', status: 'OK', uptime: process.uptime() });
-});
-
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString(), uptime: process.uptime() });
 });
@@ -435,6 +431,30 @@ app.get('/api/health', (req, res) => {
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
+
+// Serve frontend static build files (dist/ directory) when running on Railway / Production
+const distPath = path.join(__dirname, '../dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+
+  // Single Page Application (SPA) fallback: serve index.html for all non-API GET requests
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+      return next();
+    }
+    const indexPath = path.join(distPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      return res.sendFile(indexPath);
+    }
+    next();
+  });
+} else {
+  // API-only fallback if dist does not exist
+  app.get('/', (req, res) => {
+    res.json({ message: 'Sanjhi AI Backend is active', status: 'OK', uptime: process.uptime() });
+  });
+}
+
 
 /**
  * Railway & Cloud Host Keep-Alive Self-Pinger.

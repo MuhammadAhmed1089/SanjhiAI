@@ -15,17 +15,22 @@ function BottomNav() {
   const { openDrawer, isDrawerOpen } = useNavDrawer();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 w-full z-40 bg-white/95 backdrop-blur-sm border-t border-[#006972]/15 shadow-[0_-8px_30px_rgba(0,105,114,0.12)] px-2 pb-5 pt-2 flex justify-around items-center select-none">
+    <nav
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-t border-[#006972]/20 shadow-[0_-10px_35px_rgba(0,105,114,0.18)] rounded-t-3xl px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex justify-around items-center select-none"
+      style={{
+        WebkitBackdropFilter: 'blur(20px)',
+      }}
+    >
       {navItems.map((item) => (
         <NavLink
           key={item.to}
           to={item.to}
           end={item.to === '/dashboard'}
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center duration-150 py-1 px-3 rounded-2xl no-scale-active ${
+            `flex flex-col items-center justify-center transition-all duration-200 py-1.5 px-3 rounded-2xl no-scale-active relative ${
               isActive
-                ? 'bg-[#006972] text-white shadow-md shadow-[#006972]/25'
-                : 'text-gray-500 hover:text-[#006972]'
+                ? 'bg-[#006972] text-white shadow-md shadow-[#006972]/30 scale-105'
+                : 'text-gray-600 hover:text-[#006972] active:scale-95'
             }`
           }
         >
@@ -36,18 +41,20 @@ function BottomNav() {
                   <img
                     src={aiLogo}
                     alt="AI"
-                    className={`w-6 h-6 rounded-lg object-cover ${
-                      isActive ? 'ring-2 ring-white/60' : ''
+                    className={`w-6 h-6 rounded-lg object-cover transition-transform ${
+                      isActive ? 'ring-2 ring-white/80 scale-105' : ''
                     }`}
                   />
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-1 ring-white" />
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white animate-pulse" />
                 </div>
               ) : (
-                <Icon name={item.icon} size={22} />
+                <Icon name={item.icon} size={22} className={isActive ? 'text-white' : 'text-[#006972]/80'} />
               )}
-              <span className={`font-label text-[10px] font-bold tracking-tight mt-0.5 ${
-                isActive ? 'text-white' : 'text-gray-600'
-              }`}>
+              <span
+                className={`font-label text-[10.5px] font-bold tracking-tight mt-0.5 ${
+                  isActive ? 'text-white' : 'text-gray-600'
+                }`}
+              >
                 {item.label}
               </span>
             </>
@@ -59,16 +66,18 @@ function BottomNav() {
       <button
         onClick={openDrawer}
         aria-label="Open More Menu"
-        className={`flex flex-col items-center justify-center duration-150 py-1 px-3 rounded-2xl cursor-pointer no-scale-active ${
+        className={`flex flex-col items-center justify-center transition-all duration-200 py-1.5 px-3 rounded-2xl cursor-pointer no-scale-active border-none bg-transparent ${
           isDrawerOpen
-            ? 'bg-[#006972] text-white shadow-md shadow-[#006972]/25'
-            : 'text-gray-500 hover:text-[#006972]'
+            ? 'bg-[#006972] text-white shadow-md shadow-[#006972]/30 scale-105'
+            : 'text-gray-600 hover:text-[#006972] active:scale-95'
         }`}
       >
-        <Icon name="menu" size={22} />
-        <span className={`font-label text-[10px] font-bold tracking-tight mt-0.5 ${
-          isDrawerOpen ? 'text-white' : 'text-gray-600'
-        }`}>
+        <Icon name="menu" size={22} className={isDrawerOpen ? 'text-white' : 'text-[#006972]/80'} />
+        <span
+          className={`font-label text-[10.5px] font-bold tracking-tight mt-0.5 ${
+            isDrawerOpen ? 'text-white' : 'text-gray-600'
+          }`}
+        >
           Menu
         </span>
       </button>

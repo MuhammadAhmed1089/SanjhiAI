@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
-import BottomNav from '../../components/BottomNav';
 import { useNavDrawer } from '../../context/NavDrawerContext';
 import { getMyCommittees, joinByCode } from '../../services/committeeService';
 
@@ -535,7 +534,6 @@ export default function MyPools() {
         )}
 
       </div>
-      <BottomNav />
     </AuthAmbientBackground>
   );
 }

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Icon from '../../components/Icon';
-import BottomNav from '../../components/BottomNav';
 import CnicVerificationModal from '../../components/CnicVerificationModal';
 import { useNavDrawer } from '../../context/NavDrawerContext';
 import logo from '../../assets/screen.png';
@@ -1043,8 +1042,6 @@ export default function Profile() {
         }}
       />
 
-      {/* ── MOBILE BOTTOM NAV ── */}
-      <BottomNav />
 
     </div>
   );

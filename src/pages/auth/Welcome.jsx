@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logo from '../../assets/screen.png';
 import AuthAmbientBackground from '../../components/AuthAmbientBackground';
@@ -7,6 +7,13 @@ import Icon from '../../components/Icon';
 export default function Welcome() {
   const navigate = useNavigate();
   const [ripples, setRipples] = useState({});
+
+  useEffect(() => {
+    const token = localStorage.getItem('sanjhi_token');
+    if (token) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [navigate]);
 
   function triggerRipple(e, key) {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -51,13 +58,13 @@ export default function Welcome() {
               </svg>
             </div>
 
-            {/* Premium 3D Styled White & Teal Logo (Still without dancing animation) */}
+            {/* Premium Logo Showcase */}
             <div className="relative z-10 flex flex-col items-center text-center my-auto py-2 sm:py-6">
-              <div className="relative">
+              <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-white/95 backdrop-blur-md p-4 flex items-center justify-center shadow-2xl shadow-black/15 border border-white/50 hover:scale-105 transition-transform duration-300">
                 <img
                   alt="Sanjhi Logo"
                   src={logo}
-                  className="w-36 sm:w-48 lg:w-56 object-contain relative z-10 logo-3d-white cursor-default"
+                  className="w-full h-full object-contain cursor-default"
                 />
               </div>
             </div>
@@ -76,13 +83,12 @@ export default function Welcome() {
           {/* Right Action Panel */}
           <div className="lg:col-span-6 p-5 sm:p-8 lg:p-12 flex flex-col justify-between space-y-6 sm:space-y-8 bg-white/80">
             
-            {/* Header & Nastaliq Urdu Text starting exactly where "Welcome to Sanjhi" ends */}
+            {/* Header & Nastaliq Urdu Text */}
             <div className="w-fit flex flex-col items-start relative">
               <h1 className="font-headline text-[24px] sm:text-[34px] font-bold text-deep-navy tracking-tight leading-tight whitespace-nowrap">
                 Welcome to Sanjhi
               </h1>
               
-              {/* Urdu Nastaliq Text right-aligned inside the title container so it starts right under the 'i' of Sanjhi */}
               <div className="w-full flex justify-end pt-6">
                 <p className="font-urdu text-[18px] sm:text-[22px] font-bold text-[#006972] leading-tight text-right whitespace-nowrap" dir="rtl">
                   سانجھی میں خوش آمدید
@@ -140,15 +146,6 @@ export default function Welcome() {
 
           </div>
         </div>
-
-        {/* Quick floating dashboard shortcut button */}
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#006972] text-white flex items-center justify-center shadow-xl shadow-[#006972]/30 hover:bg-[#00575f] active:scale-90 transition-all z-50 cursor-pointer border border-white/30 group"
-          title="Direct to Dashboard Demo"
-        >
-          <Icon name="dashboard" size={20} className="group-hover:rotate-12 transition-transform" />
-        </button>
       </div>
     </AuthAmbientBackground>
   );

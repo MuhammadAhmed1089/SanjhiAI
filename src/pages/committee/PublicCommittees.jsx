@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import BottomNav from '../../components/BottomNav';
 import Button from '../../components/Button';
 import Icon from '../../components/Icon';
 import CnicVerificationModal from '../../components/CnicVerificationModal';
@@ -929,7 +928,6 @@ export default function PublicCommittees() {
         </div>
       )}
 
-      <BottomNav />
 
       <CnicVerificationModal
         isOpen={showCnicModal}

@@ -1,5 +1,4 @@
 import TopAppBar from '../components/TopAppBar';
-import BottomNav from '../components/BottomNav';
 
 export default function AppLayout({
   children,
@@ -19,7 +18,6 @@ export default function AppLayout({
       <main className="max-w-screen-md mx-auto px-4 md:px-6 py-6">
         {children}
       </main>
-      {showBottomNav && <BottomNav />}
     </div>
   );
 }

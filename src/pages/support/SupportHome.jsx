@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
-import BottomNav from '../../components/BottomNav';
 import { useNavDrawer } from '../../context/NavDrawerContext';
 
 export default function SupportHome() {
@@ -142,7 +141,6 @@ export default function SupportHome() {
         </main>
       </div>
 
-      <BottomNav />
     </AuthAmbientBackground>
   );
 }

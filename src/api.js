@@ -13,7 +13,7 @@
  *   const created = await api.post('/committees', { name: 'Pool', ... });
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
 
 /** Timeout for every request (ms) */
 const REQUEST_TIMEOUT_MS = 15_000;
