@@ -437,23 +437,44 @@ app.get('/health', (req, res) => {
 });
 
 /**
- * Render Keep-Alive Self-Pinger.
- * Pings the server every 10 minutes to prevent Render free tier from going to sleep.
- * Automatically detects process.env.RENDER_EXTERNAL_URL or process.env.APP_URL.
+ * Railway & Cloud Host Keep-Alive Self-Pinger.
+ * Pings the server health endpoint every 5 minutes to keep the instance active.
+ * Automatically detects Railway variables (RAILWAY_STATIC_URL, RAILWAY_PUBLIC_DOMAIN),
+ * standard host variables (APP_URL, PUBLIC_URL, SERVER_URL, RENDER_EXTERNAL_URL),
+ * or defaults to the Railway production endpoint.
  */
 function initKeepAlive() {
-  const url = process.env.RENDER_EXTERNAL_URL || process.env.APP_URL;
-  if (!url) {
-    console.log('ℹ️ [KeepAlive] Local environment detected (no RENDER_EXTERNAL_URL set). KeepAlive pinger idle.');
+  let rawUrl =
+    process.env.RAILWAY_STATIC_URL ||
+    process.env.RAILWAY_PUBLIC_DOMAIN ||
+    process.env.APP_URL ||
+    process.env.SERVER_URL ||
+    process.env.PUBLIC_URL ||
+    process.env.BACKEND_URL ||
+    process.env.RENDER_EXTERNAL_URL;
+
+  // Fallback if running on Railway/production environment without explicit URL env var
+  if (!rawUrl && (process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID)) {
+    rawUrl = 'https://sanjhiai-production.up.railway.app';
+  }
+
+  if (!rawUrl) {
+    console.log('ℹ️ [KeepAlive] Local environment detected (no host URL found). KeepAlive pinger idle.');
     return;
   }
 
-  const pingUrl = `${url.replace(/\/$/, '')}/api/health`;
-  const PING_INTERVAL = 10 * 60 * 1000; // 10 minutes (Render sleeps at 15 mins)
+  let formattedUrl = rawUrl.trim();
+  if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+    formattedUrl = `https://${formattedUrl}`;
+  }
+  formattedUrl = formattedUrl.replace(/\/$/, '').replace(/\/api$/, '');
 
-  console.log(`🚀 [KeepAlive] Initialized self-pinger targeting: ${pingUrl} (every 10m)`);
+  const pingUrl = `${formattedUrl}/api/health`;
+  const PING_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
-  setInterval(async () => {
+  console.log(`🚀 [KeepAlive] Initialized self-pinger targeting: ${pingUrl} (every 5m)`);
+
+  const doPing = async () => {
     try {
       const response = await fetch(pingUrl);
       if (response.ok) {
@@ -464,8 +485,15 @@ function initKeepAlive() {
     } catch (err) {
       console.warn('⚠️ [KeepAlive] Ping error:', err.message);
     }
-  }, PING_INTERVAL);
+  };
+
+  // Perform initial ping 10 seconds after server startup
+  setTimeout(doPing, 10000);
+
+  // Repeat ping every 5 minutes
+  setInterval(doPing, PING_INTERVAL);
 }
+
 
 app.listen(PORT, '0.0.0.0', async () => {
   console.log(`Server listening on port ${PORT}`);
