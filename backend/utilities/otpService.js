@@ -1,10 +1,56 @@
 import nodemailer from 'nodemailer';
 import dns from 'dns';
+import net from 'net';
 import { sendWhatsAppWebOTP } from './whatsappGateway.js';
 
 // Force Node.js to prioritize IPv4 addresses (fixes ENETUNREACH on IPv6-unroutable cloud hosts)
 if (dns.setDefaultResultOrder) {
   dns.setDefaultResultOrder('ipv4first');
+}
+
+/**
+ * Probe a specific host:port using raw TCP socket
+ */
+export function probePort(host, port, timeoutMs = 4000) {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+    let isResolved = false;
+
+    socket.setTimeout(timeoutMs);
+
+    socket.on('connect', () => {
+      if (!isResolved) {
+        isResolved = true;
+        socket.destroy();
+        resolve({ host, port, open: true });
+      }
+    });
+
+    socket.on('timeout', () => {
+      if (!isResolved) {
+        isResolved = true;
+        socket.destroy();
+        resolve({ host, port, open: false, error: 'TIMEOUT (Blocked by Cloud/Railway Firewall)' });
+      }
+    });
+
+    socket.on('error', (err) => {
+      if (!isResolved) {
+        isResolved = true;
+        socket.destroy();
+        resolve({ host, port, open: false, error: err.message });
+      }
+    });
+
+    try {
+      socket.connect(port, host);
+    } catch (err) {
+      if (!isResolved) {
+        isResolved = true;
+        resolve({ host, port, open: false, error: err.message });
+      }
+    }
+  });
 }
 
 // Initialize Nodemailer Transporter with intelligent service detection and strict timeouts
@@ -21,14 +67,14 @@ function createMailTransporter() {
       host: 'smtp.gmail.com',
       port: 465,
       secure: true,
-      family: 4, // Force IPv4 to prevent ENETUNREACH IPv6 routing error
+      family: 4, // Force IPv4
       auth: { user, pass },
       tls: {
         rejectUnauthorized: false,
       },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000,
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 10000,
     });
   }
 
@@ -41,29 +87,59 @@ function createMailTransporter() {
     tls: {
       rejectUnauthorized: false,
     },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 10000,
   });
 }
 
 const transporter = createMailTransporter();
 
 /**
- * Verify SMTP Socket connection on startup and log status
+ * Verify SMTP Socket connection and probe all standard ports
  */
 export async function verifySmtpConnection() {
   const user = (process.env.SMTP_USER || '').trim();
-  const host = (process.env.SMTP_HOST || '').trim();
+  const host = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
   const isGmail = host.includes('gmail') || user.includes('@gmail.com');
 
-  if (!user) {
-    console.log('ℹ️ [SMTP Service] SMTP_USER not set. OTP codes will be logged to server console in dev mode.');
-    return { connected: false, reason: 'unconfigured' };
+  console.log('\n======================================================');
+  console.log('🔍 [SMTP & PORT CONNECTIVITY DIAGNOSTICS]');
+  console.log(`Target Host : ${host}`);
+  console.log(`User/Sender : ${user || '(not configured)'}`);
+  console.log('------------------------------------------------------');
+
+  // Probe all common email ports in parallel
+  const targetHost = isGmail ? 'smtp.gmail.com' : host;
+  const portsToTest = [465, 587, 2525, 25];
+
+  const probeResults = await Promise.all(
+    portsToTest.map((p) => probePort(targetHost, p, 3500))
+  );
+
+  probeResults.forEach((res) => {
+    if (res.open) {
+      console.log(`✅ Port ${res.port.toString().padEnd(5)} : OPEN / REACHABLE`);
+    } else {
+      console.log(`❌ Port ${res.port.toString().padEnd(5)} : CLOSED / ${res.error}`);
+    }
+  });
+
+  const anyPortOpen = probeResults.some((r) => r.open);
+
+  if (!anyPortOpen) {
+    console.warn('\n⚠️ [RAILWAY NOTICE] All raw SMTP ports (465, 587, 2525) are blocked by the host network firewall.');
+    console.warn('💡 Recommended fix: Use HTTPS-based Email API (like Resend or Brevo) over port 443 which is NEVER blocked.');
+    console.warn('   Set RESEND_API_KEY or BREVO_API_KEY in Railway variables.');
   }
 
-  console.log(`🔌 [SMTP Socket] Verifying connection to ${isGmail ? 'Gmail Service' : host || 'smtp.gmail.com'} with user ${user}...`);
+  console.log('======================================================\n');
 
+  if (!user) {
+    return { connected: false, reason: 'unconfigured', probeResults };
+  }
+
+  // Try authenticating with transporter
   try {
     await new Promise((resolve, reject) => {
       transporter.verify((error, success) => {
@@ -72,25 +148,11 @@ export async function verifySmtpConnection() {
       });
     });
 
-    console.log('\n======================================================');
-    console.log('🎉 SMTP EMAIL SOCKET SUCCESSFULLY CONNECTED!');
-    console.log(`📧 Connected Account : ${user}`);
-    console.log(`🌐 Provider / Host   : ${isGmail ? 'Gmail (service: gmail)' : host || 'smtp.gmail.com'}`);
-    console.log('🚀 Ready to deliver live OTP and notification emails!');
-    console.log('======================================================\n');
-    return { connected: true };
+    console.log(`🎉 SMTP Authentication Successful on port ${isGmail ? 465 : process.env.SMTP_PORT || 465}!`);
+    return { connected: true, probeResults };
   } catch (error) {
-    console.error('\n======================================================');
-    console.error('❌ [SMTP SOCKET CONNECTION FAILED]');
-    console.error(`📧 Account          : ${user}`);
-    console.error(`⚠️ Error Reason     : ${error.message}`);
-    if (error.code === 'EAUTH') {
-      console.error('💡 Hint             : Authentication failed. Please verify your 16-character Google App Password (ensure no spaces).');
-    } else if (error.code === 'ESOCKET' || error.code === 'ETIMEDOUT') {
-      console.error('💡 Hint             : Network socket timeout. Check if port 465/587 is open.');
-    }
-    console.error('======================================================\n');
-    return { connected: false, error: error.message };
+    console.error(`⚠️ SMTP Handshake failed: ${error.message}`);
+    return { connected: false, error: error.message, probeResults };
   }
 }
 
@@ -127,13 +189,56 @@ export async function sendOTP(target, code) {
  */
 async function sendEmailOTP(email, code) {
   try {
+    const resendKey = (process.env.RESEND_API_KEY || '').trim();
+    const brevoKey = (process.env.BREVO_API_KEY || '').trim();
+
+    // 1. Primary Cloud Dispatch: Resend HTTPS API (Port 443 - Never Blocked by Railway/Cloud)
+    if (resendKey) {
+      try {
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${resendKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: process.env.RESEND_FROM || 'Sanjhi <onboarding@resend.dev>',
+            to: [email],
+            subject: 'Your Sanjhi Verification Code',
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                <h2 style="color: #2e7d32; text-align: center;">Sanjhi Verification</h2>
+                <p>Hello,</p>
+                <p>Your verification code for Sanjhi is:</p>
+                <div style="background-color: #f4f6f8; font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #1b5e20; text-align: center; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                  ${code}
+                </div>
+                <p style="color: #666; font-size: 13px;">This code will expire in 10 minutes.</p>
+              </div>
+            `,
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          console.log(`✅ [RESEND EMAIL SENT] ID: ${data.id}`);
+          return { success: true, channel: 'resend-https', messageId: data.id };
+        } else {
+          const errData = await res.text();
+          console.warn(`⚠️ [Resend API Error]: ${errData}`);
+        }
+      } catch (err) {
+        console.warn(`⚠️ [Resend API Request Failed]:`, err.message);
+      }
+    }
+
     const user = (process.env.SMTP_USER || '').trim();
-    if (!user) {
-      console.warn(`[OTP EMAIL] SMTP_USER not set. OTP code ${code} logged to console for ${email}.`);
+    if (!user && !resendKey && !brevoKey) {
+      console.warn(`[OTP EMAIL] Neither SMTP_USER nor RESEND_API_KEY set. OTP code ${code} logged to console for ${email}.`);
       return { success: true, channel: 'console', messageId: 'dev-console' };
     }
 
-    // Gmail requires sender address to match authenticated user
+    // 2. SMTP Transport
     const fromAddress = user.includes('@gmail.com')
       ? `"Sanjhi AI" <${user}>`
       : (process.env.SMTP_FROM || `"Sanjhi AI" <${user}>`);
