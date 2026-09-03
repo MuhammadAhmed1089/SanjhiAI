@@ -36,6 +36,26 @@
         </provider>
     </application>
 
+    <!-- Package Queries for Deep Linking to JazzCash, EasyPaisa, WhatsApp -->
+    <queries>
+        <package android:name="com.techlogix.mobilinkcustomer" />
+        <package android:name="pk.com.telenor.phoenix" />
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="jazzcash" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="easypaisa" />
+        </intent>
+    </queries>
+
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
