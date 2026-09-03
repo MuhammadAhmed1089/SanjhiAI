@@ -4,8 +4,8 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 
-/** Dismiss the HTML splash screen with a fade-out after minimum display time */
-function dismissSplash(minMs = 1200) {
+/** Dismiss the HTML splash screen with a smooth fade-out after minimum display time */
+function dismissSplash(minMs = 2400) {
   const splash = document.getElementById('splash-root');
   if (!splash) return;
 
@@ -39,4 +39,4 @@ root.render(
   </StrictMode>,
 );
 
-dismissSplash(1200);
+dismissSplash(2400);

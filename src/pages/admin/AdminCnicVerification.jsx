@@ -284,9 +284,9 @@ export default function AdminCnicVerification() {
 
       {/* Review Modal */}
       {selected && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSelected(null)} aria-hidden="true" />
-          <div className="relative w-full sm:w-[600px] max-h-[90vh] overflow-y-auto bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onClick={() => setSelected(null)} aria-hidden="true" />
+          <div className="relative w-full max-w-[600px] max-h-[90vh] overflow-y-auto bg-white rounded-3xl shadow-2xl p-6 my-auto animate-scale-in">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-heading text-deep-navy">Review CNIC Submission</h2>
               <button

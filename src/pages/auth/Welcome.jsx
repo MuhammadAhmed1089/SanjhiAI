@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import logo from '../../assets/screen.png';
+import logo from '../../assets/sanjhi-logo-white.png';
 import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
 
@@ -63,7 +63,7 @@ export default function Welcome() {
               <img
                 alt="Sanjhi Logo"
                 src={logo}
-                className="w-48 sm:w-60 lg:w-72 object-contain cursor-default filter drop-shadow-xl hover:scale-105 transition-transform duration-300"
+                className="w-44 sm:w-56 lg:w-64 object-contain cursor-default filter drop-shadow-2xl hover:scale-105 transition-transform duration-300"
               />
             </div>
 

@@ -1150,8 +1150,8 @@ export default function CommitteeSettings() {
           MODAL 1: ACCOUNT
       ══════════════════════════════════════════════════════ */}
       {showAccountModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl border border-[#006972]/15 overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-[#006972]/15 overflow-hidden my-auto animate-scale-in">
             <div className="h-1 bg-gradient-to-r from-[#006972] via-emerald-400 to-[#006972]" />
             <div className="p-5 sm:p-6 space-y-4">
               <div className="flex items-center justify-between">

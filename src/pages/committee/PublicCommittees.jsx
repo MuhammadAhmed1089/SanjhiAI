@@ -212,11 +212,14 @@ export default function PublicCommittees() {
       {/* ══════════════════════════════════════════════════ */}
       {/*  PREMIUM TOP NAVIGATION BAR                        */}
       {/* ══════════════════════════════════════════════════ */}
-      <header className="sticky top-0 z-40 bg-white/92 backdrop-blur-xl border-b border-[#006972]/12 shadow-[0_4px_20px_-4px_rgba(0,105,114,0.06)] transition-all">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-18 sm:h-20 flex items-center justify-between gap-3">
+      {/* ══════════════════════════════════════════════════ */}
+      {/*  TOP APP BAR                                      */}
+      {/* ══════════════════════════════════════════════════ */}
+      <header className="sticky top-0 z-40 bg-white/92 backdrop-blur-md border-b border-[#006972]/10 shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           
-          {/* Left: Back Arrow + Logo & Marketplace Branding */}
-          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+          {/* Left: Back Arrow + Logo & Marketplace Title */}
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => navigate('/dashboard')}
               aria-label="Back to Dashboard"
@@ -226,54 +229,59 @@ export default function PublicCommittees() {
               <Icon name="arrow_back" size={20} />
             </button>
 
-            <div
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2.5 cursor-pointer group select-none min-w-0"
+            <button
+              onClick={() => navigate('/profile')}
+              className="relative group cursor-pointer border-none bg-transparent p-0 shrink-0"
+              title="View Profile"
             >
-              <div className="relative shrink-0">
-                <img
-                  src={logo}
-                  alt="Sanjhi"
-                  className="w-9 h-9 sm:w-10 sm:h-10 object-contain drop-shadow-sm group-hover:scale-105 transition-transform duration-300"
-                />
+              <div className="w-11 h-11 rounded-full border-2 border-[#006972] shadow-sm group-hover:scale-105 transition-all overflow-hidden flex items-center justify-center bg-gradient-to-tr from-[#006972] to-[#004f56] text-white font-bold">
+                {userProfile?.avatar_url ? (
+                  <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  (userProfile?.full_name || 'U').charAt(0).toUpperCase()
+                )}
               </div>
+              <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white bg-emerald-500" />
+            </button>
 
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h1 className="font-headline text-[17px] sm:text-[20px] font-bold text-[#0D1B2A] group-hover:text-[#006972] transition-colors leading-none truncate">
-                    Public Marketplace
-                  </h1>
-                  <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 font-label text-[10px] font-bold uppercase tracking-wider border border-emerald-500/20">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Live Pools
-                  </span>
-                </div>
-                <p className="font-body text-[11px] sm:text-[12px] text-gray-500 hidden sm:flex items-center gap-1 mt-0.5">
-                  <span>Home</span>
-                  <span className="text-gray-300">/</span>
-                  <span className="text-[#006972] font-semibold">Explore Committees</span>
-                </p>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-label font-medium text-on-surface-variant">Marketplace</span>
+                <span className="text-[10px] font-label px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 font-bold uppercase tracking-wider hidden sm:inline-flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live Pools
+                </span>
               </div>
+              <h1 className="font-headline text-[18px] sm:text-[22px] font-bold text-[#006972] tracking-tight leading-tight truncate">
+                Public Committees
+              </h1>
             </div>
           </div>
 
-          {/* Right Navigation & Quick Tools */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {/* Desktop Navigation Links */}
-            <nav className="hidden lg:flex items-center gap-1 mr-1">
-              <button
-                onClick={() => navigate('/pools')}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full font-label text-[13px] font-semibold text-gray-600 hover:text-[#006972] hover:bg-[#006972]/8 transition-all cursor-pointer"
-              >
-                <Icon name="account_balance_wallet" size={17} />
-                <span>My Pools</span>
-              </button>
+          {/* Right: Nav Tabs + Sanjhi AI + WhatsApp + Notifications + Drawer */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <nav className="hidden md:flex items-center gap-1 mr-2">
+              {[
+                { label: 'Home', icon: 'dashboard', path: '/dashboard' },
+                { label: 'Pools', icon: 'groups', path: '/pools' },
+                { label: 'Payments', icon: 'account_balance_wallet', path: '/payments' },
+                { label: 'Support', icon: 'support_agent', path: '/support' },
+              ].map((item) => (
+                <button
+                  key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full font-label text-[13px] font-semibold text-deep-navy/60 hover:text-[#006972] hover:bg-[#006972]/8 transition-all duration-200 cursor-pointer border-none bg-transparent"
+                >
+                  <Icon name={item.icon} size={17} />
+                  {item.label}
+                </button>
+              ))}
             </nav>
 
             {/* Sanjhi AI Assistant Button */}
             <button
               onClick={() => navigate('/assistant')}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#006972]/10 hover:bg-[#006972]/18 text-[#006972] font-label text-[13px] font-bold border border-[#006972]/20 transition-all active:scale-95 cursor-pointer shadow-sm shadow-[#006972]/5"
+              className="relative overflow-hidden flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#006972]/10 hover:bg-[#006972]/18 text-[#006972] font-label text-[13px] font-bold border border-[#006972]/25 transition-all active:scale-95 cursor-pointer"
               title="Open Sanjhi AI Assistant"
             >
               <img
@@ -287,9 +295,9 @@ export default function PublicCommittees() {
             {/* WhatsApp Support Button */}
             <button
               onClick={openWhatsApp}
-              className="p-2 sm:p-2.5 rounded-full bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/25 transition-all active:scale-95 cursor-pointer group"
+              className="relative p-2.5 rounded-full bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/25 transition-all active:scale-95 cursor-pointer group"
               aria-label="Chat on WhatsApp"
-              title="Chat with official support on WhatsApp"
+              title="Chat with us on WhatsApp"
             >
               <img
                 src={whatsappIcon}
@@ -301,42 +309,26 @@ export default function PublicCommittees() {
             {/* Notifications Button */}
             <button
               onClick={() => navigate('/notifications')}
-              className="relative p-2 sm:p-2.5 rounded-full bg-white hover:bg-[#006972]/5 border border-gray-200 text-[#006972] transition-all active:scale-95 cursor-pointer group shadow-sm"
+              className="relative p-2.5 rounded-full bg-white hover:bg-[#006972]/5 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer group"
               aria-label="Notifications"
-              title="View Notifications"
+              title="Notifications"
             >
               <Icon
                 name="notifications"
-                size={20}
+                size={22}
                 className="group-hover:rotate-12 transition-transform duration-300"
               />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center text-[9px] text-white font-bold ring-2 ring-white animate-pulse">
+                <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold ring-2 ring-white">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
             </button>
 
-            {/* User Profile Avatar Link */}
-            <button
-              onClick={() => navigate('/profile')}
-              className="hidden sm:block relative group cursor-pointer p-0 border-none bg-transparent shrink-0"
-              title="View Profile & Settings"
-            >
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-tr from-[#006972] to-[#004f56] text-white font-bold flex items-center justify-center border-2 border-white shadow-sm group-hover:ring-2 group-hover:ring-[#006972]/40 transition-all overflow-hidden text-sm">
-                {userProfile?.avatar_url ? (
-                  <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  (userProfile?.full_name || 'U').charAt(0).toUpperCase()
-                )}
-              </div>
-              <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white bg-emerald-500" />
-            </button>
-
             {/* Mobile Menu Drawer Toggle */}
             <button
               onClick={openDrawer}
-              className="md:hidden relative p-2.5 rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer"
+              className="md:hidden relative p-2.5 rounded-full bg-[#006972]/10 hover:bg-[#006972]/20 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer"
               aria-label="Open Navigation Menu"
               title="Open Menu"
             >

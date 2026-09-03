@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
 import logo from '../../assets/screen.png';
@@ -8,17 +8,24 @@ import { sendOTP } from '../../services/authService';
 
 export default function SignUpForm() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { method } = useParams();
   const isPhone = method !== 'email';
+  const initialTarget = location.state?.initialTarget || '';
 
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => (!isPhone ? initialTarget : ''));
   const [password, setPassword] = useState('');
   const [confirmPass, setConfirmPass] = useState('');
   const [country, setCountry] = useState(DEFAULT_COUNTRY);
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState(() => {
+    if (isPhone && initialTarget) {
+      return initialTarget.replace(/\D/g, '').slice(-10);
+    }
+    return '';
+  });
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);

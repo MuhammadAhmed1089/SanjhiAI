@@ -16,9 +16,11 @@ function BottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-t border-[#006972]/20 shadow-[0_-10px_35px_rgba(0,105,114,0.18)] rounded-t-3xl px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex justify-around items-center select-none"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-2xl border-t border-[#006972]/15 shadow-[0_-8px_30px_rgba(0,105,114,0.14)] rounded-t-3xl px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex justify-around items-center select-none"
       style={{
-        WebkitBackdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+        transform: 'translateZ(0)',
+        willChange: 'transform',
       }}
     >
       {navItems.map((item) => (

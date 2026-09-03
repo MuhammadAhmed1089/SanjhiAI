@@ -659,27 +659,13 @@ export default function Assistant() {
       </main>
 
       {/* ══════════════════════════════════════════════════ */}
-      {/*  FLOATING WHATSAPP BUTTON                         */}
-      {/* ══════════════════════════════════════════════════ */}
-      <button
-        onClick={openWhatsApp}
-        className="fixed bottom-24 right-4 sm:bottom-28 sm:right-6 z-50 w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#1da851] text-white flex items-center justify-center shadow-lg shadow-[#25D366]/30 transition-all active:scale-90 cursor-pointer border-4 border-white animate-float-y-fast group"
-        title="Chat with us on WhatsApp"
-      >
-        <img src={whatsappIcon} alt="WhatsApp" className="w-7 h-7 brightness-0 invert" />
-        <span className="absolute right-full mr-3 px-3 py-1.5 rounded-xl bg-deep-navy text-white font-label text-[11px] font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
-          Chat on WhatsApp
-        </span>
-      </button>
-
-      {/* ══════════════════════════════════════════════════ */}
       {/*  BOTTOM CHAT INPUT & VOICE CONTROL BAR            */}
       {/* ══════════════════════════════════════════════════ */}
-      <footer className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#006972]/15 p-3 sm:p-4 shadow-[0_-6px_24px_rgba(0,105,114,0.12)]">
-        <div className="max-w-4xl mx-auto space-y-2">
+      <footer className="fixed bottom-[max(4.25rem,env(safe-area-inset-bottom))] md:bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#006972]/15 p-2.5 sm:p-4 shadow-[0_-6px_24px_rgba(0,105,114,0.12)]">
+        <div className="max-w-4xl mx-auto space-y-1.5">
 
           {isListening && (
-            <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-2 rounded-2xl text-[12px] font-label font-bold flex items-center justify-between animate-bounce-short shadow-sm">
+            <div className="bg-rose-50 border border-rose-200 text-rose-700 px-3.5 py-1.5 rounded-2xl text-[12px] font-label font-bold flex items-center justify-between animate-bounce-short shadow-sm">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping" />
                 <span>Listening... Speak into your microphone now</span>
@@ -698,28 +684,28 @@ export default function Assistant() {
               e.preventDefault();
               handleSendMessage();
             }}
-            className="flex items-center gap-2 bg-slate-50 border-2 border-[#006972]/20 focus-within:border-[#006972] focus-within:ring-4 focus-within:ring-[#006972]/10 rounded-3xl p-1.5 transition-all shadow-sm"
+            className="flex items-center gap-1.5 bg-slate-50 border-2 border-[#006972]/20 focus-within:border-[#006972] focus-within:ring-4 focus-within:ring-[#006972]/10 rounded-3xl p-1 transition-all shadow-sm"
           >
             <button
               type="button"
               onClick={openWhatsApp}
-              className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer border-none shrink-0 bg-[#25D366]/10 hover:bg-[#25D366]/20"
+              className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all cursor-pointer border-none shrink-0 bg-[#25D366]/10 hover:bg-[#25D366]/20"
               title="Send message on WhatsApp"
             >
-              <img src={whatsappIcon} alt="WhatsApp" className="w-5 h-5" />
+              <img src={whatsappIcon} alt="WhatsApp" className="w-4.5 h-4.5" />
             </button>
 
             <button
               type="button"
               onClick={toggleVoiceRecognition}
-              className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer border-none shrink-0 ${
+              className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all cursor-pointer border-none shrink-0 ${
                 isListening
                   ? 'bg-rose-600 text-white animate-pulse shadow-md'
                   : 'bg-[#006972]/10 text-[#006972] hover:bg-[#006972]/20'
               }`}
               title={isListening ? 'Stop Recording' : 'Voice Input (Speech-to-Text)'}
             >
-              <Icon name={isListening ? 'mic_off' : 'mic'} size={22} />
+              <Icon name={isListening ? 'mic_off' : 'mic'} size={20} />
             </button>
 
             <input
@@ -727,20 +713,20 @@ export default function Assistant() {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder={isListening ? 'Listening to voice...' : 'Ask Sanjhi AI anything...'}
-              className="flex-1 bg-transparent px-3 py-2 font-body text-[14px] text-deep-navy outline-none placeholder:text-on-surface-variant/50"
+              className="flex-1 bg-transparent px-2.5 py-1.5 font-body text-[14px] text-deep-navy outline-none placeholder:text-on-surface-variant/50 min-w-0"
             />
 
             <button
               type="submit"
               disabled={!inputText.trim()}
-              className="w-11 h-11 rounded-2xl bg-[#006972] hover:bg-[#00575f] text-white flex items-center justify-center transition-all cursor-pointer border-none shrink-0 shadow-md active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-10 h-10 rounded-2xl bg-[#006972] hover:bg-[#00575f] text-white flex items-center justify-center transition-all cursor-pointer border-none shrink-0 shadow-md active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
               title="Send Message"
             >
-              <Icon name="send" size={20} />
+              <Icon name="send" size={18} />
             </button>
           </form>
 
-          <p className="text-[11px] font-label text-center text-on-surface-variant/60">
+          <p className="text-[10px] font-label text-center text-on-surface-variant/60 hidden xs:block">
             Sanjhi AI provides automated guidance. For urgent help, tap the WhatsApp button.
           </p>
         </div>

@@ -81,17 +81,27 @@
 }
 
 /* ── Base Styles ── */
+html {
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  scroll-behavior: smooth;
+  height: 100%;
+}
+
 body {
   font-family: var(--font-body);
   background-color: var(--color-surface-warm);
   color: var(--color-on-surface);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  width: 100%;
   /* Smooth native-like scroll on mobile */
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
-  /* Prevent layout shift & paint during scroll */
-  contain: style;
 }
 
 /* ── Global tap highlight removal for a native feel ── */
@@ -472,12 +482,12 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ── Page Transition ── */
 .page-enter {
-  animation: page-slide-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: transform, opacity;
+  animation: page-fade-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity;
 }
-@keyframes page-slide-in {
-  from { opacity: 0; transform: translateY(8px) translateZ(0); }
-  to   { opacity: 1; transform: translateY(0) translateZ(0); }
+@keyframes page-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 /* Slide right for drawer */

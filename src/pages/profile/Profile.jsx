@@ -876,8 +876,8 @@ export default function Profile() {
           ADD CONTACT MODAL (2-Step OTP Flow)
       ════════════════════════════════════════════ */}
       {showAddContact && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xl border border-[#006972]/15">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-md rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xl border border-[#006972]/15 my-auto animate-scale-in">
             <div className="flex items-center justify-between">
               <h3 className="font-headline text-[18px] font-bold text-deep-navy flex items-center gap-2">
                 <Icon name={addContactType === 'phone' ? 'smartphone' : 'mail'} size={20} className="text-[#006972]" />

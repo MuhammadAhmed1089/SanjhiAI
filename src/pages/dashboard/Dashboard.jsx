@@ -419,7 +419,7 @@ export default function Dashboard() {
               style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.9) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
 
             <img src={logo} alt="" aria-hidden
-              className="absolute right-10 top-1/2 -translate-y-1/2 w-24 opacity-10 select-none hidden sm:block animate-float-y-slow"
+              className="absolute right-10 top-1/2 -translate-y-1/2 w-24 opacity-20 select-none hidden sm:block animate-float-y-slow pointer-events-none"
               style={{ filter: 'brightness(0) invert(1)' }} />
 
             <div className="hidden lg:block absolute top-0 -right-px h-full w-14 z-10">
@@ -812,9 +812,9 @@ function TrustBreakdownModal({ loading, data, score, onClose }) {
   const penaltyPoints = c?.penalties?.points || 0;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-label="Trust score breakdown">
-      <div className="absolute inset-0 bg-deep-navy/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[86vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 sm:p-6 overflow-y-auto" role="dialog" aria-modal="true" aria-label="Trust score breakdown">
+      <div className="fixed inset-0 bg-deep-navy/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
+      <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl max-h-[86vh] overflow-y-auto my-auto animate-scale-in">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-[#006972] text-white px-6 py-5 rounded-t-3xl flex items-start justify-between">
           <div>

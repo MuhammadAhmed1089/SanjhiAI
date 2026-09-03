@@ -1,147 +1,75 @@
-import TopAppBar from '../../components/TopAppBar';
-import Icon from '../../components/Icon';
-import Button from '../../components/Button';
+import { useNavigate } from 'react-router-dom';
+import logo from '../../assets/screen.png';
 
 export default function Loading() {
+  const navigate = useNavigate();
+
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body antialiased">
-<aside className="hidden md:flex flex-col h-screen w-80 fixed left-0 top-0 z-[60] bg-surface dark:bg-surface-dim border-r border-outline/10 p-md gap-sm shadow-lg">
-<div className="flex items-center gap-md mb-xl p-md">
-<div className="w-12 h-12 rounded-full bg-surface-container-high skeleton-pulse"></div>
-<div className="flex flex-col gap-xs">
-<div className="w-32 h-6 bg-surface-container-high rounded skeleton-pulse"></div>
-<div className="w-24 h-4 bg-surface-container-high rounded skeleton-pulse"></div>
-</div>
-</div>
-<nav className="flex flex-col gap-sm">
-<div className="flex items-center gap-md p-md rounded bg-secondary-container text-on-secondary-container font-bold">
-<span className="material-symbols-outlined">grid_view</span>
-<span className="font-label-sm text-label-sm">Dashboard</span>
-</div>
-<div className="flex items-center gap-md p-md rounded text-on-surface-variant hover:bg-surface-container-high transition-all duration-200 ease-in-out">
-<span className="material-symbols-outlined">group_work</span>
-<span className="font-label-sm text-label-sm">Pools</span>
-</div>
-<div className="flex items-center gap-md p-md rounded text-on-surface-variant hover:bg-surface-container-high transition-all duration-200 ease-in-out">
-<span className="material-symbols-outlined">diversity_3</span>
-<span className="font-label-sm text-label-sm">Connect</span>
-</div>
-<div className="flex items-center gap-md p-md rounded text-on-surface-variant hover:bg-surface-container-high transition-all duration-200 ease-in-out">
-<span className="material-symbols-outlined">person</span>
-<span className="font-label-sm text-label-sm">Profile</span>
-</div>
-</nav>
-</aside>
+    <div className="min-h-screen bg-white relative flex flex-col items-center justify-center p-4 overflow-hidden selection:bg-transparent">
+      {/* ── Ambient Dashboard Background ── */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div
+          className="absolute inset-0 opacity-[0.35]"
+          style={{
+            backgroundImage: 'radial-gradient(circle at 1.5px 1.5px, #006972 1px, transparent 1px)',
+            backgroundSize: '28px 28px',
+          }}
+        />
+        <div className="absolute w-[520px] h-[520px] rounded-full bg-[#006972]/6 blur-3xl top-[-120px] left-[-120px] animate-float-y-slow" />
+        <div className="absolute w-[380px] h-[380px] rounded-full bg-amber-400/6 blur-3xl bottom-[-80px] right-[-80px]" />
+        <img
+          src={logo}
+          alt=""
+          aria-hidden="true"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] opacity-[0.035] select-none pointer-events-none"
+          style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(85%) saturate(1450%) hue-rotate(152deg)' }}
+        />
+      </div>
 
-<div className="flex-1 md:ml-80 flex flex-col pb-24 md:pb-0">
+      {/* ── Central Glass Card ── */}
+      <div className="relative z-10 flex flex-col items-center text-center p-8 sm:p-10 rounded-3xl bg-white/85 backdrop-blur-xl border border-[#006972]/15 shadow-[0_24px_60px_-15px_rgba(0,105,114,0.14)] animate-fade-in max-w-[360px] w-full">
+        {/* Logo Container with Glowing Ring */}
+        <div className="relative w-24 h-24 flex items-center justify-center mb-6">
+          <div className="absolute -inset-2 rounded-3xl border-2 border-[#006972]/20 border-t-[#006972] animate-spin" />
+          <div className="w-20 h-20 rounded-2xl bg-white p-3 shadow-md border border-[#006972]/15 flex items-center justify-center">
+            <img src={logo} alt="Sanjhi Logo" className="w-full h-full object-contain" />
+          </div>
+        </div>
 
-<header className="w-full top-0 sticky bg-background dark:bg-background border-b border-outline/10 flex justify-between items-center px-margin-mobile py-sm z-50">
-<div className="flex items-center gap-sm md:hidden">
-<button className="text-primary dark:text-on-primary-fixed p-2 rounded hover:bg-surface-container-low transition-colors active:scale-95 duration-150">
-<span className="material-symbols-outlined">menu</span>
-</button>
-<h1 className="font-display-lg-mobile text-display-lg-mobile text-secondary dark:text-secondary-fixed font-bold">Sanjhi</h1>
-</div>
-<div className="hidden md:block">
-<h1 className="font-headline-md text-headline-md text-primary dark:text-on-primary-fixed">Dashboard</h1>
-</div>
-<button className="text-primary dark:text-on-primary-fixed p-2 rounded hover:bg-surface-container-low transition-colors active:scale-95 duration-150">
-<span className="material-symbols-outlined">notifications</span>
-</button>
-</header>
+        {/* Text Details with clear, generous line spacing */}
+        <div className="flex flex-col items-center gap-1.5 mb-6">
+          <h1 className="font-headline font-extrabold text-[#006972] text-[26px] tracking-tight">Sanjhi</h1>
+          <p className="font-urdu text-[22px] text-deep-navy font-bold leading-relaxed">سانجھی</p>
+          <span className="font-label text-[11px] uppercase tracking-widest font-bold text-[#006972]/70 mt-1">
+            Community Savings · Trusted Pools
+          </span>
+        </div>
 
-<main className="p-margin-mobile md:p-margin-desktop flex-1 flex flex-col gap-lg">
+        {/* Centered Progress Bar */}
+        <div className="w-full max-w-[200px] h-2 rounded-full bg-[#006972]/10 overflow-hidden border border-[#006972]/10 mb-3.5">
+          <div
+            className="h-full rounded-full animate-shimmer"
+            style={{
+              width: '100%',
+              background: 'linear-gradient(90deg, #006972, #10b981, #d4af37, #006972)',
+              backgroundSize: '200% 100%',
+            }}
+          />
+        </div>
 
-<div className="w-48 h-10 bg-surface-container-high rounded-lg skeleton-pulse mb-md"></div>
+        <span className="font-body text-[12px] text-on-surface-variant font-medium flex items-center gap-2 animate-pulse">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping-slow" />
+          Loading experience...
+        </span>
 
-<div className="grid grid-cols-1 md:grid-cols-12 gap-gutter">
-
-<div className="col-span-1 md:col-span-8 bg-surface-container-low border border-outline/10 rounded-xl p-lg flex flex-col justify-between min-h-[240px]">
-<div className="flex justify-between items-start">
-<div className="w-32 h-6 bg-surface-container-high rounded skeleton-pulse"></div>
-<div className="w-12 h-12 bg-surface-container-high rounded-full skeleton-pulse"></div>
-</div>
-<div className="flex flex-col gap-sm mt-auto">
-<div className="w-24 h-12 bg-surface-container-high rounded-lg skeleton-pulse"></div>
-<div className="w-full h-2 bg-surface-container-high rounded-full skeleton-pulse mt-md"></div>
-<div className="w-3/4 h-4 bg-surface-container-high rounded skeleton-pulse"></div>
-</div>
-</div>
-
-<div className="col-span-1 md:col-span-4 flex flex-col gap-gutter">
-<div className="bg-surface-container-low border border-outline/10 rounded-xl p-lg flex-1 min-h-[110px] flex items-center justify-between">
-<div className="flex flex-col gap-xs">
-<div className="w-20 h-4 bg-surface-container-high rounded skeleton-pulse"></div>
-<div className="w-16 h-8 bg-surface-container-high rounded skeleton-pulse"></div>
-</div>
-<div className="w-10 h-10 bg-surface-container-high rounded-full skeleton-pulse"></div>
-</div>
-<div className="bg-surface-container-low border border-outline/10 rounded-xl p-lg flex-1 min-h-[110px] flex items-center justify-between">
-<div className="flex flex-col gap-xs">
-<div className="w-24 h-4 bg-surface-container-high rounded skeleton-pulse"></div>
-<div className="w-12 h-8 bg-surface-container-high rounded skeleton-pulse"></div>
-</div>
-<div className="w-10 h-10 bg-surface-container-high rounded-full skeleton-pulse"></div>
-</div>
-</div>
-
-<div className="col-span-1 md:col-span-12 mt-lg">
-<div className="flex justify-between items-center mb-md">
-<div className="w-40 h-6 bg-surface-container-high rounded skeleton-pulse"></div>
-<div className="w-20 h-4 bg-surface-container-high rounded skeleton-pulse"></div>
-</div>
-<div className="flex flex-col gap-md">
-
-<div className="bg-surface-container-lowest border border-outline/10 rounded-lg p-md flex items-center gap-md">
-<div className="w-12 h-12 bg-surface-container-high rounded-lg skeleton-pulse shrink-0"></div>
-<div className="flex-1 flex flex-col gap-sm">
-<div className="w-1/3 h-5 bg-surface-container-high rounded skeleton-pulse"></div>
-<div className="w-1/2 h-4 bg-surface-container-high rounded skeleton-pulse"></div>
-</div>
-<div className="w-16 h-6 bg-surface-container-high rounded-full skeleton-pulse shrink-0"></div>
-</div>
-
-<div className="bg-surface-container-lowest border border-outline/10 rounded-lg p-md flex items-center gap-md">
-<div className="w-12 h-12 bg-surface-container-high rounded-lg skeleton-pulse shrink-0"></div>
-<div className="flex-1 flex flex-col gap-sm">
-<div className="w-2/5 h-5 bg-surface-container-high rounded skeleton-pulse"></div>
-<div className="w-1/3 h-4 bg-surface-container-high rounded skeleton-pulse"></div>
-</div>
-<div className="w-16 h-6 bg-surface-container-high rounded-full skeleton-pulse shrink-0"></div>
-</div>
-
-<div className="bg-surface-container-lowest border border-outline/10 rounded-lg p-md flex items-center gap-md">
-<div className="w-12 h-12 bg-surface-container-high rounded-lg skeleton-pulse shrink-0"></div>
-<div className="flex-1 flex flex-col gap-sm">
-<div className="w-1/4 h-5 bg-surface-container-high rounded skeleton-pulse"></div>
-<div className="w-2/5 h-4 bg-surface-container-high rounded skeleton-pulse"></div>
-</div>
-<div className="w-16 h-6 bg-surface-container-high rounded-full skeleton-pulse shrink-0"></div>
-</div>
-</div>
-</div>
-</div>
-</main>
-</div>
-
-<nav className="md:hidden fixed bottom-0 w-full z-50 rounded-t-xl bg-surface dark:bg-surface-dim border-t border-outline/10 shadow-sm flex justify-around items-center h-16 px-2">
-<a className="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 active:scale-90 transition-transform" href="#">
-<span className="material-symbols-outlined" data-weight="fill">grid_view</span>
-<span className="font-label-sm text-label-sm mt-1 hidden">Dashboard</span>
-</a>
-<a className="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high active:scale-90 transition-transform px-4 py-1 rounded-full" href="#">
-<span className="material-symbols-outlined">group_work</span>
-<span className="font-label-sm text-label-sm mt-1 hidden">Pools</span>
-</a>
-<a className="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high active:scale-90 transition-transform px-4 py-1 rounded-full" href="#">
-<span className="material-symbols-outlined">diversity_3</span>
-<span className="font-label-sm text-label-sm mt-1 hidden">Connect</span>
-</a>
-<a className="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high active:scale-90 transition-transform px-4 py-1 rounded-full" href="#">
-<span className="material-symbols-outlined">person</span>
-<span className="font-label-sm text-label-sm mt-1 hidden">Profile</span>
-</a>
-</nav>
+        {/* Home fallback button */}
+        <button
+          onClick={() => navigate('/dashboard')}
+          className="mt-6 text-[11px] font-label font-bold text-[#006972]/60 hover:text-[#006972] transition-colors"
+        >
+          Taking too long? Go to Dashboard →
+        </button>
+      </div>
     </div>
   );
 }

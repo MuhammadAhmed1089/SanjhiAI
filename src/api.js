@@ -20,7 +20,7 @@ function getApiBaseUrl() {
   if (typeof window !== 'undefined' && window.location && window.location.origin) {
     const host = window.location.hostname;
     if (host === 'localhost' || host === '127.0.0.1') {
-      return 'http://localhost:3000/api';
+      return '/api';
     }
     if (host.includes('railway.app')) {
       return `${window.location.origin}/api`;

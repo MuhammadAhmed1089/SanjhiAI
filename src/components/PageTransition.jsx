@@ -12,6 +12,7 @@ export default function PageTransition({ children }) {
   const wrapperRef = useRef(null);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     const el = wrapperRef.current;
     if (!el) return;
 
@@ -23,7 +24,7 @@ export default function PageTransition({ children }) {
   }, [location.pathname]);
 
   return (
-    <div ref={wrapperRef} className="page-enter" style={{ minHeight: '100%' }}>
+    <div ref={wrapperRef} className="page-enter w-full min-h-screen">
       {children}
     </div>
   );

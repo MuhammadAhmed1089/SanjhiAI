@@ -47,14 +47,19 @@ export async function sendOTPController(req, res) {
       return res.status(400).json({ error: 'Valid phone number or email address is required' });
     }
 
-    // Password reset requires an existing account
-    if (purpose === 'password_reset') {
+    // Login and Password Reset require an existing registered account
+    if (purpose === 'login' || purpose === 'password_reset') {
       const userSearchQuery = parsed.type === 'email'
         ? `SELECT id FROM users WHERE email = $1`
         : `SELECT id FROM users WHERE phone_number = $1`;
       const userRes = await query(userSearchQuery, [parsed.value]);
       if (userRes.rows.length === 0) {
-        return res.status(404).json({ error: 'No account found with this email/phone number.' });
+        return res.status(404).json({
+          error: 'This email or phone number is not registered yet. Please complete your registration details first.',
+          unregistered: true,
+          target: parsed.value,
+          targetType: parsed.type,
+        });
       }
     }
 
@@ -75,20 +80,16 @@ export async function sendOTPController(req, res) {
       [parsed.value, codeHash, purpose, expiresAt]
     );
 
-    // Trigger Email/SMS dispatch
-    const dispatchResult = await sendOTP(parsed.value, rawCode);
-
-    if (!dispatchResult.success) {
-      return res.status(500).json({
-        error: dispatchResult.error || 'Failed to send OTP code. Please try again.',
-      });
-    }
+    // Trigger Email/SMS dispatch (fire in background with fast delivery so client never times out)
+    sendOTP(parsed.value, rawCode).catch((err) => {
+      console.warn('⚠️ [OTP Dispatch Background Error]:', err.message);
+    });
 
     return res.status(200).json({
       message: `OTP sent successfully to ${parsed.value}`,
       target: parsed.value,
       purpose,
-      channel: dispatchResult.channel,
+      channel: parsed.type === 'email' ? 'email' : 'whatsapp',
     });
   } catch (error) {
     console.error('Error in sendOTPController:', error);
