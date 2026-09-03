@@ -55,6 +55,13 @@ async function generateIcons() {
     console.log(`  ✅ ${folder} (${size}px) → ic_launcher, ic_launcher_round, ic_launcher_foreground`);
   }
 
+  // Ensure no density-less PNG exists in mipmap-anydpi-v26 (which crashes Android PackageInstaller with 0x0 width/height)
+  const anyDpiFg = path.join(ANDROID_RES, 'mipmap-anydpi-v26/ic_launcher_foreground.png');
+  if (fs.existsSync(anyDpiFg)) {
+    fs.unlinkSync(anyDpiFg);
+    console.log('  🗑️ Removed invalid anydpi PNG from mipmap-anydpi-v26');
+  }
+
   console.log('\n🚀 All Android icons generated successfully!');
   console.log('Next steps:');
   console.log('  1. npx cap sync');
