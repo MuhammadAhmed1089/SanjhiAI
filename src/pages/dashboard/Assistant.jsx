@@ -104,17 +104,32 @@ export default function Assistant() {
     };
   }, []);
 
-  function toggleVoiceRecognition() {
+  async function toggleVoiceRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    if (!SpeechRecognition) {
-      alert('Voice recognition is not supported in your browser. Please type your message.');
+    if (isListening) {
+      try {
+        recognitionRef.current?.stop();
+      } catch (_) {}
+      setIsListening(false);
       return;
     }
 
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
+    // Explicitly request microphone stream first (necessary for Android Capacitor WebView)
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Release the test stream so SpeechRecognition can bind cleanly
+        stream.getTracks().forEach((track) => track.stop());
+      } catch (err) {
+        console.warn('Microphone permission not granted:', err);
+        alert('Microphone access is required for voice typing. Please allow microphone permission in your device settings.');
+        return;
+      }
+    }
+
+    if (!SpeechRecognition) {
+      alert('Voice recognition service is not available on this device. Please type your message.');
       return;
     }
 
@@ -133,12 +148,17 @@ export default function Assistant() {
           .map((result) => result[0])
           .map((result) => result.transcript)
           .join('');
-        setInputText(transcript);
+        if (transcript) {
+          setInputText(transcript);
+        }
       };
 
       recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
+        console.warn('Speech recognition warning:', event.error);
         setIsListening(false);
+        if (event.error === 'not-allowed') {
+          alert('Microphone permission was denied. Please allow microphone access to use voice typing.');
+        }
       };
 
       recognition.onend = () => {
@@ -148,7 +168,7 @@ export default function Assistant() {
       recognitionRef.current = recognition;
       recognition.start();
     } catch (err) {
-      console.error(err);
+      console.error('Speech recognition start error:', err);
       setIsListening(false);
     }
   }
@@ -296,79 +316,79 @@ export default function Assistant() {
       </div>
 
       {/* ══════════════════════════════════════════════════ */}
-      {/*  TOP APP BAR HEADER                               */}
+      {/*  TOP APP BAR HEADER (Responsive Mobile / Desktop)  */}
       {/* ══════════════════════════════════════════════════ */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#006972]/12 shadow-sm shrink-0">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-3">
+        <div className="max-w-4xl mx-auto px-3 sm:px-6 h-14 sm:h-18 flex items-center justify-between gap-2 sm:gap-3">
 
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               onClick={() => navigate('/dashboard')}
               aria-label="Back to dashboard"
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/15 text-[#006972] transition-colors cursor-pointer active:scale-95 shrink-0"
+              className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/15 text-[#006972] transition-colors cursor-pointer active:scale-95 shrink-0"
             >
-              <Icon name="arrow_back" size={20} />
+              <Icon name="arrow_back" size={18} />
             </button>
 
-            <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <div className="relative shrink-0">
                 <img
                   src={aiLogo}
                   alt="Sanjhi AI"
-                  className="w-10 h-10 rounded-2xl object-cover shadow-md shadow-[#006972]/20 border-2 border-white animate-float-y-fast"
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl object-cover shadow-sm border border-emerald-500/20"
                 />
-                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white">
+                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-emerald-500 rounded-full border-2 border-white">
                   <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping-slow" />
                 </span>
               </div>
 
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h1 className="font-headline text-[17px] sm:text-[20px] font-bold text-deep-navy truncate">
+                <div className="flex items-center gap-1.5">
+                  <h1 className="font-headline text-[15px] sm:text-[19px] font-bold text-deep-navy truncate leading-tight">
                     Sanjhi AI
                   </h1>
-                  <span className="px-2 py-0.5 rounded-full bg-[#006972]/10 text-[#006972] font-label text-[10px] font-bold uppercase tracking-wider hidden sm:inline">
+                  <span className="px-1.5 py-0.2 rounded-full bg-[#006972]/10 text-[#006972] font-label text-[9px] sm:text-[10px] font-bold uppercase tracking-wider hidden md:inline">
                     Smart Assistant
                   </span>
                 </div>
-                <p className="font-body text-[12px] text-emerald-700 font-semibold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                  Online - Voice Enabled
+                <p className="font-body text-[11px] sm:text-[12px] text-emerald-700 font-semibold flex items-center gap-1 leading-tight">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block shrink-0" />
+                  <span className="truncate">Online • AI Assistant</span>
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <button
               onClick={() => setShowHistory((prev) => !prev)}
-              className={`p-2.5 rounded-full transition-all active:scale-95 cursor-pointer border-none ${
-                showHistory ? 'bg-[#006972] text-white' : 'bg-[#006972]/10 hover:bg-[#006972]/20 text-[#006972]'
+              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all active:scale-95 cursor-pointer border-none ${
+                showHistory ? 'bg-[#006972] text-white shadow-sm' : 'bg-[#006972]/8 hover:bg-[#006972]/15 text-[#006972]'
               }`}
               title="Chat history"
             >
-              <Icon name="forum" size={20} />
+              <Icon name="forum" size={17} />
             </button>
             <button
               onClick={() => setShowGuide((prev) => !prev)}
-              className="p-2.5 rounded-full bg-[#006972]/10 hover:bg-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer border-none"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 text-[#006972] flex items-center justify-center transition-all active:scale-95 cursor-pointer border-none"
               title="How to use Sanjhi AI"
             >
-              <Icon name="help" size={20} />
+              <Icon name="help" size={17} />
             </button>
             <button
               onClick={openWhatsApp}
-              className="p-2.5 rounded-full bg-[#25D366]/10 hover:bg-[#25D366]/20 transition-all active:scale-95 cursor-pointer border-none"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#25D366]/10 hover:bg-[#25D366]/20 flex items-center justify-center transition-all active:scale-95 cursor-pointer border-none"
               title="Chat on WhatsApp"
             >
-              <img src={whatsappIcon} alt="WhatsApp" className="w-5 h-5" />
+              <img src={whatsappIcon} alt="WhatsApp" className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </button>
             <button
               onClick={handleNewChat}
-              className="p-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-deep-navy/70 transition-all active:scale-95 cursor-pointer border-none"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#006972] hover:bg-[#005259] text-white flex items-center justify-center transition-all active:scale-95 cursor-pointer border-none shadow-sm shadow-[#006972]/25"
               title="New Chat"
             >
-              <Icon name="add_comment" size={20} />
+              <Icon name="add_comment" size={17} />
             </button>
           </div>
         </div>

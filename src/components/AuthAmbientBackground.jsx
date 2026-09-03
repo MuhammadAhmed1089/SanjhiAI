@@ -91,7 +91,7 @@ export default function AuthAmbientBackground({ showTicker = false, children }) 
       )}
 
       {/* Page Content */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center">
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-start w-full">
         {children}
       </div>
     </div>

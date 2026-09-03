@@ -215,18 +215,21 @@ export default function PublicCommittees() {
       {/* ══════════════════════════════════════════════════ */}
       {/*  TOP APP BAR                                      */}
       {/* ══════════════════════════════════════════════════ */}
-      <header className="sticky top-0 z-40 bg-white/92 backdrop-blur-md border-b border-[#006972]/10 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      {/* ══════════════════════════════════════════════════ */}
+      {/*  TOP APP BAR (Mobile & Desktop Responsive)         */}
+      {/* ══════════════════════════════════════════════════ */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#006972]/10 shadow-sm">
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-18 flex items-center justify-between gap-2">
           
           {/* Left: Back Arrow + Logo & Marketplace Title */}
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               onClick={() => navigate('/dashboard')}
               aria-label="Back to Dashboard"
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/15 text-[#006972] transition-all cursor-pointer active:scale-95 shrink-0"
+              className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/15 text-[#006972] transition-all cursor-pointer active:scale-95 shrink-0"
               title="Return to Dashboard"
             >
-              <Icon name="arrow_back" size={20} />
+              <Icon name="arrow_back" size={18} />
             </button>
 
             <button
@@ -234,32 +237,32 @@ export default function PublicCommittees() {
               className="relative group cursor-pointer border-none bg-transparent p-0 shrink-0"
               title="View Profile"
             >
-              <div className="w-11 h-11 rounded-full border-2 border-[#006972] shadow-sm group-hover:scale-105 transition-all overflow-hidden flex items-center justify-center bg-gradient-to-tr from-[#006972] to-[#004f56] text-white font-bold">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-[#006972] shadow-sm group-hover:scale-105 transition-all overflow-hidden flex items-center justify-center bg-gradient-to-tr from-[#006972] to-[#004f56] text-white font-bold text-xs sm:text-sm">
                 {userProfile?.avatar_url ? (
                   <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
                   (userProfile?.full_name || 'U').charAt(0).toUpperCase()
                 )}
               </div>
-              <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white bg-emerald-500" />
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border-2 border-white bg-emerald-500" />
             </button>
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-label font-medium text-on-surface-variant">Marketplace</span>
-                <span className="text-[10px] font-label px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 font-bold uppercase tracking-wider hidden sm:inline-flex items-center gap-1">
+                <span className="text-[10px] sm:text-[11px] font-label font-medium text-on-surface-variant">Marketplace</span>
+                <span className="text-[9px] sm:text-[10px] font-label px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-700 font-bold uppercase tracking-wider hidden sm:inline-flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Live Pools
                 </span>
               </div>
-              <h1 className="font-headline text-[18px] sm:text-[22px] font-bold text-[#006972] tracking-tight leading-tight truncate">
+              <h1 className="font-headline text-[15px] sm:text-[20px] font-bold text-[#006972] tracking-tight leading-tight truncate">
                 Public Committees
               </h1>
             </div>
           </div>
 
           {/* Right: Nav Tabs + Sanjhi AI + WhatsApp + Notifications + Drawer */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <nav className="hidden md:flex items-center gap-1 mr-2">
               {[
                 { label: 'Home', icon: 'dashboard', path: '/dashboard' },
@@ -270,9 +273,9 @@ export default function PublicCommittees() {
                 <button
                   key={item.path}
                   onClick={() => navigate(item.path)}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-full font-label text-[13px] font-semibold text-deep-navy/60 hover:text-[#006972] hover:bg-[#006972]/8 transition-all duration-200 cursor-pointer border-none bg-transparent"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-label text-[13px] font-semibold text-deep-navy/60 hover:text-[#006972] hover:bg-[#006972]/8 transition-all cursor-pointer border-none bg-transparent"
                 >
-                  <Icon name={item.icon} size={17} />
+                  <Icon name={item.icon} size={16} />
                   {item.label}
                 </button>
               ))}
@@ -281,13 +284,13 @@ export default function PublicCommittees() {
             {/* Sanjhi AI Assistant Button */}
             <button
               onClick={() => navigate('/assistant')}
-              className="relative overflow-hidden flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#006972]/10 hover:bg-[#006972]/18 text-[#006972] font-label text-[13px] font-bold border border-[#006972]/25 transition-all active:scale-95 cursor-pointer"
+              className="relative overflow-hidden flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-full bg-[#006972]/10 hover:bg-[#006972]/18 text-[#006972] font-label text-[12px] font-bold border border-[#006972]/25 transition-all active:scale-95 cursor-pointer"
               title="Open Sanjhi AI Assistant"
             >
               <img
                 src={aiLogo}
                 alt="Sanjhi AI"
-                className="w-5 h-5 rounded-lg object-cover animate-float-y-fast shrink-0"
+                className="w-4.5 h-4.5 rounded-lg object-cover shrink-0"
               />
               <span className="hidden sm:inline">Sanjhi AI</span>
             </button>
@@ -295,31 +298,30 @@ export default function PublicCommittees() {
             {/* WhatsApp Support Button */}
             <button
               onClick={openWhatsApp}
-              className="relative p-2.5 rounded-full bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/25 transition-all active:scale-95 cursor-pointer group"
+              className="relative p-2 rounded-full bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/25 transition-all active:scale-95 cursor-pointer"
               aria-label="Chat on WhatsApp"
               title="Chat with us on WhatsApp"
             >
               <img
                 src={whatsappIcon}
                 alt="WhatsApp"
-                className="w-5 h-5 group-hover:scale-110 transition-transform duration-300"
+                className="w-4 h-4 sm:w-4.5 sm:h-4.5"
               />
             </button>
 
             {/* Notifications Button */}
             <button
               onClick={() => navigate('/notifications')}
-              className="relative p-2.5 rounded-full bg-white hover:bg-[#006972]/5 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer group"
+              className="relative p-2 rounded-full bg-white hover:bg-[#006972]/5 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer"
               aria-label="Notifications"
               title="Notifications"
             >
               <Icon
                 name="notifications"
-                size={22}
-                className="group-hover:rotate-12 transition-transform duration-300"
+                size={18}
               />
               {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold ring-2 ring-white">
+                <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-amber-500 rounded-full flex items-center justify-center text-[9px] text-white font-bold ring-1 ring-white">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
@@ -328,104 +330,106 @@ export default function PublicCommittees() {
             {/* Mobile Menu Drawer Toggle */}
             <button
               onClick={openDrawer}
-              className="md:hidden relative p-2.5 rounded-full bg-[#006972]/10 hover:bg-[#006972]/20 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer"
+              className="md:hidden relative p-2 rounded-full bg-[#006972]/10 hover:bg-[#006972]/20 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer"
               aria-label="Open Navigation Menu"
               title="Open Menu"
             >
-              <Icon name="menu" size={22} />
+              <Icon name="menu" size={18} />
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-5">
+      <main className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 pt-4">
         
         {/* ══════════════════════════════════════════════════ */}
-        {/*  HERO BANNER & TRUST STATS STRIP                   */}
+        {/*  CONCISE HERO BANNER (Clean on Mobile)             */}
         {/* ══════════════════════════════════════════════════ */}
-        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#004f56] via-[#006972] to-[#00383D] text-white p-6 sm:p-8 lg:p-10 mb-6 shadow-xl border border-white/10">
+        <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#004f56] via-[#006972] to-[#00383D] text-white p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 shadow-lg border border-white/10">
           {/* Ambient Lighting Orbs */}
-          <div className="absolute -top-24 -right-24 w-72 h-72 bg-[#D4AF37]/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-teal-300/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -top-24 -right-24 w-60 h-60 bg-[#D4AF37]/15 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[#FFE082] text-xs font-label font-bold tracking-wide uppercase mb-3">
-                <Icon name="verified" size={16} />
-                <span>Verified Public Savings Pools</span>
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-6">
+            <div className="max-w-xl">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/15 border border-white/20 text-[#FFE082] text-[10px] sm:text-xs font-label font-bold uppercase">
+                  <Icon name="verified" size={14} />
+                  <span>Public Pools</span>
+                </span>
+                <span className="text-[11px] text-emerald-200 font-medium">100% Verified ROSCA</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-headline font-extrabold tracking-tight leading-tight text-white mb-2.5">
-                Explore & Join Trusted Community Committees
+              <h1 className="text-lg sm:text-2xl lg:text-3xl font-headline font-bold tracking-tight text-white leading-tight">
+                Explore Community Committees
               </h1>
-              <p className="text-white/85 text-sm sm:text-base leading-relaxed max-w-xl font-body">
-                Discover active peer-savings circles, guaranteed turn rotations, and transparent payout schedules backed by verified identities.
+              <p className="hidden sm:block text-white/85 text-xs sm:text-sm leading-relaxed mt-1 font-body">
+                Discover active peer savings circles with guaranteed rotations and transparent payouts.
               </p>
             </div>
 
-            {/* Right Action & Status Box */}
-            <div className="flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end gap-3 shrink-0">
+            {/* Actions */}
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => navigate('/committee/create')}
-                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-[#D4AF37] to-[#E5BE48] hover:from-[#c29f2f] hover:to-[#d4af37] text-[#1a1400] font-label font-bold text-sm shadow-lg shadow-black/20 active:scale-95 transition-all cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#D4AF37] to-[#E5BE48] hover:from-[#c29f2f] hover:to-[#d4af37] text-[#1a1400] font-label font-bold text-xs sm:text-sm shadow-md active:scale-95 transition-all cursor-pointer"
               >
-                <Icon name="add_circle" size={20} />
-                <span>Create Public Pool</span>
+                <Icon name="add_circle" size={18} />
+                <span>Create Pool</span>
               </button>
 
               {/* CNIC Quick Badge */}
               {cnicStatus === 'verified' ? (
-                <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-200 text-xs font-semibold backdrop-blur-sm">
-                  <Icon name="check_circle" size={16} className="text-emerald-400" />
-                  <span>CNIC Verified • Ready to Join</span>
+                <div className="inline-flex items-center justify-center gap-1 px-2.5 py-2 rounded-xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-200 text-xs font-semibold">
+                  <Icon name="check_circle" size={14} className="text-emerald-400" />
+                  <span className="hidden sm:inline">CNIC Verified</span>
                 </div>
               ) : (
                 <button
                   onClick={() => setShowCnicModal(true)}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-2xl bg-amber-400/20 hover:bg-amber-400/30 border border-amber-300/40 text-amber-200 text-xs font-semibold backdrop-blur-sm cursor-pointer transition-colors"
+                  className="inline-flex items-center justify-center gap-1 px-2.5 py-2 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 border border-amber-300/40 text-amber-200 text-xs font-semibold cursor-pointer transition-colors"
                 >
-                  <Icon name="gpp_maybe" size={16} className="text-amber-300" />
-                  <span>Verify CNIC to Join Pools</span>
+                  <Icon name="gpp_maybe" size={14} className="text-amber-300" />
+                  <span>Verify CNIC</span>
                 </button>
               )}
             </div>
           </div>
 
-          {/* Quick Metrics Bar */}
-          <div className="mt-6 pt-5 border-t border-white/15 grid grid-cols-2 sm:grid-cols-4 gap-4 text-white/90">
+          {/* Quick Metrics Bar - Desktop only */}
+          <div className="mt-5 pt-4 border-t border-white/15 hidden md:grid grid-cols-4 gap-4 text-white/90">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-[#FFE082] shrink-0">
-                <Icon name="shield" size={20} />
+              <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-[#FFE082] shrink-0">
+                <Icon name="shield" size={18} />
               </div>
               <div>
-                <p className="text-xs text-white/70 font-medium">Identity Safety</p>
-                <p className="text-sm font-bold font-headline">100% Verified</p>
+                <p className="text-[11px] text-white/70 font-medium">Identity Safety</p>
+                <p className="text-xs font-bold font-headline">100% Verified</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-[#99F6E4] shrink-0">
-                <Icon name="autorenew" size={20} />
+              <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-[#99F6E4] shrink-0">
+                <Icon name="autorenew" size={18} />
               </div>
               <div>
-                <p className="text-xs text-white/70 font-medium">Payout Cycles</p>
-                <p className="text-sm font-bold font-headline">Automated</p>
+                <p className="text-[11px] text-white/70 font-medium">Payout Cycles</p>
+                <p className="text-xs font-bold font-headline">Automated</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-[#FED7AA] shrink-0">
-                <Icon name="payments" size={20} />
+              <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-[#FED7AA] shrink-0">
+                <Icon name="payments" size={18} />
               </div>
               <div>
-                <p className="text-xs text-white/70 font-medium">Digital Dues</p>
-                <p className="text-sm font-bold font-headline">JazzCash & Banks</p>
+                <p className="text-[11px] text-white/70 font-medium">Digital Dues</p>
+                <p className="text-xs font-bold font-headline">JazzCash & Banks</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-[#FBCFE8] shrink-0">
-                <Icon name="diversity_3" size={20} />
+              <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-[#FBCFE8] shrink-0">
+                <Icon name="diversity_3" size={18} />
               </div>
               <div>
-                <p className="text-xs text-white/70 font-medium">Active Members</p>
-                <p className="text-sm font-bold font-headline">{committees.reduce((acc, c) => acc + (Number(c.member_count) || 1), 0)}+ Enrolled</p>
+                <p className="text-[11px] text-white/70 font-medium">Active Members</p>
+                <p className="text-xs font-bold font-headline">{committees.reduce((acc, c) => acc + (Number(c.member_count) || 1), 0)}+ Enrolled</p>
               </div>
             </div>
           </div>

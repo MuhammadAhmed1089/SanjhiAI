@@ -68,20 +68,21 @@ export default function MobileSideDrawer() {
     navigate('/auth/login');
   }
 
-  if (!isDrawerOpen) return null;
+  if (!isDrawerOpen && !showCnicModal && !showLogoutModal) return null;
 
   return (
     <>
-      <div className="fixed inset-0 z-50 overflow-hidden flex">
-        {/* Backdrop Overlay */}
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity animate-fade-in"
-          onClick={closeDrawer}
-          aria-hidden="true"
-        />
+      {isDrawerOpen && (
+        <div className="fixed inset-0 z-[9999] overflow-hidden flex">
+          {/* Backdrop Overlay */}
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity animate-fade-in"
+            onClick={closeDrawer}
+            aria-hidden="true"
+          />
 
-        {/* Slide-out Drawer Panel — spring curve for native feel */}
-        <div className="relative w-full max-w-[320px] sm:max-w-[360px] bg-white h-full shadow-2xl flex flex-col justify-between z-10 animate-slide-right overflow-y-auto font-body text-[#101F20]">
+          {/* Slide-out Drawer Panel — spring curve for native feel */}
+          <div className="relative w-full max-w-[320px] sm:max-w-[360px] bg-white h-full shadow-2xl flex flex-col justify-between z-10 animate-slide-right overflow-y-auto font-body text-[#101F20]">
           
           {/* Top Section */}
           <div>
@@ -313,26 +314,27 @@ export default function MobileSideDrawer() {
             </div>
           </div>
 
-          {/* Bottom Footer Section */}
-          <div className="p-4 border-t border-gray-100 bg-[#F9FAFB] space-y-3">
+          {/* Bottom Footer Section with Phone Safe-Area Clearance */}
+          <div className="p-4 border-t border-gray-100 bg-[#F9FAFB] space-y-3 pb-[max(2rem,calc(env(safe-area-inset-bottom)+1.5rem))] shrink-0">
             <button
               onClick={() => setShowLogoutModal(true)}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-label font-bold text-xs sm:text-sm border border-rose-200/80 transition-colors cursor-pointer active:scale-95"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 font-label font-bold text-xs sm:text-sm border border-rose-200 transition-colors cursor-pointer"
             >
               <Icon name="logout" size={18} />
               <span>Log Out</span>
             </button>
 
-            <p className="text-[10px] text-center text-gray-400 font-medium">
+            <p className="text-[10.5px] text-center text-gray-400 font-medium">
               Sanjhi AI v2.4.0 • Secured Peer ROSCA
             </p>
           </div>
         </div>
       </div>
+      )}
 
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[10000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-xs w-full text-center space-y-4 shadow-2xl animate-fade-in">
             <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
               <Icon name="logout" size={24} />

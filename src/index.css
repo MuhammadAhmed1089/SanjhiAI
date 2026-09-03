@@ -83,9 +83,8 @@
 /* ── Base Styles ── */
 html {
   overflow-x: hidden;
-  scrollbar-gutter: stable;
   scroll-behavior: smooth;
-  height: 100%;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -94,18 +93,23 @@ body {
   color: var(--color-on-surface);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  min-height: 100%;
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
   width: 100%;
-  /* Smooth native-like scroll on mobile */
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
+  touch-action: pan-y pinch-zoom;
 }
 
-/* ── Global tap highlight removal for a native feel ── */
-* {
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  touch-action: pan-y pinch-zoom;
+}
+
+/* ── Touch Action: native pan-y for all containers, manipulation only for buttons ── */
+button, a, input, select, textarea, [role="button"], label {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
@@ -116,24 +120,16 @@ button, a, [role="button"] {
               box-shadow 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
 }
 
-/* ── GPU Compositing Hints — scroll containers ── */
+/* ── Smooth mobile scrolling without GPU layer explosion ── */
 .scroll-container,
-[class*="overflow-y"],
-[class*="overflow-auto"],
-[class*="overflow-scroll"] {
+[class*="overflow-y-auto"],
+[class*="overflow-y-scroll"],
+[class*="overflow-auto"] {
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-  will-change: scroll-position;
+  touch-action: pan-y pinch-zoom;
 }
 
-/* ── GPU layer utilities ── */
-.gpu-layer {
-  will-change: transform;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-}
-
-/* Fast active state for ALL buttons */
+/* Fast active state for buttons */
 button:active, [role="button"]:active {
   transform: scale(0.97);
 }
@@ -322,10 +318,16 @@ h1, h2, h3, h4, h5, h6 {
   66% { transform: translate(-15px, 15px) scale(0.95) translateZ(0); }
 }
 
-/* ── Mobile: DISABLE expensive blobs (filter:blur(100px) causes severe GPU lag) ── */
+/* ── Mobile: DISABLE expensive blobs and particles to ensure 60fps-120fps native scroll ── */
 @media (max-width: 768px) {
-  .blob {
+  .blob,
+  .particle {
     display: none !important;
+  }
+  .animate-float-y,
+  .animate-float-y-slow,
+  .animate-float-y-fast {
+    animation: none !important;
   }
 }
 

@@ -333,44 +333,44 @@ export default function Profile() {
 
       {/* ── HEADER ── */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#006972]/10 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="max-w-5xl mx-auto px-3.5 sm:px-6 h-14 sm:h-18 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <button
               onClick={() => navigate('/dashboard')}
-              className="w-9 h-9 shrink-0 flex items-center justify-center rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/12 text-[#006972] transition-colors cursor-pointer active:scale-95"
+              className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 flex items-center justify-center rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/12 text-[#006972] transition-colors cursor-pointer active:scale-95"
             >
-              <Icon name="arrow_back" size={18} />
+              <Icon name="arrow_back" size={17} />
             </button>
             <div className="min-w-0">
-              <p className="text-[11px] font-label font-medium text-on-surface-variant truncate">Account Settings</p>
-              <h1 className="font-headline text-[18px] sm:text-[22px] font-bold text-[#006972] leading-tight">My Profile</h1>
+              <p className="text-[10px] sm:text-[11px] font-label font-medium text-on-surface-variant truncate">Account Settings</p>
+              <h1 className="font-headline text-[16px] sm:text-[20px] font-bold text-[#006972] leading-tight">My Profile</h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               onClick={() => navigate('/assistant')}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full bg-[#006972]/10 hover:bg-[#006972]/18 text-[#006972] font-label text-[12px] sm:text-[13px] font-bold border border-[#006972]/20 transition-all active:scale-95 cursor-pointer shadow-sm shadow-[#006972]/5"
+              className="flex items-center gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#006972]/10 hover:bg-[#006972]/18 text-[#006972] font-label text-[11px] sm:text-[13px] font-bold border border-[#006972]/20 transition-all active:scale-95 cursor-pointer shadow-sm shadow-[#006972]/5"
             >
-              <img src={aiLogo} alt="AI" className="w-5 h-5 rounded-md object-cover animate-float-y-fast shrink-0" />
+              <img src={aiLogo} alt="AI" className="w-4 h-4 sm:w-5 sm:h-5 rounded-md object-cover animate-float-y-fast shrink-0" />
               <span className="hidden sm:inline">Sanjhi AI</span>
             </button>
             <button
               onClick={() => setShowLogoutModal(true)}
-              className="p-2.5 rounded-full bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 transition-all active:scale-95 cursor-pointer"
+              className="p-2 sm:p-2.5 rounded-full bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 transition-all active:scale-95 cursor-pointer"
               title="Log Out"
             >
-              <Icon name="logout" size={18} />
+              <Icon name="logout" size={16} />
             </button>
 
             {/* Mobile Menu Drawer Toggle */}
             <button
               onClick={openDrawer}
-              className="md:hidden p-2.5 rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer"
+              className="md:hidden p-2 sm:p-2.5 rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer"
               aria-label="Open Navigation Menu"
               title="Open Menu"
             >
-              <Icon name="menu" size={20} />
+              <Icon name="menu" size={18} />
             </button>
           </div>
         </div>
@@ -378,36 +378,36 @@ export default function Profile() {
 
       {/* ── TOAST ── */}
       {toastMessage && (
-        <div className={`fixed top-20 right-3 left-3 sm:left-auto sm:right-4 sm:w-auto z-50 px-4 py-3 rounded-2xl shadow-xl font-label text-[13px] font-bold flex items-center gap-2 border border-white/20 ${
+        <div className={`fixed top-16 sm:top-20 right-3 left-3 sm:left-auto sm:right-4 sm:w-auto z-50 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl shadow-xl font-label text-[12px] sm:text-[13px] font-bold flex items-center gap-2 border border-white/20 ${
           toastType === 'error' ? 'bg-rose-600 text-white' : 'bg-[#006972] text-white'
         }`}>
-          <Icon name={toastType === 'error' ? 'error' : 'check_circle'} size={16} className="shrink-0 text-white/80" />
+          <Icon name={toastType === 'error' ? 'error' : 'check_circle'} size={15} className="shrink-0 text-white/80" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* ── MAIN ── */}
-      <main className="max-w-5xl mx-auto px-3 sm:px-6 pt-5 pb-4 space-y-4 sm:space-y-6 relative z-10">
+      <main className="max-w-5xl mx-auto px-3 sm:px-6 pt-3 sm:pt-5 pb-4 space-y-3.5 sm:space-y-6 relative z-10">
 
         {/* ERROR ALERT */}
         {errorMessage && (
-          <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-[13px] font-body flex items-start gap-2">
-            <Icon name="error" size={16} className="shrink-0 mt-0.5 text-rose-500" />
+          <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-[12px] sm:text-[13px] font-body flex items-start gap-2">
+            <Icon name="error" size={15} className="shrink-0 mt-0.5 text-rose-500" />
             <span>{errorMessage}</span>
           </div>
         )}
 
         {/* ════════════════════════════════════════════
-            PROFILE HERO CARD
+            PROFILE HERO CARD (RESPONSIVE & COMPACT)
         ════════════════════════════════════════════ */}
-        <section className="bg-gradient-to-br from-[#006972] via-[#007a82] to-[#005f66] rounded-3xl p-5 sm:p-7 shadow-xl shadow-[#006972]/25 relative overflow-hidden">
+        <section className="bg-gradient-to-br from-[#006972] via-[#007a82] to-[#005f66] rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 md:p-7 shadow-lg shadow-[#006972]/20 relative overflow-hidden">
           <div className="absolute inset-0 opacity-10 pointer-events-none"
             style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.9) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
 
-          <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-5">
+          <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-5">
             {/* Avatar */}
             <div className="relative shrink-0">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-3 border-white/30 shadow-lg bg-white/10">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden border-2 sm:border-3 border-white/30 shadow-md bg-white/10">
                 <img
                   alt={user?.full_name || 'Profile'}
                   src={photoPreview || '/avatar.svg'}
@@ -418,44 +418,44 @@ export default function Profile() {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingPhoto}
-                className="absolute -bottom-1.5 -right-1.5 w-8 h-8 rounded-xl bg-white text-[#006972] flex items-center justify-center shadow-lg hover:bg-emerald-50 active:scale-90 transition-all cursor-pointer border border-[#006972]/10"
+                className="absolute -bottom-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-xl bg-white text-[#006972] flex items-center justify-center shadow-md hover:bg-emerald-50 active:scale-90 transition-all cursor-pointer border border-[#006972]/10"
                 title="Change Photo"
               >
                 {uploadingPhoto
-                  ? <span className="w-3.5 h-3.5 rounded-full border-2 border-[#006972] border-t-transparent animate-spin" />
-                  : <Icon name="photo_camera" size={16} />
+                  ? <span className="w-3 h-3 rounded-full border-2 border-[#006972] border-t-transparent animate-spin" />
+                  : <Icon name="photo_camera" size={13} className="sm:text-base" />
                 }
               </button>
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
             </div>
 
             {/* Name & meta */}
-            <div className="flex-1 text-center sm:text-left min-w-0 space-y-2">
+            <div className="flex-1 text-center sm:text-left min-w-0 space-y-1.5">
               {loading ? (
-                <Bone className="w-40 h-7 rounded-xl bg-white/20 mx-auto sm:mx-0" />
+                <Bone className="w-36 h-6 rounded-xl bg-white/20 mx-auto sm:mx-0" />
               ) : (
-                <h2 className="font-headline text-[22px] sm:text-[26px] font-bold text-white tracking-tight">
+                <h2 className="font-headline text-[18px] sm:text-[22px] md:text-[25px] font-bold text-white tracking-tight leading-tight">
                   {user?.full_name || 'Anonymous User'}
                 </h2>
               )}
 
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 text-white font-label text-[11px] font-bold border border-white/20">
-                  <Icon name="verified" size={13} /> Verified Member
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/15 text-white font-label text-[10px] sm:text-[11px] font-bold border border-white/20">
+                  <Icon name="verified" size={12} /> Verified Member
                 </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-400/20 text-amber-200 font-label text-[11px] font-bold border border-amber-300/20">
-                  <Icon name="star" size={13} /> Gold Tier
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-200 font-label text-[10px] sm:text-[11px] font-bold border border-amber-300/20">
+                  <Icon name="star" size={12} /> Gold Tier
                 </span>
               </div>
 
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 pt-1">
-                <p className="font-body text-[13px] text-white/75 flex items-center justify-center sm:justify-start gap-1.5">
-                  <Icon name="event" size={14} className="text-white/60" />
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-0.5">
+                <p className="font-body text-[11px] sm:text-[12px] text-white/75 flex items-center justify-center sm:justify-start gap-1">
+                  <Icon name="event" size={13} className="text-white/60" />
                   Joined {user?.created_at ? new Date(user.created_at).toLocaleDateString('en-PK', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
                 </p>
                 {user?.id && (
-                  <span className="font-mono text-[12px] font-bold text-emerald-200 bg-black/20 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/20 flex items-center gap-1.5">
-                    <Icon name="fingerprint" size={14} className="text-emerald-300" />
+                  <span className="font-mono text-[10px] sm:text-[11px] font-bold text-emerald-200 bg-black/20 backdrop-blur-md px-2 py-0.5 rounded-lg border border-white/20 flex items-center gap-1">
+                    <Icon name="fingerprint" size={12} className="text-emerald-300" />
                     {formatUserId(user.id)}
                     <button
                       type="button"
@@ -463,10 +463,10 @@ export default function Profile() {
                         navigator.clipboard.writeText(formatUserId(user.id));
                         showToast('User ID copied to clipboard!');
                       }}
-                      className="p-0.5 hover:bg-white/20 rounded text-white transition-colors cursor-pointer border-none bg-transparent flex items-center"
+                      className="p-0.5 hover:bg-white/20 rounded text-white transition-colors cursor-pointer border-none bg-transparent flex items-center ml-0.5"
                       title="Copy Formatted User ID"
                     >
-                      <Icon name="content_copy" size={13} />
+                      <Icon name="content_copy" size={11} />
                     </button>
                   </span>
                 )}
@@ -477,32 +477,32 @@ export default function Profile() {
             <div className="shrink-0 w-full sm:w-auto">
               <button
                 onClick={() => setEditing(!editing)}
-                className={`w-full sm:w-auto px-4 py-2 rounded-xl font-label text-[13px] font-bold flex items-center justify-center gap-2 transition-all cursor-pointer border ${ editing ? 'bg-white/15 text-white border-white/25 hover:bg-white/25' : 'bg-white text-[#006972] border-white/40 hover:bg-white/90 shadow-md'}`}
+                className={`w-full sm:w-auto px-3.5 py-1.5 sm:py-2 rounded-xl font-label text-[12px] sm:text-[13px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${ editing ? 'bg-white/15 text-white border-white/25 hover:bg-white/25' : 'bg-white text-[#006972] border-white/40 hover:bg-white/90 shadow-sm'}`}
               >
-                <Icon name={editing ? 'close' : 'edit'} size={16} />
+                <Icon name={editing ? 'close' : 'edit'} size={14} />
                 {editing ? 'Cancel' : 'Edit Profile'}
               </button>
             </div>
           </div>
 
           {/* Trust Score bar at bottom */}
-          <div className="relative z-10 mt-5 pt-4 border-t border-white/15">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Icon name="shield_with_heart" size={16} className="text-white/80" />
-                <span className="font-label text-[11px] font-bold text-white/80 uppercase tracking-wider">Community Trust Score</span>
+          <div className="relative z-10 mt-3 pt-2.5 sm:mt-5 sm:pt-4 border-t border-white/15">
+            <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+              <div className="flex items-center gap-1.5">
+                <Icon name="shield_with_heart" size={14} className="text-white/80" />
+                <span className="font-label text-[10px] sm:text-[11px] font-bold text-white/80 uppercase tracking-wider">Community Trust Score</span>
               </div>
-              <span className="font-headline text-[20px] font-extrabold text-white tabular-nums">
-                {trustScore} <span className="font-label text-[12px] font-normal text-white/60">/ 900</span>
+              <span className="font-headline text-[16px] sm:text-[20px] font-extrabold text-white tabular-nums">
+                {trustScore} <span className="font-label text-[11px] sm:text-[12px] font-normal text-white/60">/ 900</span>
               </span>
             </div>
-            <div className="w-full h-2.5 bg-black/20 rounded-full overflow-hidden">
+            <div className="w-full h-1.5 sm:h-2.5 bg-black/20 rounded-full overflow-hidden">
               <div className="h-full rounded-full transition-all duration-[1800ms] ease-out"
                 style={{ width: '94%', background: 'linear-gradient(90deg, #fcd34d, #6ee7b7)' }} />
             </div>
-            <div className="flex justify-between mt-1">
-              <span className="font-label text-[10px] text-white/60">94% On-time Rate</span>
-              <span className="font-label text-[10px] font-bold text-emerald-300">Top 5% Nationally</span>
+            <div className="flex justify-between mt-0.5 sm:mt-1">
+              <span className="font-label text-[9px] sm:text-[10px] text-white/60">94% On-time Rate</span>
+              <span className="font-label text-[9px] sm:text-[10px] font-bold text-emerald-300">Top 5% Nationally</span>
             </div>
           </div>
         </section>

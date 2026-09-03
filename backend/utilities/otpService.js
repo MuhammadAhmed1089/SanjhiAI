@@ -72,9 +72,9 @@ function createMailTransporter() {
       tls: {
         rejectUnauthorized: false,
       },
-      connectionTimeout: 8000,
-      greetingTimeout: 8000,
-      socketTimeout: 10000,
+      connectionTimeout: 6000,
+      greetingTimeout: 6000,
+      socketTimeout: 8000,
     });
   }
 
@@ -87,27 +87,170 @@ function createMailTransporter() {
     tls: {
       rejectUnauthorized: false,
     },
-    connectionTimeout: 8000,
-    greetingTimeout: 8000,
-    socketTimeout: 10000,
+    connectionTimeout: 6000,
+    greetingTimeout: 6000,
+    socketTimeout: 8000,
   });
 }
 
 const transporter = createMailTransporter();
 
 /**
- * Verify SMTP Socket connection and probe all standard ports
+ * Unified Email Dispatcher
+ * Prioritizes HTTPS REST APIs (Port 443 - never blocked by cloud firewalls / Railway)
+ * 1. Resend HTTPS API
+ * 2. Brevo HTTPS API
+ * 3. Nodemailer SMTP (if configured)
+ * 4. Dev Console Fallback
+ */
+export async function dispatchEmail({ to, subject, html, text }) {
+  const recipient = Array.isArray(to) ? to : [to];
+  const resendKey = (process.env.RESEND_API_KEY || '').trim();
+  const brevoKey = (process.env.BREVO_API_KEY || '').trim();
+  const smtpUser = (process.env.SMTP_USER || '').trim();
+
+  // 1. Primary: Resend HTTPS API (Port 443)
+  if (resendKey) {
+    try {
+      const fromAddress = process.env.RESEND_FROM || 'Sanjhi <onboarding@resend.dev>';
+      const payload = {
+        from: fromAddress,
+        to: recipient,
+        subject,
+        html,
+      };
+      if (text) payload.text = text;
+
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        console.log(`✅ [RESEND EMAIL SENT] ID: ${data.id} to ${recipient.join(', ')}`);
+        return { success: true, channel: 'resend-https', messageId: data.id };
+      } else {
+        const errText = await res.text();
+        console.error(`❌ [RESEND API ERROR] Status ${res.status}:`, errText);
+      }
+    } catch (err) {
+      console.error(`❌ [RESEND REQUEST FAILED]:`, err.message);
+    }
+  }
+
+  // 2. Secondary: Brevo HTTPS API (Port 443)
+  if (brevoKey) {
+    try {
+      const senderEmail = process.env.BREVO_SENDER_EMAIL || process.env.SMTP_USER || 'no-reply@sanjhi.pk';
+      const senderName = process.env.BREVO_SENDER_NAME || 'Sanjhi';
+      const payload = {
+        sender: { name: senderName, email: senderEmail },
+        to: recipient.map((email) => ({ email })),
+        subject,
+        htmlContent: html,
+      };
+      if (text) payload.textContent = text;
+
+      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': brevoKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        console.log(`✅ [BREVO EMAIL SENT] ID: ${data.messageId} to ${recipient.join(', ')}`);
+        return { success: true, channel: 'brevo-https', messageId: data.messageId };
+      } else {
+        const errText = await res.text();
+        console.error(`❌ [BREVO API ERROR] Status ${res.status}:`, errText);
+      }
+    } catch (err) {
+      console.error(`❌ [BREVO REQUEST FAILED]:`, err.message);
+    }
+  }
+
+  // 3. Fallback: SMTP Transport
+  if (smtpUser) {
+    try {
+      const fromAddress = smtpUser.includes('@gmail.com')
+        ? `"Sanjhi AI" <${smtpUser}>`
+        : (process.env.SMTP_FROM || `"Sanjhi AI" <${smtpUser}>`);
+
+      const emailPromise = transporter.sendMail({
+        from: fromAddress,
+        to: recipient.join(', '),
+        subject,
+        text: text || undefined,
+        html,
+      });
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('SMTP dispatch timed out after 5000ms')), 5000)
+      );
+
+      const info = await Promise.race([emailPromise, timeoutPromise]);
+      console.log(`✅ [SMTP EMAIL SENT] Message ID: ${info.messageId} to ${recipient.join(', ')}`);
+      return { success: true, channel: 'smtp', messageId: info.messageId };
+    } catch (err) {
+      console.error(`⚠️ [SMTP EMAIL DISPATCH FAILED]:`, err.message);
+    }
+  }
+
+  // 4. Dev / Console Fallback
+  if (!resendKey && !brevoKey && !smtpUser) {
+    console.warn(`⚠️ [EMAIL SERVICE] No email provider configured (RESEND_API_KEY or SMTP_USER). Email to ${recipient.join(', ')} logged to console.`);
+  }
+  return { success: true, channel: 'console', messageId: 'dev-console' };
+}
+
+/**
+ * Verify Email Service Connection
+ * Handles Resend, Brevo, or SMTP diagnostics
  */
 export async function verifySmtpConnection() {
+  const resendKey = (process.env.RESEND_API_KEY || '').trim();
+  const brevoKey = (process.env.BREVO_API_KEY || '').trim();
   const user = (process.env.SMTP_USER || '').trim();
   const host = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
   const isGmail = host.includes('gmail') || user.includes('@gmail.com');
 
   console.log('\n======================================================');
-  console.log('🔍 [SMTP & PORT CONNECTIVITY DIAGNOSTICS]');
+  console.log('📧 [EMAIL DISPATCH SERVICE DIAGNOSTICS]');
+
+  if (resendKey) {
+    const from = process.env.RESEND_FROM || 'Sanjhi <onboarding@resend.dev>';
+    console.log('Provider    : Resend HTTPS API (REST over Port 443)');
+    console.log(`Sender From : ${from}`);
+    console.log('Status      : ✅ Active (Cloud / Railway Firewall-safe)');
+    console.log('======================================================\n');
+    return { connected: true, provider: 'resend', from };
+  }
+
+  if (brevoKey) {
+    console.log('Provider    : Brevo HTTPS API (REST over Port 443)');
+    console.log('Status      : ✅ Active (Cloud / Railway Firewall-safe)');
+    console.log('======================================================\n');
+    return { connected: true, provider: 'brevo' };
+  }
+
   console.log(`Target Host : ${host}`);
   console.log(`User/Sender : ${user || '(not configured)'}`);
   console.log('------------------------------------------------------');
+
+  if (!user) {
+    console.warn('⚠️ No email provider configured. Emails will be logged to console in dev mode.');
+    console.log('======================================================\n');
+    return { connected: false, reason: 'unconfigured' };
+  }
 
   // Probe all common email ports in parallel
   const targetHost = isGmail ? 'smtp.gmail.com' : host;
@@ -129,15 +272,11 @@ export async function verifySmtpConnection() {
 
   if (!anyPortOpen) {
     console.warn('\n⚠️ [RAILWAY NOTICE] All raw SMTP ports (465, 587, 2525) are blocked by the host network firewall.');
-    console.warn('💡 Recommended fix: Use HTTPS-based Email API (like Resend or Brevo) over port 443 which is NEVER blocked.');
-    console.warn('   Set RESEND_API_KEY or BREVO_API_KEY in Railway variables.');
+    console.warn('💡 Recommended fix: Use HTTPS-based Email API (like Resend) over port 443 which is NEVER blocked.');
+    console.warn('   Set RESEND_API_KEY in Railway variables.');
   }
 
   console.log('======================================================\n');
-
-  if (!user) {
-    return { connected: false, reason: 'unconfigured', probeResults };
-  }
 
   // Try authenticating with transporter
   try {
@@ -185,93 +324,34 @@ export async function sendOTP(target, code) {
 }
 
 /**
- * Dispatch Email OTP via Nodemailer with strict timeout
+ * Dispatch Email OTP
  */
 async function sendEmailOTP(email, code) {
   try {
-    const resendKey = (process.env.RESEND_API_KEY || '').trim();
-    const brevoKey = (process.env.BREVO_API_KEY || '').trim();
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+        <h2 style="color: #2e7d32; text-align: center;">Sanjhi Verification</h2>
+        <p>Hello,</p>
+        <p>Your verification code for Sanjhi is:</p>
+        <div style="background-color: #f4f6f8; font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #1b5e20; text-align: center; padding: 15px; border-radius: 6px; margin: 20px 0;">
+          ${code}
+        </div>
+        <p style="color: #666; font-size: 13px;">This code will expire in 10 minutes. If you did not request this code, please ignore this email.</p>
+      </div>
+    `;
 
-    // 1. Primary Cloud Dispatch: Resend HTTPS API (Port 443 - Never Blocked by Railway/Cloud)
-    if (resendKey) {
-      try {
-        const res = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${resendKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: process.env.RESEND_FROM || 'Sanjhi <onboarding@resend.dev>',
-            to: [email],
-            subject: 'Your Sanjhi Verification Code',
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-                <h2 style="color: #2e7d32; text-align: center;">Sanjhi Verification</h2>
-                <p>Hello,</p>
-                <p>Your verification code for Sanjhi is:</p>
-                <div style="background-color: #f4f6f8; font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #1b5e20; text-align: center; padding: 15px; border-radius: 6px; margin: 20px 0;">
-                  ${code}
-                </div>
-                <p style="color: #666; font-size: 13px;">This code will expire in 10 minutes.</p>
-              </div>
-            `,
-          }),
-        });
+    const text = `Your Sanjhi verification code is: ${code}. It expires in 10 minutes. Do not share this with anyone.`;
 
-        if (res.ok) {
-          const data = await res.json();
-          console.log(`✅ [RESEND EMAIL SENT] ID: ${data.id}`);
-          return { success: true, channel: 'resend-https', messageId: data.id };
-        } else {
-          const errData = await res.text();
-          console.warn(`⚠️ [Resend API Error]: ${errData}`);
-        }
-      } catch (err) {
-        console.warn(`⚠️ [Resend API Request Failed]:`, err.message);
-      }
-    }
-
-    const user = (process.env.SMTP_USER || '').trim();
-    if (!user && !resendKey && !brevoKey) {
-      console.warn(`[OTP EMAIL] Neither SMTP_USER nor RESEND_API_KEY set. OTP code ${code} logged to console for ${email}.`);
-      return { success: true, channel: 'console', messageId: 'dev-console' };
-    }
-
-    // 2. SMTP Transport
-    const fromAddress = user.includes('@gmail.com')
-      ? `"Sanjhi AI" <${user}>`
-      : (process.env.SMTP_FROM || `"Sanjhi AI" <${user}>`);
-
-    const emailPromise = transporter.sendMail({
-      from: fromAddress,
+    const result = await dispatchEmail({
       to: email,
       subject: 'Your Sanjhi Verification Code',
-      text: `Your Sanjhi verification code is: ${code}. It expires in 10 minutes. Do not share this with anyone.`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-          <h2 style="color: #2e7d32; text-align: center;">Sanjhi Verification</h2>
-          <p>Hello,</p>
-          <p>Your verification code for Sanjhi is:</p>
-          <div style="background-color: #f4f6f8; font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #1b5e20; text-align: center; padding: 15px; border-radius: 6px; margin: 20px 0;">
-            ${code}
-          </div>
-          <p style="color: #666; font-size: 13px;">This code will expire in 10 minutes. If you did not request this code, please ignore this email.</p>
-        </div>
-      `,
+      html,
+      text,
     });
 
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('SMTP dispatch timed out after 4000ms')), 4000)
-    );
-
-    const info = await Promise.race([emailPromise, timeoutPromise]);
-
-    console.log(`✅ [OTP EMAIL SENT] Message ID: ${info.messageId}`);
-    return { success: true, channel: 'email', messageId: info.messageId };
+    return result;
   } catch (error) {
     console.error(`⚠️ [OTP EMAIL DISPATCH WARNING]:`, error.message);
-    // In dev / non-prod or when SMTP is unreachable, do not block the user with timeout!
     return { success: true, channel: 'console-fallback', error: error.message };
   }
 }
@@ -358,50 +438,48 @@ async function sendWhatsAppOTP(phone, code) {
   }
 }
 
-
 /**
- * Send Login Confirmation Email via Nodemailer
+ * Send Login Confirmation Email
  */
 export async function sendLoginNotificationEmail(email, userName) {
   try {
-    if (!process.env.SMTP_USER || !email || !email.includes('@')) return;
+    if (!email || !email.includes('@')) return;
 
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || '"Sanjhi AI" <no-reply@sanjhi.ai>',
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+        <h2 style="color: #2e7d32; text-align: center;">Sanjhi Login Notification</h2>
+        <p>Hello <strong>${userName || 'User'}</strong>,</p>
+        <p>You have successfully logged in to your Sanjhi account.</p>
+        <p style="color: #666; font-size: 13px; margin-top: 20px;">If this was not you, please secure your account immediately.</p>
+      </div>
+    `;
+    const text = `Hello ${userName || 'User'}, you have successfully logged in to your Sanjhi account. If this was not you, please secure your account immediately.`;
+
+    await dispatchEmail({
       to: email,
       subject: 'Security Alert: Successful Login to Sanjhi',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-          <h2 style="color: #2e7d32; text-align: center;">Sanjhi Login Notification</h2>
-          <p>Hello <strong>${userName || 'User'}</strong>,</p>
-          <p>You have successfully logged in to your Sanjhi account.</p>
-          <p style="color: #666; font-size: 13px; margin-top: 20px;">If this was not you, please secure your account immediately.</p>
-        </div>
-      `,
+      html,
+      text,
     });
-    console.log(`✅ [LOGIN EMAIL SENT] Sent login confirmation email to ${email}`);
   } catch (err) {
     console.error(`❌ [LOGIN EMAIL FAILED]:`, err.message);
   }
 }
 
 /**
- * Send general HTML email notification via Nodemailer
+ * Send general HTML email notification
  */
 export async function sendGeneralEmail(to, subject, html) {
   try {
-    if (!process.env.SMTP_USER || !to || !to.includes('@')) {
-      return { success: false, error: 'SMTP not configured or invalid recipient.' };
+    if (!to || !to.includes('@')) {
+      return { success: false, error: 'Invalid recipient email address.' };
     }
 
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || '"Sanjhi AI" <no-reply@sanjhi.ai>',
+    return await dispatchEmail({
       to,
       subject,
       html,
     });
-    console.log(`✅ [EMAIL SENT] Sent notification email to ${to}`);
-    return { success: true };
   } catch (err) {
     console.error(`❌ [EMAIL SEND FAILED]:`, err.message);
     return { success: false, error: err.message };

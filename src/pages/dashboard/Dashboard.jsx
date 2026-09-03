@@ -117,6 +117,7 @@ export default function Dashboard() {
   const [recentNotifications, setRecentNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loadingBackend, setLoadingBackend] = useState(true);
+  const [selectedActivityModal, setSelectedActivityModal] = useState(null);
 
   const trustScore = useCountUp(targetScore, 1600, !loadingBackend);
   
@@ -323,68 +324,69 @@ export default function Dashboard() {
       </div>
 
       {/* ══════════════════════════════════════════════════ */}
-      {/*  TOP APP BAR                                      */}
+      {/*  TOP APP BAR (Mobile & Desktop Responsive)         */}
       {/* ══════════════════════════════════════════════════ */}
-      <header className="sticky top-0 z-40 bg-white/92 backdrop-blur-md border-b border-[#006972]/10 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#006972]/10 shadow-sm">
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-18 flex items-center justify-between gap-2">
 
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/profile')} className="relative group cursor-pointer border-none bg-transparent p-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <button onClick={() => navigate('/profile')} className="relative group cursor-pointer border-none bg-transparent p-0 shrink-0">
               <img src={userPhoto || "/avatar.svg"} alt="Profile"
-                className="w-11 h-11 rounded-full object-cover border-2 border-[#006972] shadow-sm group-hover:scale-110 group-hover:shadow-md transition-all duration-300 animate-glow-ring" />
-              <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white bg-emerald-500">
+                className="w-9 h-9 sm:w-11 sm:h-11 rounded-full object-cover border-2 border-[#006972] shadow-sm group-hover:scale-105 transition-all duration-300" />
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full border-2 border-white bg-emerald-500">
                 <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping-slow" />
               </span>
             </button>
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
-                <span className="text-[12px] font-label font-medium text-on-surface-variant">Welcome back,</span>
-                <span className="text-[10px] font-label px-2 py-0.5 rounded-full bg-[#006972]/10 text-[#006972] font-bold uppercase tracking-wider hidden sm:inline-block">
+                <span className="text-[10.5px] sm:text-[12px] font-label font-medium text-on-surface-variant">Welcome back,</span>
+                <span className="text-[9px] sm:text-[10px] font-label px-1.5 py-0.2 rounded-full bg-[#006972]/10 text-[#006972] font-bold uppercase tracking-wider hidden sm:inline-block">
                   Verified ✓
                 </span>
               </div>
 
               {/* Show skeleton while loading backend name to prevent flashing mock names */}
               {loadingBackend && !userName ? (
-                <Bone className="w-36 h-6 rounded-full mt-1" />
+                <Bone className="w-28 h-5 rounded-full mt-0.5" />
               ) : (
-                <h1 className="font-headline text-[18px] sm:text-[24px] font-bold text-[#006972] tracking-tight leading-tight truncate">
+                <h1 className="font-headline text-[15px] sm:text-[22px] font-bold text-[#006972] tracking-tight leading-tight truncate">
                   {userName || 'User'}
                 </h1>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <nav className="hidden md:flex items-center gap-1 mr-2">
               {navTabs.slice(1, 4).map((item) => (
                 <button key={item.path} onClick={() => navigate(item.path)}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-full font-label text-[13px] font-semibold text-deep-navy/60 hover:text-[#006972] hover:bg-[#006972]/8 transition-all duration-200 cursor-pointer border-none bg-transparent">
-                  <Icon name={item.icon} size={17} />
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-label text-[13px] font-semibold text-deep-navy/60 hover:text-[#006972] hover:bg-[#006972]/8 transition-all cursor-pointer border-none bg-transparent">
+                  <Icon name={item.icon} size={16} />
                   {item.label}
                 </button>
               ))}
             </nav>
 
             <button onClick={(e) => { ripple(e, 'ai'); navigate('/assistant'); }}
-              className="relative overflow-hidden flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#006972]/10 hover:bg-[#006972]/18 text-[#006972] font-label text-[13px] font-bold border border-[#006972]/25 transition-all active:scale-95 cursor-pointer">
-              {ripples.ai && <span key={ripples.ai.k} className="absolute rounded-full bg-[#006972]/20 w-28 h-28 -translate-x-1/2 -translate-y-1/2 animate-ping pointer-events-none" style={{ left: ripples.ai.x, top: ripples.ai.y }} />}
-              <img src={aiLogo} alt="Sanjhi AI" className="w-5 h-5 rounded-lg object-cover animate-float-y-fast" />
+              className="relative overflow-hidden flex items-center gap-1 px-2.5 sm:px-3.5 py-1.5 rounded-full bg-[#006972]/10 hover:bg-[#006972]/18 text-[#006972] font-label text-[12px] font-bold border border-[#006972]/25 transition-all active:scale-95 cursor-pointer"
+              title="Open Sanjhi AI Assistant">
+              {ripples.ai && <span key={ripples.ai.k} className="absolute rounded-full bg-[#006972]/20 w-24 h-24 -translate-x-1/2 -translate-y-1/2 animate-ping pointer-events-none" style={{ left: ripples.ai.x, top: ripples.ai.y }} />}
+              <img src={aiLogo} alt="Sanjhi AI" className="w-4.5 h-4.5 rounded-lg object-cover shrink-0" />
               <span className="hidden sm:inline">Sanjhi AI</span>
             </button>
 
             <button onClick={openWhatsApp}
-              className="relative p-2.5 rounded-full bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/25 transition-all active:scale-95 cursor-pointer group" aria-label="Chat on WhatsApp"
+              className="relative p-2 rounded-full bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/25 transition-all active:scale-95 cursor-pointer group" aria-label="Chat on WhatsApp"
               title="Chat with us on WhatsApp">
-              <img src={whatsappIcon} alt="WhatsApp" className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+              <img src={whatsappIcon} alt="WhatsApp" className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </button>
 
             <button onClick={() => navigate('/notifications')}
-              className="relative p-2.5 rounded-full bg-white hover:bg-[#006972]/5 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer group" aria-label="Notifications">
-              <Icon name="notifications" size={22} className="group-hover:rotate-12 transition-transform duration-300" />
+              className="relative p-2 rounded-full bg-white hover:bg-[#006972]/5 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer group" aria-label="Notifications">
+              <Icon name="notifications" size={18} />
               {unreadCount > 0 && (
-                 <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold ring-2 ring-white">
+                 <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-amber-500 rounded-full flex items-center justify-center text-[9px] text-white font-bold ring-1 ring-white">
                     {unreadCount > 9 ? '9+' : unreadCount}
                  </span>
               )}
@@ -393,123 +395,114 @@ export default function Dashboard() {
             {/* Mobile Menu Drawer Toggle */}
             <button
               onClick={openDrawer}
-              className="md:hidden relative p-2.5 rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer"
+              className="md:hidden relative p-2 rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer"
               aria-label="Open Navigation Menu"
               title="Open Menu"
             >
-              <Icon name="menu" size={22} />
+              <Icon name="menu" size={18} />
             </button>
           </div>
         </div>
       </header>
 
       {/* ══════════════════════════════════════════════════ */}
-      {/*  MAIN CONTENT                                     */}
+      {/*  MAIN CONTENT (Responsive Mobile / Desktop)        */}
       {/* ══════════════════════════════════════════════════ */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-8 relative z-10">
+      <main className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 space-y-4 sm:space-y-6 relative z-10">
 
         {/* ── TRUST SCORE + METRICS ── */}
-        <section ref={heroRef} className={`grid grid-cols-1 lg:grid-cols-12 gap-5 transition-all duration-700 ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+        <section ref={heroRef} className={`grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-5 transition-all duration-700 ${heroInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
 
-          {/* Trust Score Card — tap for the full component breakdown */}
+          {/* Trust Score Card — Compact on mobile, rich on desktop */}
           <div onClick={openTrustBreakdown} role="button" tabIndex={0} title="Tap to see your score breakdown"
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openTrustBreakdown(); }}
-            className="lg:col-span-8 bg-[#006972] text-white rounded-3xl p-6 sm:p-8 relative overflow-hidden flex flex-col justify-between shadow-xl shadow-[#006972]/25 group cursor-pointer animate-border-breathe border-2 border-transparent min-h-[220px]">
+            className="lg:col-span-8 bg-[#006972] text-white rounded-2xl sm:rounded-3xl p-4 sm:p-7 relative overflow-hidden flex flex-col justify-between shadow-lg shadow-[#006972]/20 group cursor-pointer animate-border-breathe border-2 border-transparent min-h-[150px] sm:min-h-[210px]">
             <div className="absolute inset-0 opacity-15 pointer-events-none"
-              style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.9) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+              style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.9) 1px, transparent 1px)', backgroundSize: '18px 18px' }} />
 
             <img src={logo} alt="" aria-hidden
-              className="absolute right-10 top-1/2 -translate-y-1/2 w-24 opacity-20 select-none hidden sm:block animate-float-y-slow pointer-events-none"
+              className="absolute right-6 top-1/2 -translate-y-1/2 w-20 opacity-15 select-none hidden sm:block pointer-events-none"
               style={{ filter: 'brightness(0) invert(1)' }} />
 
-            <div className="hidden lg:block absolute top-0 -right-px h-full w-14 z-10">
-              <svg viewBox="0 0 100 600" preserveAspectRatio="none" className="h-full w-full">
-                <path d="M0,0 C60,100 20,250 60,350 C90,430 20,500 40,600 L100,600 L100,0 Z" fill="white" />
-              </svg>
-            </div>
-
             <div className="relative z-10">
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="p-2 rounded-xl bg-white/20 group-hover:bg-white/30 transition-colors animate-float-y-fast">
-                    <Icon name="shield_with_heart" size={22} />
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="p-1 sm:p-1.5 rounded-lg bg-white/20">
+                    <Icon name="shield_with_heart" size={16} />
                   </span>
-                  <h2 className="font-label text-[11px] uppercase tracking-widest font-bold text-white/85">Community Trust Score</h2>
+                  <h2 className="font-label text-[10px] sm:text-[11px] uppercase tracking-wider font-bold text-white/90">Trust Score</h2>
                 </div>
-                <span className="px-3 py-1 rounded-full bg-white/20 text-white text-[11px] font-label font-bold border border-white/30 flex items-center gap-1">
-                  <Icon name="verified" size={14} /> {scoreTier(targetScore).badge}
+                <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-[10px] sm:text-[11px] font-label font-bold border border-white/30 flex items-center gap-1">
+                  <Icon name="verified" size={13} /> {scoreTier(targetScore).badge}
                 </span>
               </div>
 
-              <div className="flex flex-wrap items-baseline gap-4">
+              <div className="flex items-baseline gap-3 sm:gap-4 my-1">
                 {loadingBackend ? (
-                  <Bone className="w-36 h-16 rounded-2xl bg-white/20" />
+                  <Bone className="w-28 h-10 rounded-xl bg-white/20" />
                 ) : (
-                  <span className="font-headline text-[60px] sm:text-[72px] font-extrabold text-white tracking-tight leading-none tabular-nums animate-score-glow">
+                  <span className="font-headline text-[38px] sm:text-[56px] lg:text-[68px] font-extrabold text-white tracking-tight leading-none tabular-nums">
                     {trustScore.toLocaleString()}
                   </span>
                 )}
-                <span className="text-[14px] font-body text-white/85 max-w-[220px] leading-snug">
+                <span className="text-[11px] sm:text-[13px] font-body text-white/85 leading-tight flex-1">
                   {scoreTier(targetScore).tagline}
                 </span>
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-white/20 relative z-10">
-              <div className="flex justify-between text-[12px] font-label text-white/90 mb-2 font-medium">
+            <div className="mt-2.5 pt-2 sm:mt-4 sm:pt-3 border-t border-white/20 relative z-10">
+              <div className="flex justify-between text-[11px] sm:text-[12px] font-label text-white/90 mb-1 font-medium">
                 <span>{trustScore.toLocaleString()} / 1000</span>
-                <span className="font-bold">{onTimeRate}% Reliability Rate</span>
+                <span className="font-bold">{onTimeRate}% Reliability</span>
               </div>
-              <div className="w-full h-3 bg-black/25 rounded-full overflow-hidden p-0.5 border border-white/25">
+              <div className="w-full h-2 sm:h-2.5 bg-black/25 rounded-full overflow-hidden p-0.5 border border-white/20">
                 <div className="h-full rounded-full transition-all duration-[1700ms] ease-out relative overflow-hidden"
                   style={{ width: heroInView ? `${Math.min(100, Math.max(0, targetScore / 10))}%` : '0%', background: 'linear-gradient(90deg, #fcd34d, #6ee7b7, #ffffff)' }}>
                   <div className="absolute inset-0 animate-shimmer" />
                 </div>
               </div>
-              <p className="mt-2.5 text-[11px] font-label font-bold text-white/70 flex items-center gap-1 group-hover:text-white transition-colors">
-                <Icon name="analytics" size={14} /> Tap to see the full breakdown — reliability, completion, verification & penalties
+              <p className="mt-1.5 text-[9.5px] sm:text-[11px] font-label font-bold text-white/70 flex items-center gap-1">
+                <Icon name="analytics" size={13} /> Tap for full reliability & penalty breakdown
               </p>
             </div>
           </div>
 
-          {/* Side Metric Cards */}
-          <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col gap-4">
+          {/* Side Metric Cards — 2 columns on mobile, clean cards on desktop */}
+          <div className="lg:col-span-4 grid grid-cols-2 lg:grid-cols-1 gap-2.5 sm:gap-3">
             {[
               {
                 icon: 'account_balance_wallet',
-                label: 'Total Contributed',
+                label: 'Contributed',
                 value: `PKR ${totalAmt.toLocaleString()}`,
-                sub: 'Confirmed payments',
+                sub: 'Confirmed dues',
                 subIcon: 'trending_up',
                 subColor: 'text-emerald-700',
-                iconCls: 'bg-[#006972] text-white shadow-md shadow-[#006972]/25',
-                delay: '0s',
+                iconCls: 'bg-[#006972] text-white shadow-sm',
               },
               {
                 icon: 'event_available',
-                label: 'Next Payout Turn',
-                value: nextPayoutInfo ? `PKR ${nextPayoutAmt.toLocaleString()}` : 'None Scheduled',
-                sub: nextPayoutInfo ? `Turn #${nextPayoutInfo.turnNumber} — ${new Date(nextPayoutInfo.dueDate).toLocaleDateString()}` : 'No upcoming payout',
+                label: 'Next Payout',
+                value: nextPayoutInfo ? `PKR ${nextPayoutAmt.toLocaleString()}` : 'None',
+                sub: nextPayoutInfo ? `Turn #${nextPayoutInfo.turnNumber}` : 'No upcoming turn',
                 subIcon: 'schedule',
                 subColor: 'text-amber-800',
-                iconCls: 'bg-[#006972]/10 text-[#006972] border-2 border-[#006972]/20',
-                delay: '0.5s',
+                iconCls: 'bg-[#006972]/10 text-[#006972] border border-[#006972]/20',
               },
             ].map((card, i) => (
-              <div key={i} className="flex-1 bg-white rounded-3xl p-5 border-2 border-[#006972]/15 flex items-center gap-4 shadow-sm hover:shadow-lg hover:border-[#006972]/50 hover:-translate-y-1.5 transition-all duration-300 cursor-default"
-                style={{ animation: `float-y ${6 + i * 2}s ease-in-out infinite ${card.delay}` }}>
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${card.iconCls}`}>
-                  <Icon name={card.icon} size={24} />
+              <div key={i} className="bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-4 border border-[#006972]/15 flex items-center gap-2.5 sm:gap-3 shadow-sm hover:shadow-md transition-all">
+                <div className={`w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 ${card.iconCls}`}>
+                  <Icon name={card.icon} size={18} />
                 </div>
-                <div>
-                  <p className="font-label text-[11px] font-bold text-[#006972] uppercase tracking-wider">{card.label}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-label text-[9.5px] sm:text-[11px] font-bold text-[#006972] uppercase tracking-wider truncate">{card.label}</p>
                   {loadingBackend ? (
-                    <Bone className="w-28 h-6 rounded-full my-1" />
+                    <Bone className="w-16 h-4 rounded-full my-0.5" />
                   ) : (
-                    <p className="font-headline text-[20px] sm:text-[22px] font-extrabold text-deep-navy tabular-nums">{card.value}</p>
+                    <p className="font-headline text-[13.5px] sm:text-[19px] font-extrabold text-deep-navy tabular-nums truncate leading-tight">{card.value}</p>
                   )}
-                  <p className={`font-label text-[12px] font-bold flex items-center gap-0.5 ${card.subColor}`}>
-                    <Icon name={card.subIcon} size={14} /> {card.sub}
+                  <p className={`font-label text-[10px] sm:text-[11px] font-bold flex items-center gap-0.5 truncate ${card.subColor}`}>
+                    <Icon name={card.subIcon} size={12} /> {card.sub}
                   </p>
                 </div>
               </div>
@@ -517,28 +510,28 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* ── QUICK ACTIONS ── */}
-        <section ref={actionsRef} className={`grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 transition-all duration-700 delay-100 ${actionsInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+        {/* ── QUICK ACTIONS (Compact Mobile Grid) ── */}
+        <section ref={actionsRef} className={`grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3 transition-all duration-700 delay-100 ${actionsInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           {[
-            { label: 'Create Committee', icon: 'add_circle', primary: true, path: '/committee/create', id: 'act-create' },
-            { label: 'Join Committee', icon: 'group_add', primary: false, path: '/join', id: 'act-join' },
-            { label: 'Explore Public', icon: 'public', primary: false, path: '/committees/public', id: 'act-explore' },
+            { label: 'Create Pool', icon: 'add_circle', primary: true, path: '/committee/create', id: 'act-create' },
+            { label: 'Join Code', icon: 'group_add', primary: false, path: '/join', id: 'act-join' },
+            { label: 'Explore Pools', icon: 'public', primary: false, path: '/committees/public', id: 'act-explore' },
             { label: 'Pay Dues', icon: 'payments', primary: false, path: '/payments', id: 'act-pay' },
-            { label: 'Support Ticket', icon: 'report_problem', primary: false, path: '/support/file-complaint', id: 'act-support' },
+            { label: 'Support', icon: 'report_problem', primary: false, path: '/support/file-complaint', id: 'act-support' },
           ].map((action, idx) => (
             <button key={action.id}
               onClick={(e) => { ripple(e, action.id); setTimeout(() => navigate(action.path), 120); }}
-              className={`relative overflow-hidden py-5 px-3 rounded-2xl font-label text-[14px] font-bold active:scale-95 transition-all duration-200 shadow-sm hover:shadow-xl hover:-translate-y-1.5 flex flex-col items-center gap-2.5 cursor-pointer group ${action.primary
+              className={`relative overflow-hidden py-3 px-2 sm:py-4 sm:px-3 rounded-xl sm:rounded-2xl font-label text-[12px] sm:text-[13px] font-bold active:scale-95 transition-all shadow-sm flex flex-col items-center gap-1.5 cursor-pointer ${action.primary
                   ? 'bg-[#006972] text-white hover:bg-[#005a62] shadow-[#006972]/20'
-                  : 'bg-white text-[#006972] border-2 border-[#006972] hover:bg-[#006972]/5'
+                  : 'bg-white text-[#006972] border border-[#006972]/30 hover:bg-[#006972]/5'
                 }`}
               style={{ animationDelay: `${idx * 0.1}s` }}>
               {ripples[action.id] && (
-                <span key={ripples[action.id].k} className={`absolute rounded-full w-36 h-36 -translate-x-1/2 -translate-y-1/2 pointer-events-none animate-ping ${action.primary ? 'bg-white/20' : 'bg-[#006972]/10'}`}
+                <span key={ripples[action.id].k} className={`absolute rounded-full w-28 h-28 -translate-x-1/2 -translate-y-1/2 pointer-events-none animate-ping ${action.primary ? 'bg-white/20' : 'bg-[#006972]/10'}`}
                   style={{ left: ripples[action.id].x, top: ripples[action.id].y }} />
               )}
-              <Icon name={action.icon} size={32} className="group-hover:scale-125 group-hover:rotate-6 transition-transform duration-300" />
-              {action.label}
+              <Icon name={action.icon} size={22} className="shrink-0" />
+              <span className="truncate">{action.label}</span>
             </button>
           ))}
         </section>
@@ -638,51 +631,57 @@ export default function Dashboard() {
         </section>
 
         {/* ── RECENT ACTIVITY ── */}
-        <section ref={activityRef} className={`bg-white rounded-3xl p-6 border-2 border-[#006972]/15 shadow-sm transition-all duration-700 delay-200 ${activityInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-headline text-[18px] font-bold text-[#006972] flex items-center gap-2">
-              <Icon name="history" size={22} />
+        <section ref={activityRef} className={`bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-[#006972]/15 shadow-sm transition-all duration-700 delay-200 ${activityInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-headline text-[16px] sm:text-[18px] font-bold text-[#006972] flex items-center gap-1.5">
+              <Icon name="history" size={20} />
               Recent Activity
             </h3>
-            <button onClick={() => navigate('/notifications')} className="font-label text-[13px] font-bold text-[#006972] hover:underline bg-transparent border-none cursor-pointer">
+            <button onClick={() => navigate('/notifications')} className="font-label text-[12px] sm:text-[13px] font-bold text-[#006972] hover:underline bg-transparent border-none cursor-pointer">
               View All
             </button>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {loadingBackend ? (
               [0, 1].map((i) => (
-                <div key={i} className="flex items-center gap-4 p-3.5 rounded-2xl bg-[#fbfaee]">
-                  <Bone className="w-10 h-10 rounded-xl shrink-0" />
-                  <div className="flex-1 flex flex-col gap-2">
-                    <Bone className="w-1/3 h-4 rounded-full" />
+                <div key={i} className="flex items-center gap-3 p-3 rounded-xl sm:rounded-2xl bg-[#fbfaee]">
+                  <Bone className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl shrink-0" />
+                  <div className="flex-1 flex flex-col gap-1.5">
+                    <Bone className="w-1/3 h-3.5 rounded-full" />
                     <Bone className="w-2/3 h-3 rounded-full" />
                   </div>
                 </div>
               ))
             ) : recentActivities.length > 0 ? (
-              recentActivities.slice(0, 6).map((act, idx) => {
+              recentActivities.slice(0, 5).map((act, idx) => {
                 const iconMap = {
-                  committee_created: 'groups',
-                  payment: 'payments',
-                  payout: 'account_balance_wallet',
-                  member_request: 'group_add',
-                  participant_added: 'person_add',
+                  payment: { name: 'payments', bg: 'bg-emerald-500/10 text-emerald-700' },
+                  committee_join: { name: 'group_add', bg: 'bg-[#006972]/10 text-[#006972]' },
+                  committee_create: { name: 'add_circle', bg: 'bg-[#D4AF37]/20 text-[#7a6400]' },
+                  default: { name: 'notifications', bg: 'bg-slate-100 text-slate-700' },
                 };
+                const ic = iconMap[act.action_type] || iconMap.default;
                 return (
-                  <div key={act.id || idx}
-                    className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-[#fbfaee] border border-deep-navy/5 hover:bg-[#006972]/5 hover:border-[#006972]/25 hover:translate-x-1 transition-all duration-200 cursor-pointer group">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-[#006972]/10 text-[#006972] group-hover:scale-110 transition-transform duration-200">
-                      <Icon name={iconMap[act.type] || 'history'} size={20} />
+                    <div key={act.id || idx}
+                    onClick={() => setSelectedActivityModal({
+                      title: act.title,
+                      description: act.description,
+                      date: act.created_at,
+                      type: act.action_type || 'activity',
+                      icon: ic.name,
+                      iconBg: ic.bg,
+                    })}
+                    className="flex items-center gap-2.5 sm:gap-3.5 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-[#fbfaee] border border-deep-navy/5 hover:bg-[#006972]/5 hover:border-[#006972]/25 transition-all cursor-pointer group">
+                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${ic.bg}`}>
+                      <Icon name={ic.name} size={18} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-headline text-[14px] font-bold text-deep-navy truncate">{act.description}</p>
-                      <p className="font-body text-[12px] text-on-surface-variant truncate">
-                        {act.committee_name} • {(act.type || '').replace('_', ' ')} • {(act.status || '')}
-                      </p>
+                      <p className="font-headline text-[13px] sm:text-[14px] font-bold text-deep-navy truncate">{act.title}</p>
+                      <p className="font-body text-[11px] sm:text-[12px] text-on-surface-variant truncate">{act.description}</p>
                     </div>
-                    <span className="font-label text-[11px] text-on-surface-variant shrink-0 ml-2">
-                      {act.created_at ? new Date(act.created_at).toLocaleDateString() : ''}
+                    <span className="font-label text-[10px] sm:text-[11px] text-on-surface-variant shrink-0 ml-1">
+                      {new Date(act.created_at).toLocaleDateString()}
                     </span>
                   </div>
                 );
@@ -690,21 +689,29 @@ export default function Dashboard() {
             ) : recentNotifications.length > 0 ? (
               recentNotifications.map((item, idx) => (
                 <div key={item.id || idx}
-                  className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-[#fbfaee] border border-deep-navy/5 hover:bg-[#006972]/5 hover:border-[#006972]/25 hover:translate-x-1 transition-all duration-200 cursor-pointer group">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-[#006972]/10 text-[#006972] group-hover:scale-110 transition-transform duration-200">
-                    <Icon name="notifications" size={20} />
+                  onClick={() => setSelectedActivityModal({
+                    title: item.type?.replace(/_/g, ' ').toUpperCase() || 'Notification',
+                    description: item.content || item.body || 'Notification detail',
+                    date: item.created_at,
+                    type: item.type || 'notification',
+                    icon: 'notifications',
+                    iconBg: 'bg-[#006972]/10 text-[#006972]',
+                  })}
+                  className="flex items-center gap-2.5 sm:gap-3.5 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-[#fbfaee] border border-deep-navy/5 hover:bg-[#006972]/5 hover:border-[#006972]/25 transition-all cursor-pointer group">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 bg-[#006972]/10 text-[#006972]">
+                    <Icon name="notifications" size={18} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-headline text-[14px] font-bold text-deep-navy truncate">{item.type?.replace('_', ' ').toUpperCase() || 'Notification'}</p>
-                    <p className="font-body text-[12px] text-on-surface-variant truncate">{item.content}</p>
+                    <p className="font-headline text-[13px] sm:text-[14px] font-bold text-deep-navy truncate">{item.type?.replace('_', ' ').toUpperCase() || 'Notification'}</p>
+                    <p className="font-body text-[11px] sm:text-[12px] text-on-surface-variant truncate">{item.content}</p>
                   </div>
-                  <span className="font-label text-[11px] text-on-surface-variant shrink-0 ml-2">
+                  <span className="font-label text-[10px] sm:text-[11px] text-on-surface-variant shrink-0 ml-1">
                     {new Date(item.created_at).toLocaleDateString()}
                   </span>
                 </div>
               ))
             ) : (
-              <div className="p-4 rounded-2xl bg-[#fbfaee] text-center text-on-surface-variant text-[13px] font-body">
+              <div className="p-3.5 rounded-xl sm:rounded-2xl bg-[#fbfaee] text-center text-on-surface-variant text-[12px] sm:text-[13px] font-body">
                 No recent activity yet.
               </div>
             )}
@@ -723,15 +730,98 @@ export default function Dashboard() {
         />
       )}
 
+      {/* ── ACTIVITY / NOTIFICATION DETAIL MODAL ── */}
+      {selectedActivityModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
+          onClick={() => setSelectedActivityModal(null)}
+        >
+          <div
+            className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] animate-scale-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between gap-3 bg-[#fbfaee]/70">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${selectedActivityModal.iconBg || 'bg-[#006972]/10 text-[#006972]'}`}>
+                  <Icon name={selectedActivityModal.icon || 'notifications'} size={20} />
+                </div>
+                <div className="min-w-0">
+                  <span className="inline-block px-2 py-0.5 rounded-full font-label text-[10px] font-bold bg-[#006972]/10 text-[#006972] border border-[#006972]/20 mb-0.5">
+                    {selectedActivityModal.type.replace(/_/g, ' ').toUpperCase()}
+                  </span>
+                  <h3 className="font-headline text-[15px] sm:text-[16px] font-bold text-deep-navy truncate">
+                    Activity Details
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedActivityModal(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0"
+              >
+                <Icon name="close" size={16} />
+              </button>
+            </div>
+
+            <div className="p-4 sm:p-5 space-y-3 overflow-y-auto">
+              <div>
+                <h4 className="font-headline text-[15px] sm:text-[16px] font-bold text-deep-navy mb-1.5">
+                  {selectedActivityModal.title}
+                </h4>
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70 text-slate-800 font-body text-[13px] leading-relaxed select-text">
+                  {selectedActivityModal.description}
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-[#fbfaee] border border-deep-navy/5 flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[#006972]/10 text-[#006972] flex items-center justify-center shrink-0">
+                  <Icon name="schedule" size={16} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-label uppercase font-bold text-on-surface-variant">Recorded At</p>
+                  <p className="text-[12px] font-bold text-deep-navy truncate">
+                    {new Date(selectedActivityModal.date).toLocaleString('en-PK', {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    })}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3.5 sm:p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${selectedActivityModal.title}\n\n${selectedActivityModal.description}`);
+                  setSelectedActivityModal(null);
+                }}
+                className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-label text-[12px] font-bold border border-slate-200 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <Icon name="content_copy" size={14} />
+                <span>Copy</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedActivityModal(null)}
+                className="px-4 py-2 rounded-xl bg-[#006972] hover:bg-[#005a62] text-white font-label text-[12px] font-bold transition-all cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ══════════════════════════════════════════════════ */}
       {/*  FLOATING WHATSAPP BUTTON                         */}
       {/* ══════════════════════════════════════════════════ */}
       <button
         onClick={openWhatsApp}
-        className="fixed bottom-24 right-4 md:bottom-6 md:right-6 z-50 w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#1da851] text-white flex items-center justify-center shadow-lg shadow-[#25D366]/30 transition-all active:scale-90 cursor-pointer border-4 border-white animate-float-y-fast group"
+        className="fixed bottom-20 right-3.5 md:bottom-6 md:right-6 z-50 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#25D366] hover:bg-[#1da851] text-white flex items-center justify-center shadow-lg shadow-[#25D366]/30 transition-all active:scale-90 cursor-pointer border-2 sm:border-4 border-white group"
         title="Chat with us on WhatsApp"
       >
-        <img src={whatsappIcon} alt="WhatsApp" className="w-7 h-7 brightness-0 invert" />
+        <img src={whatsappIcon} alt="WhatsApp" className="w-6 h-6 sm:w-7 sm:h-7 brightness-0 invert" />
         <span className="absolute right-full mr-3 px-3 py-1.5 rounded-xl bg-deep-navy text-white font-label text-[11px] font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
           Chat on WhatsApp
         </span>
@@ -744,45 +834,46 @@ export default function Dashboard() {
 /* ── Committee Card Component ── */
 function CommitteeCard({ onClick, iconName, iconBg, title, subtitle, badge, badgeStyle, metrics, footerLeft, footerLeftColor, footerRight, progress }) {
   return (
-    <div onClick={onClick}
-      className="bg-white rounded-3xl p-6 border-2 border-[#006972]/20 hover:border-[#006972] transition-all duration-300 cursor-pointer group shadow-sm hover:shadow-xl hover:-translate-y-1.5 relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-16 h-16 bg-[#006972]/4 rounded-bl-3xl pointer-events-none transition-all duration-500 group-hover:w-28 group-hover:h-28" />
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-shimmer rounded-3xl pointer-events-none" />
-
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center group-hover:scale-115 group-hover:rotate-3 transition-transform duration-300 ${iconBg}`}>
-            <Icon name={iconName} size={26} />
+    <div
+      onClick={onClick}
+      className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-[#006972]/15 hover:border-[#006972] transition-all cursor-pointer group shadow-sm hover:shadow-md relative overflow-hidden"
+    >
+      <div className="flex items-start justify-between mb-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 ${iconBg}`}>
+            <Icon name={iconName} size={20} />
           </div>
-          <div>
-            <h3 className="font-headline text-[17px] font-bold text-deep-navy group-hover:text-[#006972] transition-colors duration-200">{title}</h3>
-            <p className="font-label text-[12px] text-on-surface-variant">{subtitle}</p>
+          <div className="min-w-0">
+            <h3 className="font-headline text-[14.5px] sm:text-[17px] font-bold text-deep-navy group-hover:text-[#006972] transition-colors truncate">{title}</h3>
+            <p className="font-label text-[11px] sm:text-[12px] text-on-surface-variant truncate">{subtitle}</p>
           </div>
         </div>
-        <span className={`font-label text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${badgeStyle}`}>{badge}</span>
+        <span className={`font-label text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border shrink-0 ${badgeStyle}`}>{badge}</span>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 py-3 px-3 bg-[#fbfaee] rounded-2xl mb-3 text-center border border-deep-navy/5">
+      <div className="grid grid-cols-3 gap-1.5 py-2 px-2.5 sm:py-2.5 sm:px-3 bg-[#fbfaee] rounded-xl sm:rounded-2xl mb-2 text-center border border-deep-navy/5">
         {metrics.map((m, i) => (
           <div key={i}>
-            <p className="font-label text-[9px] uppercase text-on-surface-variant font-semibold mb-0.5">{m.label}</p>
-            <p className={`font-headline text-[15px] font-bold ${m.color || (m.highlight ? 'text-[#006972]' : 'text-deep-navy')}`}>{m.value}</p>
+            <p className="font-label text-[8.5px] sm:text-[9px] uppercase text-on-surface-variant font-semibold mb-0.5">{m.label}</p>
+            <p className={`font-headline text-[13px] sm:text-[15px] font-bold ${m.color || (m.highlight ? 'text-[#006972]' : 'text-deep-navy')}`}>{m.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="mb-3">
-        <div className="w-full h-1.5 bg-deep-navy/6 rounded-full overflow-hidden">
-          <div className="h-full bg-[#006972] rounded-full transition-all duration-1000 group-hover:opacity-80"
+      <div className="mb-2">
+        <div className="w-full h-1 sm:h-1.5 bg-deep-navy/6 rounded-full overflow-hidden">
+          <div className="h-full bg-[#006972] rounded-full transition-all duration-1000"
             style={{ width: `${progress}%` }} />
         </div>
       </div>
 
-      <div className="flex items-center justify-between text-[13px] font-label">
-        <span className={`font-bold flex items-center gap-1 ${footerLeftColor}`}>{footerLeft}</span>
-        {typeof footerRight === 'string' ? (
-          <span className="text-[#006972] font-bold flex items-center gap-0.5 group-hover:underline">{footerRight} <Icon name="chevron_right" size={16} /></span>
-        ) : footerRight}
+      <div className="flex items-center justify-between text-[11px] sm:text-[12px] font-label font-bold pt-1 border-t border-deep-navy/5">
+        <span className={`flex items-center gap-1 ${footerLeftColor || 'text-deep-navy/70'}`}>
+          {footerLeft}
+        </span>
+        <span className="text-[#006972] flex items-center gap-0.5 group-hover:underline">
+          {footerRight} →
+        </span>
       </div>
     </div>
   );

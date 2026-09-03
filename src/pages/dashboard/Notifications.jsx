@@ -64,6 +64,9 @@ export default function Notifications() {
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [markingAll, setMarkingAll] = useState(false);
 
+  const [selectedNotif, setSelectedNotif] = useState(null);
+  const [copied, setCopied] = useState(false);
+
   useEffect(() => {
     loadNotifications();
   }, []);
@@ -87,6 +90,9 @@ export default function Notifications() {
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n))
       );
+      if (selectedNotif && selectedNotif.id === id) {
+        setSelectedNotif((prev) => ({ ...prev, read_at: new Date().toISOString() }));
+      }
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
     }
@@ -99,6 +105,9 @@ export default function Notifications() {
       setNotifications((prev) =>
         prev.map((n) => ({ ...n, read_at: n.read_at || new Date().toISOString() }))
       );
+      if (selectedNotif) {
+        setSelectedNotif((prev) => ({ ...prev, read_at: prev.read_at || new Date().toISOString() }));
+      }
     } catch (err) {
       console.error('Failed to mark all as read:', err);
     } finally {
@@ -123,21 +132,14 @@ export default function Notifications() {
     if (!notif.read_at) {
       handleMarkAsRead(notif.id);
     }
+    setSelectedNotif(notif);
+  }
 
-    // Smart navigation routing based on notification metadata
-    if (notif.related_committee_id) {
-      navigate(`/committee/${notif.related_committee_id}`);
-      return;
-    }
-
-    const type = (notif.type || '').toLowerCase();
-    if (type.includes('payment') || type.includes('payout')) {
-      navigate('/payments');
-    } else if (type.includes('cnic')) {
-      navigate('/profile');
-    } else if (type.includes('complaint')) {
-      navigate('/support/complaints');
-    }
+  function handleCopyDetails(text) {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }
 
   return (
@@ -310,6 +312,143 @@ export default function Notifications() {
           )}
         </main>
 
+        {/* ── NOTIFICATION DETAILS MODAL ── */}
+        {selectedNotif && (() => {
+          const meta = getNotificationMeta(selectedNotif.type);
+          const displayTitle = selectedNotif.title || (selectedNotif.type || 'NOTIFICATION').replace(/_/g, ' ').toUpperCase();
+          const displayBody = selectedNotif.body || selectedNotif.content || 'No details provided.';
+          const formattedDate = new Date(selectedNotif.created_at).toLocaleDateString('en-PK', {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          });
+          const formattedTime = new Date(selectedNotif.created_at).toLocaleTimeString('en-PK', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+          });
+
+          return (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
+              onClick={() => setSelectedNotif(null)}
+            >
+              <div
+                className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] animate-scale-up"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Modal Header */}
+                <div className="p-4 sm:p-6 border-b border-slate-100 flex items-start justify-between gap-3 bg-[#fbfaee]/70">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-11 h-11 rounded-2xl ${meta.iconBg} flex items-center justify-center shrink-0 shadow-sm border border-black/5`}>
+                      <Icon name={meta.icon} size={24} />
+                    </div>
+                    <div className="min-w-0">
+                      <span className={`inline-block px-2.5 py-0.5 rounded-full font-label text-[10px] font-bold ${meta.color} border mb-1`}>
+                        {meta.badge}
+                      </span>
+                      <h2 className="font-headline text-[16px] sm:text-[18px] font-bold text-deep-navy leading-snug">
+                        Notification Details
+                      </h2>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedNotif(null)}
+                    className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0"
+                    aria-label="Close dialog"
+                  >
+                    <Icon name="close" size={18} />
+                  </button>
+                </div>
+
+                {/* Modal Content */}
+                <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
+                  <div>
+                    <h3 className="font-headline text-[16px] sm:text-[18px] font-bold text-deep-navy mb-2">
+                      {displayTitle}
+                    </h3>
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 text-slate-800 font-body text-[13px] sm:text-[14px] leading-relaxed whitespace-pre-wrap select-text">
+                      {displayBody}
+                    </div>
+                  </div>
+
+                  {/* Metadata Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="p-3 rounded-xl bg-[#fbfaee] border border-deep-navy/5 flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-[#006972]/10 text-[#006972] flex items-center justify-center shrink-0">
+                        <Icon name="schedule" size={16} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-label uppercase font-bold text-on-surface-variant">Time & Date</p>
+                        <p className="text-[12px] font-bold text-deep-navy truncate">{formattedDate} • {formattedTime}</p>
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-[#fbfaee] border border-deep-navy/5 flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                        <Icon name="done_all" size={16} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-label uppercase font-bold text-on-surface-variant">Status</p>
+                        <p className="text-[12px] font-bold text-emerald-700">Read & Acknowledged</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Committee details if available */}
+                  {(selectedNotif.committee_name || selectedNotif.related_committee_id) && (
+                    <div className="p-3 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Icon name="groups" size={18} className="text-teal-700 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-label uppercase font-bold text-teal-800">Related Committee</p>
+                          <p className="text-[12px] font-bold text-teal-900 truncate">
+                            {selectedNotif.committee_name || `Committee #${selectedNotif.related_committee_id}`}
+                          </p>
+                        </div>
+                      </div>
+                      {selectedNotif.related_committee_id && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedNotif(null);
+                            navigate(`/committee/${selectedNotif.related_committee_id}`);
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white font-label text-[11px] font-bold transition-all cursor-pointer shrink-0"
+                        >
+                          View Pool
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Modal Footer Actions */}
+                <div className="p-4 sm:p-5 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => handleCopyDetails(`${displayTitle}\n\n${displayBody}`)}
+                    className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-label text-[12px] font-bold border border-slate-200 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+                  >
+                    <Icon name={copied ? 'check' : 'content_copy'} size={15} className={copied ? 'text-emerald-600' : ''} />
+                    <span>{copied ? 'Copied!' : 'Copy Text'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedNotif(null)}
+                    className="px-4 py-2 rounded-xl bg-[#006972] hover:bg-[#005a62] text-white font-label text-[12px] font-bold transition-all cursor-pointer active:scale-95 shadow-sm"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
       </div>
     </AuthAmbientBackground>

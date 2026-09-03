@@ -127,50 +127,52 @@ export default function MyPools() {
       <div className="w-full max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-8 flex flex-col min-h-[calc(100vh-36px)] gap-5 pb-28 md:pb-12">
 
         {/* Top Header */}
-        <header className="w-full flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        {/* Top Header (Responsive Mobile / Desktop) */}
+        <header className="w-full flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               onClick={() => navigate('/dashboard')}
               aria-label="Go to Dashboard"
-              className="w-11 h-11 flex items-center justify-center rounded-full bg-white/60 hover:bg-white/80 text-[#006972] transition-all cursor-pointer active:scale-90 backdrop-blur-xl border border-white/80 shadow-[0_4px_20px_rgba(0,105,114,0.12)]"
+              className="w-8 h-8 sm:w-11 sm:h-11 flex items-center justify-center rounded-full bg-white/70 hover:bg-white text-[#006972] transition-all cursor-pointer active:scale-90 border border-white/80 shadow-sm shrink-0"
             >
-              <Icon name="arrow_back" size={20} />
+              <Icon name="arrow_back" size={18} />
             </button>
-            <div>
-              <h1 className="font-headline text-[22px] sm:text-[26px] font-bold text-deep-navy tracking-tight">
+            <div className="min-w-0">
+              <h1 className="font-headline text-[16px] sm:text-[24px] font-bold text-deep-navy tracking-tight truncate leading-tight">
                 My Committee Pools
               </h1>
-              <p className="font-label text-[11px] text-on-surface-variant font-medium">
-                Manage your active, hosting, and participating pools
+              <p className="font-label text-[10.5px] sm:text-[11px] text-on-surface-variant font-medium truncate">
+                Manage your active, hosting, and member pools
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <button
               onClick={() => setShowJoinModal(true)}
-              className="px-3.5 py-2.5 rounded-2xl bg-white/70 hover:bg-white text-[#006972] font-label text-[12px] font-bold transition-all cursor-pointer border border-white/80 shadow-sm flex items-center gap-1.5 active:scale-95"
+              className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl bg-white/80 hover:bg-white text-[#006972] font-label text-[11px] sm:text-[12px] font-bold transition-all cursor-pointer border border-[#006972]/15 shadow-sm flex items-center gap-1 active:scale-95"
+              title="Join by Invite Code"
             >
-              <Icon name="vpn_key" size={16} />
+              <Icon name="vpn_key" size={15} />
               <span className="hidden sm:inline">Join Code</span>
             </button>
 
             <button
               onClick={() => navigate('/committee/create')}
-              className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[#006972] to-[#007a82] hover:from-[#00575f] hover:to-[#006972] text-white font-label text-[13px] font-bold transition-all shadow-md shadow-[#006972]/20 flex items-center gap-1.5 cursor-pointer border-none active:scale-95"
+              className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#006972] to-[#007a82] hover:from-[#00575f] hover:to-[#006972] text-white font-label text-[11px] sm:text-[13px] font-bold transition-all shadow-md shadow-[#006972]/20 flex items-center gap-1 cursor-pointer border-none active:scale-95"
             >
-              <Icon name="add_circle" size={18} />
+              <Icon name="add_circle" size={16} />
               <span>Create Pool</span>
             </button>
 
             {/* Mobile Menu Drawer Toggle */}
             <button
               onClick={openDrawer}
-              className="md:hidden w-10 h-10 flex items-center justify-center rounded-2xl bg-white/70 hover:bg-white text-[#006972] border border-white/80 shadow-sm transition-all active:scale-95 cursor-pointer"
+              className="md:hidden w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl sm:rounded-2xl bg-white/80 hover:bg-white text-[#006972] border border-[#006972]/15 shadow-sm transition-all active:scale-95 cursor-pointer"
               aria-label="Open Navigation Menu"
               title="Open Menu"
             >
-              <Icon name="menu" size={20} />
+              <Icon name="menu" size={18} />
             </button>
           </div>
         </header>
