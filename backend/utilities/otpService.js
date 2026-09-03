@@ -4,7 +4,8 @@ import { sendWhatsAppWebOTP } from './whatsappGateway.js';
 // Initialize Nodemailer Transporter with intelligent service detection and strict timeouts
 function createMailTransporter() {
   const user = (process.env.SMTP_USER || '').trim();
-  const pass = (process.env.SMTP_PASS || '').trim();
+  // Strip any accidental spaces from Google App Password (e.g. 'tqam zmfr hfmz bcro' -> 'tqamzmfrhfmzbcro')
+  const pass = (process.env.SMTP_PASS || '').replace(/\s+/g, '').trim();
   const host = (process.env.SMTP_HOST || '').trim();
   const isGmail = host.includes('gmail') || user.includes('@gmail.com');
 
@@ -14,26 +15,71 @@ function createMailTransporter() {
       auth: { user, pass },
       pool: true,
       maxConnections: 3,
-      connectionTimeout: 4000,
-      greetingTimeout: 4000,
-      socketTimeout: 5000,
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 6000,
     });
   }
 
   return nodemailer.createTransport({
-    host: host || 'smtp.ethereal.email',
+    host: host || 'smtp.gmail.com',
     port: parseInt(process.env.SMTP_PORT || '587', 10),
     secure: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465',
     auth: { user, pass },
     pool: true,
     maxConnections: 3,
-    connectionTimeout: 4000,
-    greetingTimeout: 4000,
-    socketTimeout: 5000,
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 6000,
   });
 }
 
 const transporter = createMailTransporter();
+
+/**
+ * Verify SMTP Socket connection on startup and log status
+ */
+export async function verifySmtpConnection() {
+  const user = (process.env.SMTP_USER || '').trim();
+  const host = (process.env.SMTP_HOST || '').trim();
+  const isGmail = host.includes('gmail') || user.includes('@gmail.com');
+
+  if (!user) {
+    console.log('ℹ️ [SMTP Service] SMTP_USER not set. OTP codes will be logged to server console in dev mode.');
+    return { connected: false, reason: 'unconfigured' };
+  }
+
+  console.log(`🔌 [SMTP Socket] Verifying connection to ${isGmail ? 'Gmail Service' : host || 'smtp.gmail.com'} with user ${user}...`);
+
+  try {
+    await new Promise((resolve, reject) => {
+      transporter.verify((error, success) => {
+        if (error) reject(error);
+        else resolve(success);
+      });
+    });
+
+    console.log('\n======================================================');
+    console.log('🎉 SMTP EMAIL SOCKET SUCCESSFULLY CONNECTED!');
+    console.log(`📧 Connected Account : ${user}`);
+    console.log(`🌐 Provider / Host   : ${isGmail ? 'Gmail (service: gmail)' : host || 'smtp.gmail.com'}`);
+    console.log('🚀 Ready to deliver live OTP and notification emails!');
+    console.log('======================================================\n');
+    return { connected: true };
+  } catch (error) {
+    console.error('\n======================================================');
+    console.error('❌ [SMTP SOCKET CONNECTION FAILED]');
+    console.error(`📧 Account          : ${user}`);
+    console.error(`⚠️ Error Reason     : ${error.message}`);
+    if (error.code === 'EAUTH') {
+      console.error('💡 Hint             : Authentication failed. Please verify your 16-character Google App Password (ensure no spaces).');
+    } else if (error.code === 'ESOCKET' || error.code === 'ETIMEDOUT') {
+      console.error('💡 Hint             : Network socket timeout. Check if port 465/587 is open.');
+    }
+    console.error('======================================================\n');
+    return { connected: false, error: error.message };
+  }
+}
 
 /**
  * Generate a random 6-digit numeric OTP code.
@@ -68,13 +114,19 @@ export async function sendOTP(target, code) {
  */
 async function sendEmailOTP(email, code) {
   try {
-    if (!process.env.SMTP_USER) {
+    const user = (process.env.SMTP_USER || '').trim();
+    if (!user) {
       console.warn(`[OTP EMAIL] SMTP_USER not set. OTP code ${code} logged to console for ${email}.`);
       return { success: true, channel: 'console', messageId: 'dev-console' };
     }
 
+    // Gmail requires sender address to match authenticated user
+    const fromAddress = user.includes('@gmail.com')
+      ? `"Sanjhi AI" <${user}>`
+      : (process.env.SMTP_FROM || `"Sanjhi AI" <${user}>`);
+
     const emailPromise = transporter.sendMail({
-      from: process.env.SMTP_FROM || '"Sanjhi AI" <no-reply@sanjhi.ai>',
+      from: fromAddress,
       to: email,
       subject: 'Your Sanjhi Verification Code',
       text: `Your Sanjhi verification code is: ${code}. It expires in 10 minutes. Do not share this with anyone.`,

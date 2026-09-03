@@ -55,6 +55,13 @@ router.get('/whatsapp-status', (req, res) => {
   res.json(getWhatsAppStatus());
 });
 
+// SMTP Email Connection Status
+router.get('/smtp-status', async (req, res) => {
+  const { verifySmtpConnection } = await import('../utilities/otpService.js');
+  const result = await verifySmtpConnection();
+  res.json(result);
+});
+
 // Public OTP & Auth routes
 router.post('/otp/send', sendOTPController);
 router.post('/otp/verify', verifyOTPController);

@@ -22,6 +22,7 @@ import { startSweeper } from './utilities/complaintAgent/sweeper.js';
 import { processComplaint } from './utilities/complaintAgent/index.js';
 import { ensureAssistantTables, seedDefaultKbDocs } from './assistant/schema.js';
 import { ensureTrustScoreTables, backfillTrustEvents } from './utilities/trustScore.js';
+import { verifySmtpConnection } from './utilities/otpService.js';
 
 dotenv.config();
 
@@ -518,6 +519,7 @@ function initKeepAlive() {
 app.listen(PORT, '0.0.0.0', async () => {
   console.log(`Server listening on port ${PORT}`);
   await testConnection(); // logs DB connection status to terminal on startup
+  await verifySmtpConnection(); // verifies SMTP socket handshake & credentials on startup
   await ensureInAppNotificationChannel(); // ensures 'in_app' notification channel exists
   await ensureAiCaseFileColumn(); // ensures ai_case_file column exists
   await ensureComplaintStatusEnum(); // ensures 'ai_resolved' + 'needs_human_review' in enum
