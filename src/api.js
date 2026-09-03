@@ -13,7 +13,20 @@
  *   const created = await api.post('/committees', { name: 'Pool', ... });
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
+function getApiBaseUrl() {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace(/\/$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location && window.location.origin) {
+    const host = window.location.hostname;
+    if (host !== 'localhost' && host !== '127.0.0.1') {
+      return `${window.location.origin}/api`;
+    }
+  }
+  return 'http://localhost:3000/api';
+}
+
+const BASE_URL = getApiBaseUrl();
 
 /** Timeout for every request (ms) */
 const REQUEST_TIMEOUT_MS = 15_000;

@@ -156,13 +156,11 @@ export default function LoginForm() {
 
             {/* Middle Brand Showcase */}
             <div className="relative z-10 flex flex-col items-start my-auto space-y-4">
-              <div className="w-32 h-32 rounded-2xl bg-white/95 backdrop-blur-md p-3 flex items-center justify-center shadow-xl shadow-black/10 border border-white/40 mb-1">
-                <img
-                  alt="Sanjhi Logo"
-                  src={logo}
-                  className="w-full h-full object-contain hover:scale-105 transition-transform duration-300"
-                />
-              </div>
+              <img
+                alt="Sanjhi Logo"
+                src={logo}
+                className="w-36 sm:w-44 object-contain mb-1 filter drop-shadow-lg hover:scale-105 transition-transform duration-300"
+              />
               <h2 className="font-headline text-[28px] font-bold leading-tight tracking-tight text-white">
                 Secure Access to Your Savings Pools
               </h2>

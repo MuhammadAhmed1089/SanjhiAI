@@ -7,8 +7,19 @@ import Button from '../../components/Button';
 import { getPendingCnics, approveCnic, rejectCnic } from '../../services/adminService';
 import { logout } from '../../services/authService';
 
-const GLASS_CARD = 'bg-white/70 backdrop-blur-2xl border border-white/90 shadow-[0_12px_40px_rgba(0,105,114,0.08)]';
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+function getApiUrl() {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace(/\/$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location && window.location.origin) {
+    const host = window.location.hostname;
+    if (host !== 'localhost' && host !== '127.0.0.1') {
+      return `${window.location.origin}/api`;
+    }
+  }
+  return 'http://localhost:3000/api';
+}
+const API_URL = getApiUrl();
 
 function Bone({ className = '' }) {
   return <div className={`skeleton-bone ${className}`} />;

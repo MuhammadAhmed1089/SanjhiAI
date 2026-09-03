@@ -60,13 +60,11 @@ export default function Welcome() {
 
             {/* Premium Logo Showcase */}
             <div className="relative z-10 flex flex-col items-center text-center my-auto py-2 sm:py-6">
-              <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-white/95 backdrop-blur-md p-4 flex items-center justify-center shadow-2xl shadow-black/15 border border-white/50 hover:scale-105 transition-transform duration-300">
-                <img
-                  alt="Sanjhi Logo"
-                  src={logo}
-                  className="w-full h-full object-contain cursor-default"
-                />
-              </div>
+              <img
+                alt="Sanjhi Logo"
+                src={logo}
+                className="w-48 sm:w-60 lg:w-72 object-contain cursor-default filter drop-shadow-xl hover:scale-105 transition-transform duration-300"
+              />
             </div>
 
             {/* Bottom Tagline */}

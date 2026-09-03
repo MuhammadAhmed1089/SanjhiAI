@@ -17,14 +17,23 @@ import {
   getCnicStatus,
 } from '../../services/authService';
 
-const BACKEND_URL = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL.replace('/api', '')
-  : 'http://localhost:3000';
+function getBackendUrl() {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location && window.location.origin) {
+    const host = window.location.hostname;
+    if (host !== 'localhost' && host !== '127.0.0.1') {
+      return window.location.origin;
+    }
+  }
+  return 'http://localhost:3000';
+}
 
 function resolvePhotoUrl(url) {
   if (!url) return null;
   if (url.startsWith('http') || url.startsWith('data:')) return url;
-  return `${BACKEND_URL}${url}`;
+  return `${getBackendUrl()}${url}`;
 }
 
 /** Formats UUID into user-friendly Sanjhi ID string, e.g. SNJ-C85E-41E8 */

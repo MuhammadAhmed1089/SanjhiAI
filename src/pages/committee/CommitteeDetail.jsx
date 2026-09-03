@@ -9,14 +9,23 @@ import { memberService } from '../../services';
 import ReportUserModal from '../../components/ReportUserModal';
 import AddToCalendarModal from '../../components/AddToCalendarModal';
 
-const BACKEND_URL = import.meta.env.VITE_API_URL
-  ? import.meta.env.VITE_API_URL.replace('/api', '')
-  : 'http://localhost:3000';
+function getBackendUrl() {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location && window.location.origin) {
+    const host = window.location.hostname;
+    if (host !== 'localhost' && host !== '127.0.0.1') {
+      return window.location.origin;
+    }
+  }
+  return 'http://localhost:3000';
+}
 
 function resolvePhotoUrl(url) {
   if (!url) return null;
   if (url.startsWith('http') || url.startsWith('data:')) return url;
-  return `${BACKEND_URL}${url}`;
+  return `${getBackendUrl()}${url}`;
 }
 
 export default function CommitteeDetail() {
@@ -962,12 +971,12 @@ export default function CommitteeDetail() {
                   <label className="block font-label text-[11px] font-bold uppercase text-on-surface-variant">Shareable Invite Link</label>
                   <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
                     <p className="font-mono text-[12px] text-slate-700 truncate bg-white p-2 rounded-xl border border-slate-200">
-                      {committee.inviteLink || `http://localhost:5173/join/${committee.inviteCode}`}
+                      {committee.inviteLink || `${window.location.origin}/join/${committee.inviteCode}`}
                     </p>
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
-                          const link = committee.inviteLink || `http://localhost:5173/join/${committee.inviteCode}`;
+                          const link = committee.inviteLink || `${window.location.origin}/join/${committee.inviteCode}`;
                           navigator.clipboard.writeText(link);
                           showToast('Invite link copied! Share with participants.');
                         }}
