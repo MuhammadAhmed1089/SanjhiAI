@@ -1,9 +1,15 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import dns from 'dns';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 import fs from 'fs';
+
+// Force Node.js to use IPv4 by default (prevents ENETUNREACH on IPv6-unroutable networks)
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 import { testConnection, query } from './config/db.js';
 import { requireAuth } from './utilities/jwt.js';
 import { initWhatsAppGateway } from './utilities/whatsappGateway.js';

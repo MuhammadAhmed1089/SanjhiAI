@@ -1,5 +1,11 @@
 import nodemailer from 'nodemailer';
+import dns from 'dns';
 import { sendWhatsAppWebOTP } from './whatsappGateway.js';
+
+// Force Node.js to prioritize IPv4 addresses (fixes ENETUNREACH on IPv6-unroutable cloud hosts)
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 // Initialize Nodemailer Transporter with intelligent service detection and strict timeouts
 function createMailTransporter() {
@@ -10,11 +16,12 @@ function createMailTransporter() {
   const isGmail = host.includes('gmail') || user.includes('@gmail.com');
 
   if (isGmail && user && pass) {
-    // Port 465 with Direct SSL is required on Railway/cloud hosts (port 587 STARTTLS is blocked)
+    // Port 465 with Direct SSL and IPv4 socket connection
     return nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 465,
       secure: true,
+      family: 4, // Force IPv4 to prevent ENETUNREACH IPv6 routing error
       auth: { user, pass },
       tls: {
         rejectUnauthorized: false,
@@ -29,6 +36,7 @@ function createMailTransporter() {
     host: host || 'smtp.gmail.com',
     port: port,
     secure: port === 465 || process.env.SMTP_SECURE === 'true',
+    family: 4, // Force IPv4
     auth: { user, pass },
     tls: {
       rejectUnauthorized: false,
