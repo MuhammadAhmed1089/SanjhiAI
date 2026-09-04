@@ -9,7 +9,7 @@ const GLASS_CARD = 'bg-white/60 backdrop-blur-xl border border-white/80 shadow-[
 
 /* ── Skeleton Bone Helper ── */
 function Bone({ className = '' }) {
-  return <div className={`skeleton-bone ${className}`} />;
+  return <span className={`skeleton-bone inline-block ${className}`} />;
 }
 
 export default function MyPools() {

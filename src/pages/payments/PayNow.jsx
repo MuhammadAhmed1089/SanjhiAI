@@ -4,7 +4,7 @@ import AuthAmbientBackground from '../../components/AuthAmbientBackground';
 import Icon from '../../components/Icon';
 import { getCommitteeById } from '../../services/committeeService';
 import { submitPayment } from '../../services/paymentService';
-import { getWallet, openWalletApp, copyText, detectPlatform } from '../../utils/wallets';
+import { getWallet, openWalletApp, copyText, detectPlatform, WALLETS } from '../../utils/wallets';
 
 const GLASS_CARD = 'bg-white/60 backdrop-blur-xl border border-white/80 shadow-[0_8px_32px_rgba(0,105,114,0.12)]';
 
@@ -17,7 +17,7 @@ function formatDate(dateStr) {
 
 /* ── Skeleton Bone Helper ── */
 function Bone({ className = '' }) {
-  return <div className={`skeleton-bone ${className}`} />;
+  return <span className={`skeleton-bone inline-block ${className}`} />;
 }
 
 export default function PayNow() {
@@ -116,16 +116,27 @@ export default function PayNow() {
     }
   }
 
-  function handleOpenWallet() {
-    const result = openWalletApp(wallet);
+  async function handleOpenWallet(walletKey) {
+    const targetWallet = walletKey ? WALLETS[walletKey] : wallet;
+    if (!targetWallet) return;
+
+    // Auto-copy account number for user convenience
+    if (committee?.account_number) {
+      await copyText(committee.account_number);
+      setCopied('number');
+      setTimeout(() => setCopied(''), 2000);
+      showToast(`Copied ${committee.account_number} — opening ${targetWallet.label}...`);
+    }
+
+    const result = openWalletApp(targetWallet);
     if (result === 'unavailable') {
       setWalletHint(
         platform === 'desktop'
-          ? 'Wallet apps open on mobile. Use your phone to pay, or copy the account details below.'
-          : 'Wallet app not detected. Install it from your app store, then come back.'
+          ? `Opening ${targetWallet.label} in new tab. You can also scan/transfer using your phone.`
+          : `${targetWallet.label} not detected. Install it from the Play Store / App Store, then return here.`
       );
     } else {
-      setWalletHint('Complete the transfer in your wallet app, then submit your details below.');
+      setWalletHint(`Opening ${targetWallet.label}. Account number has been copied to your clipboard!`);
     }
   }
 
@@ -414,20 +425,42 @@ export default function PayNow() {
               </div>
             </section>
 
-            {/* Open Wallet App Button */}
-            {wallet.scheme && (
-              <button
-                onClick={handleOpenWallet}
-                className="w-full flex items-center justify-center gap-2.5 rounded-2xl py-3.5 text-white font-label text-[14px] font-bold shadow-lg transition-all hover:shadow-xl active:scale-[0.98] cursor-pointer border border-white/25"
-                style={{ backgroundColor: wallet.brandColor }}
-              >
-                <Icon name="open_in_new" size={18} />
-                Open {wallet.label} App
-              </button>
-            )}
+            {/* Open Wallet Quick Action Buttons (JazzCash & EasyPaisa) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <span className="font-label text-[10px] font-bold uppercase text-on-surface-variant tracking-wider flex items-center gap-1">
+                  <Icon name="phone_android" size={13} className="text-[#006972]" /> Quick Pay via Mobile Wallet
+                </span>
+                <span className="text-[10px] font-label text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-semibold">
+                  Auto-copies Account #
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* JazzCash Button */}
+                <button
+                  type="button"
+                  onClick={() => handleOpenWallet('jazzcash')}
+                  className="w-full flex items-center justify-center gap-2.5 rounded-2xl py-3 px-4 text-white font-label text-[13px] font-bold shadow-md hover:shadow-lg active:scale-[0.98] cursor-pointer transition-all border border-white/25 bg-[#c8102e]"
+                >
+                  <Icon name="open_in_new" size={16} />
+                  <span>Open JazzCash</span>
+                </button>
+
+                {/* EasyPaisa Button */}
+                <button
+                  type="button"
+                  onClick={() => handleOpenWallet('easypaisa')}
+                  className="w-full flex items-center justify-center gap-2.5 rounded-2xl py-3 px-4 text-white font-label text-[13px] font-bold shadow-md hover:shadow-lg active:scale-[0.98] cursor-pointer transition-all border border-white/25 bg-[#00a651]"
+                >
+                  <Icon name="open_in_new" size={16} />
+                  <span>Open EasyPaisa</span>
+                </button>
+              </div>
+            </div>
 
             {walletHint && (
-              <p className="font-body text-[12px] text-on-surface-variant text-center px-2 leading-relaxed -mt-2 bg-white/40 border border-white/60 p-2.5 rounded-xl">
+              <p className="font-body text-[12px] text-on-surface-variant text-center px-3 leading-relaxed bg-white/60 border border-white/80 p-2.5 rounded-2xl shadow-sm">
                 {walletHint}
               </p>
             )}

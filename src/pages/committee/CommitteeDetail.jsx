@@ -9,24 +9,7 @@ import { memberService } from '../../services';
 import ReportUserModal from '../../components/ReportUserModal';
 import AddToCalendarModal from '../../components/AddToCalendarModal';
 
-function getBackendUrl() {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '');
-  }
-  if (typeof window !== 'undefined' && window.location && window.location.origin) {
-    const host = window.location.hostname;
-    if (host !== 'localhost' && host !== '127.0.0.1') {
-      return window.location.origin;
-    }
-  }
-  return 'http://localhost:3000';
-}
-
-function resolvePhotoUrl(url) {
-  if (!url) return null;
-  if (url.startsWith('http') || url.startsWith('data:')) return url;
-  return `${getBackendUrl()}${url}`;
-}
+import { resolvePhotoUrl, getBackendUrl } from '../../utils/backendUrl';
 
 export default function CommitteeDetail() {
   const navigate = useNavigate();
@@ -304,94 +287,102 @@ export default function CommitteeDetail() {
   return (
     <div className="min-h-screen bg-white text-deep-navy font-body antialiased relative overflow-x-hidden pb-28 md:pb-12">
 
-      {/* ── AMBIENT BACKGROUND LAYER ── */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.3]"
-          style={{ backgroundImage: 'radial-gradient(circle at 1.5px 1.5px, #006972 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
-        <div className="absolute w-[520px] h-[520px] rounded-full bg-[#006972]/5 blur-3xl top-[-100px] left-[-100px] animate-float-y-slow" />
-        <div className="absolute w-[380px] h-[380px] rounded-full bg-amber-400/5 blur-3xl bottom-[15%] right-[-60px]"
-          style={{ animation: 'float-y 8s ease-in-out infinite 2s' }} />
+      {/* ── AMBIENT BACKGROUND LAYER (GPU-OPTIMIZED) ── */}
+      <div
+        className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
+        style={{ contain: 'strict', transform: 'translateZ(0)' }}
+      >
+        <div className="absolute inset-0 opacity-[0.28]"
+          style={{ backgroundImage: 'radial-gradient(circle at 1.5px 1.5px, #006972 1.2px, transparent 1.2px)', backgroundSize: '28px 28px' }} />
+        <div
+          className="absolute w-[500px] h-[500px] rounded-full top-[-150px] left-[-150px] pointer-events-none opacity-35"
+          style={{ background: 'radial-gradient(circle, rgba(0,105,114,0.18) 0%, rgba(0,105,114,0.03) 50%, transparent 70%)' }}
+        />
+        <div
+          className="absolute w-[450px] h-[450px] rounded-full bottom-[-100px] right-[-100px] pointer-events-none opacity-25"
+          style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.2) 0%, rgba(212,175,55,0.03) 50%, transparent 70%)' }}
+        />
         <img src={logo} alt="" aria-hidden
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] sm:w-[650px] opacity-[0.035] select-none pointer-events-none"
-          style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(85%) saturate(1450%) hue-rotate(152deg)' }} />
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] sm:w-[480px] md:w-[650px] opacity-[0.035] select-none pointer-events-none" />
       </div>
 
-      {/* ── HEADER BAR ── */}
+      {/* ── MODERN GLASS NAVBAR ── */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#006972]/12 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="max-w-5xl mx-auto px-3.5 sm:px-6 h-14 sm:h-18 flex items-center justify-between gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               onClick={() => navigate('/dashboard')}
-              className="w-10 h-10 shrink-0 flex items-center justify-center rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/12 text-[#006972] transition-colors cursor-pointer active:scale-95"
+              className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 flex items-center justify-center rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/12 text-[#006972] transition-colors cursor-pointer active:scale-95"
+              aria-label="Back to Dashboard"
             >
-              <Icon name="arrow_back" size={20} />
+              <Icon name="arrow_back" size={17} />
             </button>
 
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-full bg-[#006972]/10 text-[#006972] font-label text-[10px] font-bold uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="px-2 py-0.5 rounded-full bg-[#006972]/10 text-[#006972] font-label text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">
                   {committee.userRole}
                 </span>
                 {committee.is_public ? (
-                  <span className="px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200 font-label text-[10px] font-bold uppercase tracking-wider">
+                  <span className="px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200 font-label text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">
                     Public
                   </span>
                 ) : (
-                  <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-label text-[10px] font-bold uppercase tracking-wider">
+                  <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-label text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">
                     Private
                   </span>
                 )}
-                <span className="text-[11px] font-label text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-bold hidden sm:inline">
+                <span className="text-[10px] sm:text-[11px] font-label text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-bold hidden sm:inline">
                   Cycle {selectedCycle?.cycle_number ?? '—'} of {committee.capacity}
                 </span>
               </div>
-              <h1 className="font-headline text-[18px] sm:text-[22px] font-bold text-[#006972] leading-tight truncate">
+              <h1 className="font-headline text-[15px] sm:text-[19px] font-bold text-[#006972] leading-tight truncate">
                 {committee.name}
               </h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               onClick={() => setShowInviteModal(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-[#006972]/10 hover:bg-[#006972]/18 text-[#006972] font-label text-[12px] font-bold border border-[#006972]/20 transition-all active:scale-95 cursor-pointer"
+              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full bg-[#006972]/10 hover:bg-[#006972]/18 text-[#006972] font-label text-[11px] sm:text-[12px] font-bold border border-[#006972]/20 transition-all active:scale-95 cursor-pointer"
             >
-              <Icon name="person_add" size={16} />
-              <span className="hidden sm:inline">Invite</span>
+              <Icon name="person_add" size={15} />
+              <span className="hidden xs:inline">Invite</span>
             </button>
 
             <button
               onClick={() => setShowCalendarModal(true)}
-              className="p-2.5 rounded-full bg-teal-50 hover:bg-teal-100 border border-teal-200 text-[#006972] transition-all active:scale-95 cursor-pointer"
+              className="hidden sm:flex p-2 sm:p-2.5 rounded-full bg-teal-50 hover:bg-teal-100 border border-teal-200 text-[#006972] transition-all active:scale-95 cursor-pointer"
               title="Add Payment Schedule to Google / Apple Calendar"
             >
-              <Icon name="calendar_month" size={18} />
+              <Icon name="calendar_month" size={16} />
             </button>
 
             <button
               onClick={() => openReportModal({ id: committee.created_by || committee.organizer_id, name: committee.organizer_name || 'Committee Organizer' })}
-              className="p-2.5 rounded-full bg-slate-100 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-500 hover:text-rose-600 transition-all active:scale-95 cursor-pointer"
+              className="hidden sm:flex p-2 sm:p-2.5 rounded-full bg-slate-100 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-500 hover:text-rose-600 transition-all active:scale-95 cursor-pointer"
               title="Report Organizer or Pool Issue"
             >
-              <Icon name="flag" size={18} />
+              <Icon name="flag" size={16} />
             </button>
 
             <button
               onClick={() => navigate(`/committee/${id || '1'}/settings`)}
-              className="p-2.5 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-deep-navy transition-all active:scale-95 cursor-pointer"
+              className="p-2 sm:p-2.5 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-deep-navy transition-all active:scale-95 cursor-pointer"
               title="Committee Settings"
             >
-              <Icon name="settings" size={20} />
+              <Icon name="settings" size={17} />
             </button>
 
             {/* Mobile Menu Drawer Toggle */}
             <button
               onClick={openDrawer}
-              className="md:hidden p-2.5 rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer"
+              className="md:hidden p-2 sm:p-2.5 rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer"
               aria-label="Open Navigation Menu"
               title="Open Menu"
             >
-              <Icon name="menu" size={20} />
+              <Icon name="menu" size={18} />
             </button>
           </div>
         </div>

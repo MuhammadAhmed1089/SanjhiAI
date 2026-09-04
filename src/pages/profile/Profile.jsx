@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Icon from '../../components/Icon';
 import CnicVerificationModal from '../../components/CnicVerificationModal';
 import { useNavDrawer } from '../../context/NavDrawerContext';
+import { useCountUp } from '../../hooks/useCountUp';
+import { resolvePhotoUrl, getBackendUrl } from '../../utils/backendUrl';
 import logo from '../../assets/screen.png';
 import aiLogo from '../../assets/sanjhi-ai-logo.png';
 import {
@@ -16,24 +18,14 @@ import {
   verifyContactOTP,
   getCnicStatus,
 } from '../../services/authService';
+import { getTrustScoreBreakdown } from '../../services/dashboardService';
 
-function getBackendUrl() {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '');
-  }
-  if (typeof window !== 'undefined' && window.location && window.location.origin) {
-    const host = window.location.hostname;
-    if (host !== 'localhost' && host !== '127.0.0.1') {
-      return window.location.origin;
-    }
-  }
-  return 'http://localhost:3000';
-}
-
-function resolvePhotoUrl(url) {
-  if (!url) return null;
-  if (url.startsWith('http') || url.startsWith('data:')) return url;
-  return `${getBackendUrl()}${url}`;
+/* ── Trust score tier (0–1000 model) ── */
+function scoreTier(score) {
+  if (score >= 900) return { badge: 'Top Tier Participant', tier: 'Diamond Tier', color: 'text-emerald-200 bg-emerald-500/20 border-emerald-300/30' };
+  if (score >= 750) return { badge: 'Trusted Member', tier: 'Gold Tier', color: 'text-amber-200 bg-amber-400/20 border-amber-300/30' };
+  if (score >= 600) return { badge: 'Building Trust', tier: 'Silver Tier', color: 'text-sky-200 bg-sky-400/20 border-sky-300/30' };
+  return { badge: 'Needs Attention', tier: 'Bronze Tier', color: 'text-orange-200 bg-orange-400/20 border-orange-300/30' };
 }
 
 /** Formats UUID into user-friendly Sanjhi ID string, e.g. SNJ-C85E-41E8 */
@@ -43,28 +35,13 @@ function formatUserId(id) {
   return `SNJ-${clean.slice(0, 4)}-${clean.slice(4, 8)}`;
 }
 
-function useCountUp(target, duration = 1400, active = true) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    if (!active || target <= 0) return;
-    const start = performance.now();
-    const step = (now) => {
-      const t = Math.min((now - start) / duration, 1);
-      setCount(Math.floor((1 - Math.pow(1 - t, 3)) * target));
-      if (t < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }, [target, duration, active]);
-  return count;
-}
-
 function Bone({ className = '' }) {
-  return <div className={`skeleton-bone ${className}`} />;
+  return <span className={`skeleton-bone inline-block ${className}`} />;
 }
 
 const TICKER_ITEMS = [
   { icon: 'verified_user', text: 'Verified Community Profile — All transactions logged securely', color: 'text-[#006972]' },
-  { icon: 'shield', text: 'Trust Score: Community High-Reliability Rating (94%)', color: 'text-emerald-600' },
+  { icon: 'shield', text: 'Trust Score: Live ledger verification and reliability metrics', color: 'text-emerald-600' },
   { icon: 'auto_awesome', text: 'Ask Sanjhi AI anytime to manage your committee schedules & profile', color: 'text-amber-700' },
 ];
 
@@ -81,17 +58,36 @@ export default function Profile() {
   const location = useLocation();
   const { openDrawer } = useNavDrawer();
 
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Initialize from local phone cache for instant 0ms load
+  const [user, setUser] = useState(() => {
+    try {
+      const cached = localStorage.getItem('sanjhi_cached_profile');
+      return cached ? JSON.parse(cached) : null;
+    } catch (_) {
+      return null;
+    }
+  });
+
+  const [targetTrustScore, setTargetTrustScore] = useState(() => {
+    const cached = localStorage.getItem('sanjhi_cached_trust');
+    return cached ? Number(cached) : 0;
+  });
+
+  const [reliabilityRate, setReliabilityRate] = useState(() => {
+    const cached = localStorage.getItem('sanjhi_cached_rel');
+    return cached ? Number(cached) : 90;
+  });
+
+  const [loading, setLoading] = useState(() => !user);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
   const [errorMessage, setErrorMessage] = useState('');
 
-  const [fullName, setFullName] = useState('');
-  const [age, setAge] = useState('');
-  const [sex, setSex] = useState('');
+  const [fullName, setFullName] = useState(() => user?.full_name || '');
+  const [age, setAge] = useState(() => user?.age ? user.age.toString() : '');
+  const [sex, setSex] = useState(() => user?.sex || '');
 
   // Add contact modal state with 2-step OTP flow
   const [showAddContact, setShowAddContact] = useState(false);
@@ -114,13 +110,15 @@ export default function Profile() {
 
   const [language, setLanguage] = useState(() => localStorage.getItem('sanjhi_lang') || 'en');
 
-  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(() => {
+    return user?.profile_photo_url ? resolvePhotoUrl(user.profile_photo_url) : null;
+  });
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileInputRef = useRef(null);
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  const trustScore = useCountUp(850, 1600, !loading);
+  const trustScore = useCountUp(targetTrustScore, 1400, true);
 
   useEffect(() => {
     const saved = localStorage.getItem('sanjhi_lang') || 'en';
@@ -131,15 +129,37 @@ export default function Profile() {
   useEffect(() => {
     async function loadProfile() {
       try {
-        setLoading(true);
-        const data = await getProfile();
-        setUser(data);
-        setFullName(data.full_name || '');
-        setAge(data.age ? data.age.toString() : '');
-        setSex(data.sex || '');
-        if (data.profile_photo_url) {
-          setPhotoPreview(resolvePhotoUrl(data.profile_photo_url));
+        if (!user) setLoading(true);
+        const [profileData, trustData] = await Promise.allSettled([
+          getProfile(),
+          getTrustScoreBreakdown(),
+        ]);
+
+        if (profileData.status === 'fulfilled' && profileData.value) {
+          const data = profileData.value;
+          setUser(data);
+          setFullName(data.full_name || '');
+          setAge(data.age ? data.age.toString() : '');
+          setSex(data.sex || '');
+          if (data.profile_photo_url) {
+            setPhotoPreview(resolvePhotoUrl(data.profile_photo_url));
+          }
+          localStorage.setItem('sanjhi_cached_profile', JSON.stringify(data));
         }
+
+        if (trustData.status === 'fulfilled' && trustData.value) {
+          const tData = trustData.value;
+          if (typeof tData.score === 'number') {
+            setTargetTrustScore(tData.score);
+            localStorage.setItem('sanjhi_cached_trust', tData.score.toString());
+          }
+          if (typeof tData.components?.reliability?.rate === 'number') {
+            const rate = Math.round(tData.components.reliability.rate * 100);
+            setReliabilityRate(rate);
+            localStorage.setItem('sanjhi_cached_rel', rate.toString());
+          }
+        }
+
         try {
           const prefs = await getNotificationPrefs();
           if (prefs) setNotifPrefs(prefs);
@@ -149,7 +169,7 @@ export default function Profile() {
           setCnicData(cnicRes?.cnic || cnicRes);
         } catch (_) {}
       } catch (err) {
-        setErrorMessage('Could not load profile. Please try again.');
+        if (!user) setErrorMessage('Could not load profile. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -441,10 +461,10 @@ export default function Profile() {
 
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5">
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/15 text-white font-label text-[10px] sm:text-[11px] font-bold border border-white/20">
-                  <Icon name="verified" size={12} /> Verified Member
+                  <Icon name="verified" size={12} /> {scoreTier(targetTrustScore).badge}
                 </span>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-200 font-label text-[10px] sm:text-[11px] font-bold border border-amber-300/20">
-                  <Icon name="star" size={12} /> Gold Tier
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-label text-[10px] sm:text-[11px] font-bold border ${scoreTier(targetTrustScore).color}`}>
+                  <Icon name="star" size={12} /> {scoreTier(targetTrustScore).tier}
                 </span>
               </div>
 
@@ -493,16 +513,16 @@ export default function Profile() {
                 <span className="font-label text-[10px] sm:text-[11px] font-bold text-white/80 uppercase tracking-wider">Community Trust Score</span>
               </div>
               <span className="font-headline text-[16px] sm:text-[20px] font-extrabold text-white tabular-nums">
-                {trustScore} <span className="font-label text-[11px] sm:text-[12px] font-normal text-white/60">/ 900</span>
+                {trustScore.toLocaleString()} <span className="font-label text-[11px] sm:text-[12px] font-normal text-white/60">/ 1000</span>
               </span>
             </div>
             <div className="w-full h-1.5 sm:h-2.5 bg-black/20 rounded-full overflow-hidden">
               <div className="h-full rounded-full transition-all duration-[1800ms] ease-out"
-                style={{ width: '94%', background: 'linear-gradient(90deg, #fcd34d, #6ee7b7)' }} />
+                style={{ width: `${Math.min(100, Math.max(0, targetTrustScore / 10))}%`, background: 'linear-gradient(90deg, #fcd34d, #6ee7b7, #ffffff)' }} />
             </div>
             <div className="flex justify-between mt-0.5 sm:mt-1">
-              <span className="font-label text-[9px] sm:text-[10px] text-white/60">94% On-time Rate</span>
-              <span className="font-label text-[9px] sm:text-[10px] font-bold text-emerald-300">Top 5% Nationally</span>
+              <span className="font-label text-[9px] sm:text-[10px] text-white/80">{reliabilityRate}% On-time Rate</span>
+              <span className="font-label text-[9px] sm:text-[10px] font-bold text-emerald-300">{scoreTier(targetTrustScore).badge}</span>
             </div>
           </div>
         </section>
@@ -794,7 +814,7 @@ export default function Profile() {
                         <div className="flex items-center justify-between gap-1.5 mb-1">
                           <div className="flex items-center gap-1.5">
                             <Icon name={item.icon} size={13} className="text-[#006972]" />
-                            <p className="font-label text-[10px] uppercase text-on-surface-variant font-bold tracking-wider">{item.label}</p>
+                            <span className="font-label text-[10px] uppercase text-on-surface-variant font-bold tracking-wider">{item.label}</span>
                           </div>
                           {item.copyable && user?.id && (
                             <button
@@ -810,9 +830,9 @@ export default function Profile() {
                             </button>
                           )}
                         </div>
-                        <p className={`font-headline text-[14px] font-bold capitalize ${item.highlight ? 'text-emerald-700' : 'text-deep-navy'}`}>
+                        <div className={`font-headline text-[14px] font-bold capitalize ${item.highlight ? 'text-emerald-700' : 'text-deep-navy'}`}>
                           {loading ? <Bone className="w-20 h-4 rounded-lg" /> : (item.value || <span className="font-normal text-[13px] text-on-surface-variant">Not set</span>)}
-                        </p>
+                        </div>
                       </div>
                     ))}
                   </div>

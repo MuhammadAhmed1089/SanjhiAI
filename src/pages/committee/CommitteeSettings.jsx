@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Icon from '../../components/Icon';
 import logo from '../../assets/screen.png';
+import { useNavDrawer } from '../../context/NavDrawerContext';
 import {
   getCommitteeById,
   updateCommittee,
@@ -23,7 +24,7 @@ function intervalLabel(value) {
 
 /* ── Skeleton bone helper ── */
 function Bone({ className = '' }) {
-  return <div className={`skeleton-bone ${className}`} />;
+  return <span className={`skeleton-bone inline-block ${className}`} />;
 }
 
 /* ── Toggle Switch ── */
@@ -56,6 +57,7 @@ export default function CommitteeSettings() {
   const navigate = useNavigate();
   const { id } = useParams();
   const committeeId = id || '1';
+  const { openDrawer } = useNavDrawer();
 
   // Role from backend: 'organizer' | 'co_organizer' | 'member' | 'viewer'
   const [role, setRole] = useState(null);
@@ -200,17 +202,17 @@ export default function CommitteeSettings() {
 
         {/* Skeleton header */}
         <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#006972]/10 shadow-sm">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <Bone className="w-10 h-10 rounded-full shrink-0" />
-              <div className="space-y-2">
-                <Bone className="w-28 h-3 rounded-full" />
-                <Bone className="w-44 h-5 rounded-xl" />
+          <div className="max-w-4xl mx-auto px-3.5 sm:px-6 h-14 sm:h-18 flex items-center justify-between gap-2.5 sm:gap-3">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <Bone className="w-8 h-8 sm:w-10 sm:h-10 rounded-full shrink-0" />
+              <div className="space-y-1.5">
+                <Bone className="w-24 h-2.5 rounded-full" />
+                <Bone className="w-36 h-4 rounded-xl" />
               </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <Bone className="w-20 h-6 rounded-full" />
-              <Bone className="w-20 h-7 rounded-full" />
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <Bone className="w-16 h-5 rounded-full" />
+              <Bone className="w-16 h-6 rounded-full" />
             </div>
           </div>
         </header>
@@ -490,51 +492,69 @@ export default function CommitteeSettings() {
   return (
     <div className="min-h-screen bg-white text-deep-navy font-body antialiased relative overflow-x-hidden pb-24 md:pb-12">
 
-      {/* ── AMBIENT BACKGROUND LAYER ── */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.3]"
-          style={{ backgroundImage: 'radial-gradient(circle at 1.5px 1.5px, #006972 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
-        <div className="absolute w-[500px] h-[500px] rounded-full bg-[#006972]/5 blur-3xl top-[-100px] left-[-100px] animate-float-y-slow" />
-        <div className="absolute w-[360px] h-[360px] rounded-full bg-amber-400/5 blur-3xl bottom-[15%] right-[-60px]"
-          style={{ animation: 'float-y 8s ease-in-out infinite 2s' }} />
+      {/* ── AMBIENT BACKGROUND LAYER (GPU-OPTIMIZED) ── */}
+      <div
+        className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
+        style={{ contain: 'strict', transform: 'translateZ(0)' }}
+      >
+        <div className="absolute inset-0 opacity-[0.28]"
+          style={{ backgroundImage: 'radial-gradient(circle at 1.5px 1.5px, #006972 1.2px, transparent 1.2px)', backgroundSize: '28px 28px' }} />
+        <div
+          className="absolute w-[500px] h-[500px] rounded-full top-[-150px] left-[-150px] pointer-events-none opacity-35"
+          style={{ background: 'radial-gradient(circle, rgba(0,105,114,0.18) 0%, rgba(0,105,114,0.03) 50%, transparent 70%)' }}
+        />
+        <div
+          className="absolute w-[450px] h-[450px] rounded-full bottom-[-100px] right-[-100px] pointer-events-none opacity-25"
+          style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.2) 0%, rgba(212,175,55,0.03) 50%, transparent 70%)' }}
+        />
         <img src={logo} alt="" aria-hidden
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] sm:w-[650px] opacity-[0.035] select-none pointer-events-none"
-          style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(85%) saturate(1450%) hue-rotate(152deg)' }} />
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] sm:w-[480px] md:w-[650px] opacity-[0.035] select-none pointer-events-none" />
       </div>
 
       {/* ── HEADER BAR ── */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#006972]/10 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="max-w-4xl mx-auto px-3.5 sm:px-6 h-14 sm:h-18 flex items-center justify-between gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               onClick={() => navigate(`/committee/${committeeId}`)}
-              className="w-10 h-10 shrink-0 flex items-center justify-center rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/12 text-[#006972] transition-colors cursor-pointer active:scale-95"
+              className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 flex items-center justify-center rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/12 text-[#006972] transition-colors cursor-pointer active:scale-95"
+              aria-label="Back to Committee"
             >
-              <Icon name="arrow_back" size={20} />
+              <Icon name="arrow_back" size={17} />
             </button>
             <div className="min-w-0">
-              <p className="text-[11px] font-label font-medium text-on-surface-variant truncate">
+              <p className="text-[10px] sm:text-[11px] font-label font-medium text-on-surface-variant truncate">
                 {isManagementRole ? 'Management Console' : 'Member Preferences'}
               </p>
-              <h1 className="font-headline text-[18px] sm:text-[22px] font-bold text-[#006972] leading-tight truncate">
+              <h1 className="font-headline text-[15px] sm:text-[19px] font-bold text-[#006972] leading-tight truncate">
                 Committee Settings
               </h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="px-2 py-0.5 rounded-full bg-[#006972]/10 text-[#006972] font-label text-[10px] font-bold uppercase tracking-wider">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <span className="hidden xs:inline-block px-2 py-0.5 rounded-full bg-[#006972]/10 text-[#006972] font-label text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">
               {roleLabel}
             </span>
-            <span className={`px-3 py-1 rounded-full font-label text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 border ${
+            <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full font-label text-[10px] sm:text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 border ${
               committeeStatus === 'active'
                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                 : committeeStatus === 'frozen'
                   ? 'bg-amber-50 text-amber-800 border-amber-200'
                   : 'bg-slate-100 text-slate-600 border-slate-200'
             }`}>
-              <Icon name={committeeStatus === 'active' ? 'verified' : 'pause_circle'} size={13} /> {committeeStatus}
+              <Icon name={committeeStatus === 'active' ? 'verified' : 'pause_circle'} size={12} /> {committeeStatus}
             </span>
+
+            {/* Mobile Drawer Toggle */}
+            <button
+              onClick={openDrawer}
+              className="md:hidden p-2 rounded-full bg-[#006972]/8 hover:bg-[#006972]/15 border border-[#006972]/20 text-[#006972] transition-all active:scale-95 cursor-pointer"
+              aria-label="Open Navigation Menu"
+              title="Open Menu"
+            >
+              <Icon name="menu" size={18} />
+            </button>
           </div>
         </div>
       </header>

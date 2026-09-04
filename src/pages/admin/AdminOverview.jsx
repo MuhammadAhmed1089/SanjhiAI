@@ -10,7 +10,7 @@ const GLASS_CARD = 'bg-white/70 backdrop-blur-2xl border border-white/90 shadow-
 
 /* ── Skeleton Helper ── */
 function Bone({ className = '' }) {
-  return <div className={`skeleton-bone ${className}`} />;
+  return <span className={`skeleton-bone inline-block ${className}`} />;
 }
 
 export default function AdminOverview() {

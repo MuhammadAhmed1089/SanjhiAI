@@ -49,36 +49,57 @@ export function detectPlatform() {
 }
 
 /**
- * Android Chrome intent URL. If the app is installed it opens; otherwise
- * Chrome falls back to browser_fallback_url (the Play Store listing).
+ * Android Chrome & WebView intent URL.
+ * Targeted directly at the app's package with Play Store fallback.
  */
 export function buildAndroidIntentUrl(wallet) {
   if (!wallet?.androidPackage) return null;
   const fallback = encodeURIComponent(wallet.playStoreUrl);
-  return `intent://#Intent;scheme=${wallet.scheme};package=${wallet.androidPackage};S.browser_fallback_url=${fallback};end`;
+  return `intent:#Intent;package=${wallet.androidPackage};action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;S.browser_fallback_url=${fallback};end`;
 }
 
 /**
- * Open the wallet app on the current device.
+ * Open the wallet app on the current device (JazzCash / EasyPaisa).
  * Returns 'opened' | 'fallback' | 'unavailable' so the caller can show a hint.
  */
-export function openWalletApp(wallet) {
-  if (!wallet?.scheme) return 'unavailable';
+export function openWalletApp(walletOrKey) {
+  const wallet = typeof walletOrKey === 'string'
+    ? WALLETS[walletOrKey.toLowerCase()] || WALLETS.jazzcash
+    : walletOrKey;
+
+  if (!wallet || (!wallet.scheme && !wallet.androidPackage)) return 'unavailable';
   const platform = detectPlatform();
 
   if (platform === 'android') {
     const intentUrl = buildAndroidIntentUrl(wallet);
     if (intentUrl) {
-      window.location.href = intentUrl;
-      return 'opened';
+      try {
+        const link = document.createElement('a');
+        link.href = intentUrl;
+        link.rel = 'noopener';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+          if (link.parentNode) link.parentNode.removeChild(link);
+        }, 600);
+        return 'opened';
+      } catch {
+        window.location.href = intentUrl;
+        return 'opened';
+      }
     }
     return 'unavailable';
   }
 
   if (platform === 'ios') {
-    // No way to detect installation reliably; attempt the scheme. If the app
-    // is missing iOS shows its own "cannot open" dialog — acceptable here.
     window.location.href = `${wallet.scheme}://`;
+    return 'opened';
+  }
+
+  // Desktop or unknown -> Open official app web page / Google Play store
+  if (wallet.playStoreUrl) {
+    window.open(wallet.playStoreUrl, '_blank', 'noopener,noreferrer');
     return 'opened';
   }
 

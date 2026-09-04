@@ -8,31 +8,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sanjhi — Community Savings</title>
 
-    <!-- Preconnect for faster DNS + TLS -->
+    <!-- Preconnect for Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-    <!-- Non-blocking font load (media trick: loads async, swaps to all on load) -->
+    <!-- Instant High-Priority Icon & Typography Loading -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap"
       rel="stylesheet"
-      media="print"
-      onload="this.media='all'"
-    />
-    <noscript>
-      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet" />
-    </noscript>
-
-    <!-- Material Symbols — restricted weight range to reduce payload -->
-    <link
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=swap"
-      rel="stylesheet"
-      media="print"
-      onload="this.media='all'"
     />
-    <noscript>
-      <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=swap" rel="stylesheet" />
-    </noscript>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap"
+    />
 
     <style>
       /* ── Reset Box Sizing for Seamless Pre-CSS Layout ── */
@@ -281,23 +269,21 @@
         overflow: hidden;
         border: 1px solid rgba(0, 105, 114, 0.1);
         position: relative;
+        overflow: hidden;
       }
       .splash-progress-bar {
         height: 100%;
+        width: 100%;
         border-radius: 99px;
-        background: linear-gradient(90deg, #006972, #10b981, #d4af37, #006972);
-        background-size: 250% 100%;
-        animation: splash-progress 2.4s cubic-bezier(0.4, 0, 0.2, 1) both,
-                   splash-progress-shimmer 1.4s linear infinite;
+        background: linear-gradient(90deg, #006972 0%, #10b981 50%, #d4af37 80%, #006972 100%);
+        background-size: 200% 100%;
+        animation: splash-indeterminate 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        will-change: transform;
       }
-      @keyframes splash-progress {
-        0%   { width: 0%; }
-        60%  { width: 75%; }
-        100% { width: 100%; }
-      }
-      @keyframes splash-progress-shimmer {
-        0%   { background-position: 250% 0; }
-        100% { background-position: -250% 0; }
+      @keyframes splash-indeterminate {
+        0%   { transform: translateX(-100%); }
+        50%  { transform: translateX(25%); }
+        100% { transform: translateX(200%); }
       }
 
       /* Status badge */

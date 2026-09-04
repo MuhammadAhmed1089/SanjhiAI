@@ -17,6 +17,18 @@ function getApiBaseUrl() {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL.replace(/\/$/, '');
   }
+
+  // Detect Capacitor native Android / iOS runtime
+  const isCapacitor = typeof window !== 'undefined' && (
+    window.Capacitor?.isNativePlatform?.() ||
+    window.location.protocol === 'capacitor:' ||
+    (window.location.hostname === 'localhost' && window.Capacitor)
+  );
+
+  if (isCapacitor) {
+    return 'https://sanjhiai-production.up.railway.app/api';
+  }
+
   if (typeof window !== 'undefined' && window.location && window.location.origin) {
     const host = window.location.hostname;
     if (host === 'localhost' || host === '127.0.0.1') {

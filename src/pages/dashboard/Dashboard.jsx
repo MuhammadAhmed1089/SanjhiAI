@@ -7,21 +7,8 @@ import aiLogo from '../../assets/sanjhi-ai-logo.png';
 import whatsappIcon from '../../assets/whatsapp-icon.svg';
 import { dashboardService, notificationService } from '../../services';
 
-/* ── Count-up hook ── */
-function useCountUp(target, duration = 1400, active = true) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    if (!active || target <= 0) return;
-    const start = performance.now();
-    const step = (now) => {
-      const t = Math.min((now - start) / duration, 1);
-      setCount(Math.floor((1 - Math.pow(1 - t, 3)) * target));
-      if (t < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }, [target, duration, active]);
-  return count;
-}
+import { useCountUp } from '../../hooks/useCountUp';
+import { resolvePhotoUrl, getBackendUrl } from '../../utils/backendUrl';
 
 /* ── Scroll-reveal hook ── */
 function useInView(threshold = 0.12) {
@@ -37,7 +24,7 @@ function useInView(threshold = 0.12) {
 
 /* ── Helper skeleton bone ── */
 function Bone({ className = '' }) {
-  return <div className={`skeleton-bone ${className}`} />;
+  return <span className={`skeleton-bone inline-block ${className}`} />;
 }
 
 /* ── Ticker items ── */
@@ -63,25 +50,6 @@ const PARTICLES = [
 ];
 
 const WHATSAPP_NUMBER = '923411713517';
-
-function getBackendUrl() {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '');
-  }
-  if (typeof window !== 'undefined' && window.location && window.location.origin) {
-    const host = window.location.hostname;
-    if (host !== 'localhost' && host !== '127.0.0.1') {
-      return window.location.origin;
-    }
-  }
-  return 'http://localhost:3000';
-}
-
-function resolvePhotoUrl(url) {
-  if (!url) return null;
-  if (url.startsWith('http') || url.startsWith('data:')) return url;
-  return `${getBackendUrl()}${url}`;
-}
 
 /* ── Trust score tier (0–1000 model) ── */
 function scoreTier(score) {
@@ -274,36 +242,28 @@ export default function Dashboard() {
     <div className="min-h-screen bg-white text-deep-navy font-body antialiased relative overflow-x-hidden pb-28 md:pb-12">
 
       {/* ══════════════════════════════════════════════════ */}
-      {/*  AMBIENT BACKGROUND LAYER                         */}
+      {/*  AMBIENT BACKGROUND LAYER (GPU-OPTIMIZED)          */}
       {/* ══════════════════════════════════════════════════ */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+      <div
+        className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
+        style={{ contain: 'strict', transform: 'translateZ(0)' }}
+      >
         {/* Dot grid */}
-        <div className="absolute inset-0 opacity-[0.35]"
-          style={{ backgroundImage: 'radial-gradient(circle at 1.5px 1.5px, #006972 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+        <div className="absolute inset-0 opacity-[0.28]"
+          style={{ backgroundImage: 'radial-gradient(circle at 1.5px 1.5px, #006972 1.2px, transparent 1.2px)', backgroundSize: '28px 28px' }} />
 
-        {/* Slow-drifting colour blobs */}
-        <div className="absolute w-[520px] h-[520px] rounded-full bg-[#006972]/6 blur-3xl top-[-120px] left-[-120px] animate-float-y-slow" />
-        <div className="absolute w-[380px] h-[380px] rounded-full bg-amber-400/6 blur-3xl bottom-[10%] right-[-80px]"
-          style={{ animation: 'float-y 9s ease-in-out infinite 2s' }} />
+        {/* Soft atmospheric accents (zero expensive software blurs) */}
+        <div
+          className="absolute w-[500px] h-[500px] rounded-full top-[-150px] left-[-150px] pointer-events-none opacity-35"
+          style={{ background: 'radial-gradient(circle, rgba(0,105,114,0.18) 0%, rgba(0,105,114,0.03) 50%, transparent 70%)' }}
+        />
+        <div
+          className="absolute w-[450px] h-[450px] rounded-full bottom-[-100px] right-[-100px] pointer-events-none opacity-25"
+          style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.2) 0%, rgba(212,175,55,0.03) 50%, transparent 70%)' }}
+        />
 
-        {/* Floating particles */}
-        {PARTICLES.map((p, i) => (
-          <div key={i} className="absolute rounded-full bg-[#006972] particle"
-            style={{
-              left: `${p.x}%`,
-              top: `${p.y}%`,
-              width: p.size,
-              height: p.size,
-              opacity: 0.18,
-              animationDuration: `${p.dur}s`,
-              animationDelay: `${p.delay}s`,
-            }}
-          />
-        ))}
-
-        {/* Sanjhi logo watermark - Responsive for all screen sizes */}
-        <img src={logo} alt="" aria-hidden className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[500px] md:w-[720px] lg:w-[950px] xl:w-[1150px] opacity-[0.04] select-none pointer-events-none transition-all duration-300"
-          style={{ filter: 'brightness(0) saturate(100%) invert(26%) sepia(85%) saturate(1450%) hue-rotate(152deg)' }} />
+        {/* Sanjhi logo watermark */}
+        <img src={logo} alt="" aria-hidden className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] sm:w-[480px] md:w-[650px] opacity-[0.035] select-none pointer-events-none" />
       </div>
 
       {/* ══════════════════════════════════════════════════ */}

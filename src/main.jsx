@@ -4,8 +4,31 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 
-/** Dismiss the HTML splash screen with a smooth fade-out after minimum display time */
-function dismissSplash(minMs = 2400) {
+// Suppress benign third-party/DevTools PerformanceObserver inspector errors
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (event) => {
+    if (
+      event?.message?.includes?.('startTime') ||
+      event?.filename === '' ||
+      event?.filename?.includes?.('anonymous')
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  });
+}
+
+/** Register Service Worker to cache all assets on the device */
+if ('serviceWorker' in navigator && (import.meta.env?.PROD || window.location.protocol === 'https:')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((err) => {
+      console.warn('[SW] Registration error:', err);
+    });
+  });
+}
+
+/** Dismiss the HTML splash screen smoothly once React paints */
+function dismissSplash(minMs = 200) {
   const splash = document.getElementById('splash-root');
   if (!splash) return;
 
@@ -21,7 +44,7 @@ function dismissSplash(minMs = 2400) {
         splash.classList.add('hidden');
       }, { once: true });
       // Fallback in case transitionend doesn't fire
-      setTimeout(() => splash.classList.add('hidden'), 600);
+      setTimeout(() => splash.classList.add('hidden'), 300);
     }, remaining);
   }
 
@@ -39,4 +62,4 @@ root.render(
   </StrictMode>,
 );
 
-dismissSplash(2400);
+dismissSplash(200);

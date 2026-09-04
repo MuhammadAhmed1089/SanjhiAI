@@ -6,7 +6,7 @@ import { getComplaint } from '../../services/supportService';
 
 /* ── Skeleton Bone ── */
 function Bone({ className = '' }) {
-  return <div className={`skeleton-bone ${className}`} />;
+  return <span className={`skeleton-bone inline-block ${className}`} />;
 }
 
 /* ── Helpers ── */
