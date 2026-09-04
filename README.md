@@ -1,6 +1,6 @@
 # 🌟 Sanjhi (سانجھی) — AI-Powered Community Savings & ROSCA Platform
 
-> **🌐 Live Hosted Web Application:** [https://sanjhiai-production.up.railway.app](https://sanjhiai-production.up.railway.app)  
+> **🌐 Live Hosted Web Application:** [https://sanjhiai-production.up.railway.app](https://sanjhiai.netlify.app)  
 > *(Replace or update with your custom domain if applicable)*
 
 > **📱 Android APK Binary Location:**  
