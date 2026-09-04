@@ -11,8 +11,9 @@ import { getUnreadCount } from '../../services/notificationService';
 import logo from '../../assets/screen.png';
 import aiLogo from '../../assets/sanjhi-ai-logo.png';
 import whatsappIcon from '../../assets/whatsapp-icon.svg';
+import { SUPPORT_WHATSAPP_NUMBER } from '../../utils/constants';
 
-const WHATSAPP_NUMBER = '923411713517';
+const WHATSAPP_NUMBER = SUPPORT_WHATSAPP_NUMBER;
 
 const CATEGORIES = [
   { value: '', label: 'All Pools', icon: 'apps', bg: 'bg-[#006972]/10', text: 'text-[#006972]', border: 'border-[#006972]/20' },

@@ -4,6 +4,10 @@ import { query } from '../config/db.js';
 const JWT_SECRET = process.env.JWT_SECRET || 'sanjhi_super_secret_jwt_key_2026';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
+  console.warn('⚠️ [SECURITY WARNING] process.env.JWT_SECRET is not set! Using default secret in production is unsafe.');
+}
+
 /**
  * Sign a JWT token for a user
  * @param {object} payload - { userId, phone, email }

@@ -9,6 +9,7 @@ import { dashboardService, notificationService } from '../../services';
 
 import { useCountUp } from '../../hooks/useCountUp';
 import { resolvePhotoUrl, getBackendUrl } from '../../utils/backendUrl';
+import { SUPPORT_WHATSAPP_NUMBER } from '../../utils/constants';
 
 /* ── Scroll-reveal hook ── */
 function useInView(threshold = 0.12) {
@@ -49,7 +50,7 @@ const PARTICLES = [
   { x: 72, y: 90, size: 4, delay: 3.5, dur: 7 },
 ];
 
-const WHATSAPP_NUMBER = '923411713517';
+const WHATSAPP_NUMBER = SUPPORT_WHATSAPP_NUMBER;
 
 /* ── Trust score tier (0–1000 model) ── */
 function scoreTier(score) {

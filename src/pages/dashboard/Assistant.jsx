@@ -5,8 +5,9 @@ import aiLogo from '../../assets/sanjhi-ai-logo.png';
 import whatsappIcon from '../../assets/whatsapp-icon.svg';
 import chatbotIcon from '../../assets/chatbot-icon.svg';
 import { assistantService } from '../../services';
+import { SUPPORT_WHATSAPP_NUMBER } from '../../utils/constants';
 
-const WHATSAPP_NUMBER = '923411713517';
+const WHATSAPP_NUMBER = SUPPORT_WHATSAPP_NUMBER;
 
 /* ── How-to-use guide steps ── */
 const HOW_TO_USE_STEPS = [
