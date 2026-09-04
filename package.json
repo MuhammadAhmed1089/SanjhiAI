@@ -4,15 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "dev": "concurrently \"npm run client\" \"npm run server\"",
+    "client": "vite",
+    "server": "nodemon backend/server.js",
     "start": "node backend/server.js",
     "build": "vite build",
-    "cap:sync": "npx cap sync android && node scripts/patch-gradle.mjs",
     "build:apk": "npm run build && npm run cap:sync && cd android && .\\gradlew assembleDebug",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "server": "nodemon backend/server.js",
-    "client": "vite",
-    "dev": "concurrently \"npm run client\" \"npm run server\""
+    "cap:sync": "npx cap sync android && node scripts/patch-gradle.mjs",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@capacitor/android": "^8.5.1",
