@@ -109,7 +109,8 @@ export async function parseCommitteeAIText(req, res) {
         { role: 'system', content: SYSTEM_EXTRACTION_PROMPT },
         { role: 'user', content: `Extract from this text: "${text}"` }
       ],
-      model: 'qwen/qwen3.8-27b',
+      model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+      max_tokens: 500,
       response_format: { type: 'json_object' },
     });
 
@@ -405,7 +406,8 @@ export async function parseCommitteeAIAudio(req, res) {
         role: "user",
         content: `Extract from this text: "${transcription.text}"`
       }],
-      model: "qwen/qwen3.8-27b",
+      model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+      max_tokens: 500,
       response_format: { type: "json_object" },
     });
     

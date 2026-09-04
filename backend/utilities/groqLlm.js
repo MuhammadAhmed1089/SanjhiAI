@@ -9,7 +9,7 @@
 
 import Groq from 'groq-sdk';
 
-const GROQ_MODEL = 'qwen/qwen3.8-27b';
+const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 
 /**
  * Send a chat completion request and return the assistant content.
@@ -27,9 +27,9 @@ export async function chatCompletion(messages, options = {}) {
   const completion = await groq.chat.completions.create({
     messages,
     model: GROQ_MODEL,
-    temperature: options.temperature ?? 1,
-    top_p: options.top_p ?? 0.95,
-    max_tokens: options.max_tokens ?? 1024,
+    temperature: options.temperature ?? 0.7,
+    top_p: options.top_p ?? 0.9,
+    max_tokens: options.max_tokens ?? 500,
   });
 
   const content = completion.choices?.[0]?.message?.content;

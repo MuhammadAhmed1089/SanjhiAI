@@ -3,7 +3,7 @@ import { TOOL_DEFINITIONS, executeTool } from './tools/index.js';
 import { updateSession } from './sessionManager.js';
 import { detectLanguage } from './formatter.js';
 
-const MODEL = 'qwen/qwen3.8-27b';
+const MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 const MAX_TURNS = 3;
 
 const SYSTEM_PROMPT = `You are Sanjhi Bot — a bilingual WhatsApp assistant for Sanjhi, Pakistan's trusted peer-to-peer committee savings platform.

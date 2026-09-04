@@ -29,7 +29,7 @@ async function curateActivityMessages(activities) {
         },
         { role: 'user', content: `Rewrite these activity messages:\n${list}` },
       ],
-      { max_tokens: 1024, temperature: 0.9, timeoutMs: 20000 }
+      { max_tokens: 450, temperature: 0.7, timeoutMs: 20000 }
     );
 
     // Extract JSON array even if wrapped in markdown fences
