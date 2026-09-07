@@ -87,6 +87,7 @@ sanjhi/
 For detailed step-by-step instructions on setting up the database, environment variables, running dev servers, and building the Android APK, refer to:
 
 👉 **[Local Setup Instructions (`instructions.md`)](file:///d:/hack/sanjhi/instructions.md)**
+* the instructions.md contains the instruction to run the commands
 
 ```bash
 # Quick Start
